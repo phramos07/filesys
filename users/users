@@ -1,0 +1,7 @@
+root /** rwx
+maria /** rw-
+joao /** rw-
+pedro /** rw-
+tiago /** rw-
+luzia /** rwx
+carla /** r--
