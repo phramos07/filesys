@@ -61,13 +61,13 @@ public class Main {
                         String userListed = parts[0];
                         String dir = parts[1];
                         String dirPermission = parts[2];
-
-                        System.out.println(userListed + " " + dir + " " + dirPermission); // Somente imprime o usuário, diretório e permissão
-
+                        
                         /* A FAZER:
                          * Processar a permissão de todos os usuários existentes por diretório.
                          * Por enquanto esse código somente imprime as permissões contidas no arquivo users.
                         */
+                        System.out.println(userListed + " " + dir + " " + dirPermission); // Somente imprime o usuário, diretório e permissão
+
 
                     } else {
                         System.out.println("Formato ruim no arquivo de usuários. Linha: " + line);
