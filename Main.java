@@ -86,13 +86,13 @@ public class Main {
         // Obs: Como passar a lista de usuários para o FileSystem?
         fileSystem = new FileSystem(/*usuários?*/);
 
-        // // DESCOMENTE O BLOCO ABAIXO PARA CRIAR O DIRETÓRIO RAIZ ANTES DE RODAR O MENU
-        // // Cria o diretório raiz do sistema. Root sempre tem permissão total "rwx"
-        // try {
-        //     fileSystem.mkdir(ROOT_DIR, ROOT_USER);
-        // } catch (CaminhoJaExistenteException | PermissaoException e) {
-        //     System.out.println(e.getMessage());
-        // }
+        // DESCOMENTE O BLOCO ABAIXO PARA CRIAR O DIRETÓRIO RAIZ ANTES DE RODAR O MENU
+        // Cria o diretório raiz do sistema. Root sempre tem permissão total "rwx"
+        try {
+            fileSystem.mkdir(ROOT_DIR, ROOT_USER);
+        } catch (CaminhoJaExistenteException | PermissaoException | CaminhoNaoEncontradoException e) {
+            System.out.println(e.getMessage());
+        }
 
         // Menu interativo.
         menu();
@@ -175,7 +175,7 @@ public class Main {
         fileSystem.chmod(caminho, user, usuarioAlvo, permissoes);
     }
 
-    public static void mkdir() throws CaminhoJaExistenteException, PermissaoException {
+    public static void mkdir() throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
         System.out.println("Insira o caminho do diretório a ser criado:");
         String caminho = scanner.nextLine();
         
@@ -191,7 +191,7 @@ public class Main {
         fileSystem.rm(caminho, user, recursivo);
     }
 
-    public static void touch() throws CaminhoJaExistenteException, PermissaoException {
+    public static void touch() throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
         System.out.println("Insira o caminho do arquivo a ser criado:");
         String caminho = scanner.nextLine();
         

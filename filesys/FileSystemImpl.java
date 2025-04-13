@@ -10,12 +10,43 @@ import exception.PermissaoException;
 // e atributos & métodos privados podem ser adicionados
 public final class FileSystemImpl implements IFileSystem {
     private static final String ROOT_USER = "root"; // pode ser necessário
+    private Diretorio root;
 
     public FileSystemImpl() {}
 
+    private Diretorio navegar(String caminho) throws CaminhoNaoEncontradoException {
+        if (caminho.equals("/")) {
+            return root;
+        }
+
+        String[] partes = caminho.split("/");
+        Diretorio atual = root;
+
+        for (String parte : partes) {
+            if (parte.isEmpty()) continue;
+            if (!atual.getFilhos().containsKey(parte)) {
+                throw new CaminhoNaoEncontradoException("Caminho não encontrado: " + caminho);
+            }
+            atual = atual.getFilhos().get(parte);
+        }
+
+        return atual;
+    }
+
     @Override
-    public void mkdir(String caminho, String nome) throws CaminhoJaExistenteException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'mkdir'");
+    public void mkdir(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
+        Diretorio parent = navegar(caminho.substring(0, caminho.lastIndexOf('/')));
+        String nomeDiretorio = caminho.substring(caminho.lastIndexOf('/') + 1);
+
+        if (parent.isArquivo()) {
+            throw new UnsupportedOperationException("Não é possível criar um diretório dentro de um arquivo.");
+        }
+
+        if (parent.getFilhos().containsKey(nomeDiretorio)) {
+            throw new CaminhoJaExistenteException("Diretório já existe: " + nomeDiretorio);
+        }
+
+        parent.adicionarFilho(new Diretorio(nomeDiretorio, "rwx", usuario));
     }
 
     @Override
@@ -31,8 +62,19 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     @Override
-    public void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'touch'");
+    public void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
+        Diretorio parent = navegar(caminho.substring(0, caminho.lastIndexOf('/')));
+        String nomeArquivo = caminho.substring(caminho.lastIndexOf('/') + 1);
+
+        if (parent.isArquivo()) {
+            throw new PermissaoException("Não é possível criar um arquivo dentro de um arquivo.");
+        }
+
+        if (parent.getFilhos().containsKey(nomeArquivo)) {
+            throw new CaminhoJaExistenteException("Arquivo já existe: " + nomeArquivo);
+        }
+
+        parent.adicionarFilho(new Arquivo(nomeArquivo, "rw-", usuario));
     }
 
     @Override
