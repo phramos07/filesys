@@ -18,6 +18,7 @@ public final class FileSystemImpl implements IFileSystem {
         users.add(new Usuario(ROOT_USER, "rwx", "/**"));
     }
 
+    @Override
     public void addUser(Usuario user) {
         if (users.stream().anyMatch(u -> u.getNome().equals(user.getNome()))) {
             throw new IllegalArgumentException("Usuário com o mesmo nome já existe: " + user.getNome());
@@ -25,7 +26,10 @@ public final class FileSystemImpl implements IFileSystem {
         users.add(user);
     }
 
+    @Override
     public void removeUser(Usuario user) {
+        if (user.getNome().equals(ROOT_USER))
+            throw new IllegalArgumentException("Não é possível remover o usuário root.");
         users.remove(user);
     }
 

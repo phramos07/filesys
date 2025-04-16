@@ -7,6 +7,13 @@ import exception.PermissaoException;
 // Apenas modifique essa interface caso seja EXTREMAMENTE necessário.
 // Documente & Justifique TODAS asalterações feitas.
 public interface IFileSystem {
+    // Adiciona um usuário ao sistema. Se o usuário já existir, será lançada uma exceção.
+    void addUser(Usuario user);
+
+    // Remove um usuário do sistema.
+    // O usuário root não pode ser removido.
+    void removeUser(Usuario user);
+
     // Altera as permissões de um arquivo ou diretório.
     // Configura a permissao do caminho para o usuarioAlvo.
     // Apenas o usuario root ou que tenha permissão de rw do caminho podem alterar as permissões.

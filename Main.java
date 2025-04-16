@@ -1,4 +1,5 @@
 import filesys.IFileSystem;
+import filesys.Usuario;
 
 import java.util.Scanner;
 import java.io.FileNotFoundException;
@@ -27,7 +28,7 @@ public class Main {
     private static Scanner scanner = new Scanner(System.in);
 
     // Usuário que está executando o programa
-    private static String user;
+    private static String username;
 
     // O sistema de arquivos é inteiramente virtual, ou seja, será reiniciado a cada execução do programa.
     // Logo, não é necessário salvar os arquivos em disco. O sistema será uma simulação em memória.
@@ -39,7 +40,7 @@ public class Main {
             System.out.println("Usuário não fornecido");
             return;
         }
-        user = args[1];
+        username = args[1];
         
         // Carrega a lista de usuários do sistema a partir de arquivo
         // Formato do arquivo users:
@@ -62,12 +63,17 @@ public class Main {
                         String dir = parts[1];
                         String dirPermission = parts[2];
                         
-                        /* A FAZER:
+                        /* 
+                        A FAZER:
                          * Processar a permissão de todos os usuários existentes por diretório.
                          * Por enquanto esse código somente imprime as permissões contidas no arquivo users.
-                        */
+                        
                         System.out.println(userListed + " " + dir + " " + dirPermission); // Somente imprime o usuário, diretório e permissão
+                        */
 
+                        Usuario user = new Usuario(userListed, dirPermission, dir);
+
+                        fileSystem.addUser(user);
 
                     } else {
                         System.out.println("Formato ruim no arquivo de usuários. Linha: " + line);
@@ -172,14 +178,14 @@ public class Main {
         System.out.println("Insira a permissão (formato: 3 caracteres\"rwx\"):");
         String permissoes = scanner.nextLine();
         
-        fileSystem.chmod(caminho, user, usuarioAlvo, permissoes);
+        fileSystem.chmod(caminho, username, usuarioAlvo, permissoes);
     }
 
     public static void mkdir() throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
         System.out.println("Insira o caminho do diretório a ser criado:");
         String caminho = scanner.nextLine();
         
-        fileSystem.mkdir(caminho, user);
+        fileSystem.mkdir(caminho, username);
     }
 
     public static void rm() throws CaminhoNaoEncontradoException, PermissaoException {
@@ -188,14 +194,14 @@ public class Main {
         System.out.println("Remover recursivamente? (true/false):");
         boolean recursivo = Boolean.parseBoolean(scanner.nextLine());
         
-        fileSystem.rm(caminho, user, recursivo);
+        fileSystem.rm(caminho, username, recursivo);
     }
 
     public static void touch() throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
         System.out.println("Insira o caminho do arquivo a ser criado:");
         String caminho = scanner.nextLine();
         
-        fileSystem.touch(caminho, user);
+        fileSystem.touch(caminho, username);
     }
 
     public static void write() throws CaminhoNaoEncontradoException, PermissaoException {
@@ -207,7 +213,7 @@ public class Main {
         String content = scanner.nextLine();
         byte[] buffer = content.getBytes();
         
-        fileSystem.write(caminho, user, anexar, buffer);
+        fileSystem.write(caminho, username, anexar, buffer);
     }
 
     public static void read() throws CaminhoNaoEncontradoException, PermissaoException {
@@ -215,7 +221,7 @@ public class Main {
         String caminho = scanner.nextLine();
         byte[] buffer = new byte[READ_BUFFER_SIZE]; // Exemplo de tamanho de buffer por load/leitura . O que acontece se o Buffer for menor que o conteúdo a ser lido?     
         
-        fileSystem.read(caminho, user, buffer); // Lógica para ler arquivos maiores que o buffer deve ser implementada. 
+        fileSystem.read(caminho, username, buffer); // Lógica para ler arquivos maiores que o buffer deve ser implementada. 
     }
 
     public static void mv() throws CaminhoNaoEncontradoException, PermissaoException {
@@ -224,7 +230,7 @@ public class Main {
         System.out.println("Insira o novo caminho do arquivo:");
         String caminhoNovo = scanner.nextLine();
         
-        fileSystem.mv(caminhoAntigo, caminhoNovo, user);
+        fileSystem.mv(caminhoAntigo, caminhoNovo, username);
     }
 
     public static void ls() throws CaminhoNaoEncontradoException, PermissaoException {
@@ -233,7 +239,7 @@ public class Main {
         System.out.println("Listar recursivamente? (true/false):");
         boolean recursivo = Boolean.parseBoolean(scanner.nextLine());
         
-        fileSystem.ls(caminho, user, recursivo);
+        fileSystem.ls(caminho, username, recursivo);
     }
 
     public static void cp() throws CaminhoNaoEncontradoException, PermissaoException {
@@ -244,6 +250,6 @@ public class Main {
         System.out.println("Copiar recursivamente? (true/false):");
         boolean recursivo = Boolean.parseBoolean(scanner.nextLine());
         
-        fileSystem.cp(caminhoOrigem, caminhoDestino, user, recursivo);
+        fileSystem.cp(caminhoOrigem, caminhoDestino, username, recursivo);
     }
 }

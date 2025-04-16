@@ -64,4 +64,14 @@ final public class FileSystem implements IFileSystem {
             throws CaminhoNaoEncontradoException, PermissaoException {
         fileSystemImpl.cp(caminhoOrigem, caminhoDestino, usuario, recursivo);
     }
+
+    @Override
+    public void addUser(Usuario user) {
+        fileSystemImpl.addUser(user);
+    }
+
+    @Override
+    public void removeUser(Usuario user) {
+        fileSystemImpl.removeUser(user);
+    }
 }
