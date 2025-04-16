@@ -3,27 +3,42 @@ package filesys;
 import exception.CaminhoJaExistenteException;
 import exception.CaminhoNaoEncontradoException;
 import exception.PermissaoException;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.StringTokenizer;
 
-// Implemente nesta classe o seu código do FileSystem.
-// A classe pode ser alterada.
-// O construtor, argumentos do construtor podem ser modificados 
-// e atributos & métodos privados podem ser adicionados
 public final class FileSystemImpl implements IFileSystem {
-    private static final String ROOT_USER = "root"; // pode ser necessário
+    private static final String ROOT_USER = "root";
+    private Set<Usuario> users = new HashSet<>();
     private Diretorio root;
 
-    public FileSystemImpl() {}
+    public FileSystemImpl() {
+        root = new Diretorio("/", "rwx", ROOT_USER);
+        users.add(new Usuario(ROOT_USER, "rwx", "/**"));
+    }
+
+    public void addUser(Usuario user) {
+        if (users.stream().anyMatch(u -> u.getNome().equals(user.getNome()))) {
+            throw new IllegalArgumentException("Usuário com o mesmo nome já existe: " + user.getNome());
+        }
+        users.add(user);
+    }
+
+    public void removeUser(Usuario user) {
+        users.remove(user);
+    }
 
     private Diretorio navegar(String caminho) throws CaminhoNaoEncontradoException {
         if (caminho.equals("/")) {
             return root;
         }
 
-        String[] partes = caminho.split("/");
         Diretorio atual = root;
+        StringTokenizer tokenizer = new StringTokenizer(caminho, "/");
 
-        for (String parte : partes) {
-            if (parte.isEmpty()) continue;
+        while (tokenizer.hasMoreTokens()) {
+            String parte = tokenizer.nextToken();
             if (!atual.getFilhos().containsKey(parte)) {
                 throw new CaminhoNaoEncontradoException("Caminho não encontrado: " + caminho);
             }
@@ -34,9 +49,14 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     @Override
-    public void mkdir(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
+    public void mkdir(String caminho, String usuario)
+            throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
         Diretorio parent = navegar(caminho.substring(0, caminho.lastIndexOf('/')));
         String nomeDiretorio = caminho.substring(caminho.lastIndexOf('/') + 1);
+
+        if (!parent.temPermissao(usuario, 'w')) {
+            throw new PermissaoException("Sem permissão para criar diretório em: " + caminho);
+        }
 
         if (parent.isArquivo()) {
             throw new UnsupportedOperationException("Não é possível criar um diretório dentro de um arquivo.");
@@ -46,67 +66,245 @@ public final class FileSystemImpl implements IFileSystem {
             throw new CaminhoJaExistenteException("Diretório já existe: " + nomeDiretorio);
         }
 
-        parent.adicionarFilho(new Diretorio(nomeDiretorio, "rwx", usuario));
+        Usuario user = users.stream()
+                .filter(u -> u.getNome().equals(usuario))
+                .findFirst()
+                .orElseThrow(() -> new PermissaoException("Usuário não encontrado: " + usuario));
+
+        parent.adicionarFilho(new Diretorio(nomeDiretorio, user.getPermissao(), user.getNome()));
     }
 
     @Override
     public void chmod(String caminho, String usuario, String usuarioAlvo, String permissao)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'chmod'");
+        Diretorio dir = navegar(caminho);
+
+        if (!dir.temPermissao(usuario, 'w')) {
+            throw new PermissaoException("Usuário sem permissão para alterar permissões em: " + caminho);
+        }
+
+        dir.setPermissaoUsuario(usuarioAlvo, permissao);
     }
 
     @Override
     public void rm(String caminho, String usuario, boolean recursivo)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'rm'");
+        if (caminho.equals("/")) {
+            throw new PermissaoException("Não é possível remover o diretório raiz.");
+        }
+
+        Diretorio pai = navegar(caminho.substring(0, caminho.lastIndexOf('/')));
+        String nomeAlvo = caminho.substring(caminho.lastIndexOf('/') + 1);
+
+        Diretorio alvo = pai.getFilhos().get(nomeAlvo);
+        if (alvo == null) throw new CaminhoNaoEncontradoException("Caminho não encontrado: " + caminho);
+
+        if (!alvo.temPermissao(usuario, 'w'))
+            throw new PermissaoException("Sem permissão para remover: " + caminho);
+
+        if (!alvo.isArquivo()) {
+            if (!recursivo && !alvo.getFilhos().isEmpty()) {
+                throw new PermissaoException("Diretório não está vazio. Use recursivo=true.");
+            }
+
+            if (recursivo) {
+                removerRecursivo(alvo, usuario);
+            }
+        }
+
+        pai.removerFilho(nomeAlvo);
+    }
+
+    private void removerRecursivo(Diretorio dir, String usuario) throws PermissaoException {
+        for (Diretorio filho : dir.getFilhos().values()) {
+            if (!filho.temPermissao(usuario, 'w')) {
+                throw new PermissaoException("Sem permissão para remover: " + filho.getNome());
+            }
+
+            if (!filho.isArquivo()) {
+                removerRecursivo(filho, usuario);
+            }
+        }
+        dir.getFilhos().clear();
     }
 
     @Override
-    public void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
+    public void touch(String caminho, String usuario)
+            throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
         Diretorio parent = navegar(caminho.substring(0, caminho.lastIndexOf('/')));
         String nomeArquivo = caminho.substring(caminho.lastIndexOf('/') + 1);
 
+        if (!parent.temPermissao(usuario, 'w')) {
+            throw new PermissaoException("Sem permissão para criar arquivo em: " + caminho);
+        }
+
         if (parent.isArquivo()) {
-            throw new PermissaoException("Não é possível criar um arquivo dentro de um arquivo.");
+            throw new UnsupportedOperationException("Não é possível criar um arquivo dentro de um arquivo.");
         }
 
         if (parent.getFilhos().containsKey(nomeArquivo)) {
             throw new CaminhoJaExistenteException("Arquivo já existe: " + nomeArquivo);
         }
 
-        parent.adicionarFilho(new Arquivo(nomeArquivo, "rw-", usuario));
+        Usuario user = users.stream()
+                .filter(u -> u.getNome().equals(usuario))
+                .findFirst()
+                .orElseThrow(() -> new PermissaoException("Usuário não encontrado: " + usuario));
+
+        parent.adicionarFilho(new Arquivo(nomeArquivo, user.getPermissao(), user.getNome()));
     }
 
     @Override
     public void write(String caminho, String usuario, boolean anexar, byte[] buffer)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'write'");
+        Diretorio dir = navegar(caminho);
+
+        if (!dir.isArquivo())
+            throw new UnsupportedOperationException("Não é possível escrever em um diretório.");
+        if (!dir.temPermissao(usuario, 'w')) throw new PermissaoException("Sem permissão de escrita.");
+
+        Arquivo arquivo = (Arquivo) dir;
+
+        if (!anexar) arquivo.clearBlocos();
+
+        int offset = 0;
+        while (offset < buffer.length) {
+            Arquivo.Bloco bloco = new Arquivo.Bloco();
+            int length = Math.min(buffer.length - offset, bloco.dados.length);
+
+            if (length <= 0) {
+                throw new IllegalArgumentException("O tamanho do bloco não pode ser zero ou negativo.");
+            }
+
+            System.arraycopy(buffer, offset, bloco.dados, 0, length);
+            offset += length;
+        }
     }
 
-    @Override
     public void read(String caminho, String usuario, byte[] buffer)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'read'");
+        Diretorio dir = navegar(caminho);
+
+        if (!dir.isArquivo()) throw new PermissaoException("Não é possível ler de um diretório.");
+        if (!dir.temPermissao(usuario, 'r')) throw new PermissaoException("Sem permissão de leitura.");
+
+        Arquivo arquivo = (Arquivo) dir;
+
+        long fileSize = arquivo.getTamanho();
+        if (buffer.length < fileSize) {
+            throw new IllegalArgumentException("Buffer é menor que o tamanho do arquivo.");
+        }
+
+        int offset = 0;
+        for (Arquivo.Bloco bloco : arquivo.getBlocos()) {
+            int length = Math.min(buffer.length - offset, bloco.dados.length);
+            System.arraycopy(bloco.dados, 0, buffer, offset, length);
+            offset += length;
+        }
     }
 
     @Override
     public void mv(String caminhoAntigo, String caminhoNovo, String usuario)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'mv'");
+        if (caminhoAntigo.equals("/") || caminhoNovo.equals("/")) {
+            throw new PermissaoException("Não é possível mover o diretório raiz.");
+        }
+
+        Diretorio paiAntigo = navegar(caminhoAntigo.substring(0, caminhoAntigo.lastIndexOf('/')));
+        String nomeAntigo = caminhoAntigo.substring(caminhoAntigo.lastIndexOf('/') + 1);
+        Diretorio alvo = paiAntigo.getFilhos().get(nomeAntigo);
+
+        if (alvo == null) throw new CaminhoNaoEncontradoException("Origem não encontrada.");
+        if (!alvo.temPermissao(usuario, 'w'))
+            throw new PermissaoException("Sem permissão de escrita no item de origem.");
+
+        Diretorio paiNovo = navegar(caminhoNovo.substring(0, caminhoNovo.lastIndexOf('/')));
+        String nomeNovo = caminhoNovo.substring(caminhoNovo.lastIndexOf('/') + 1);
+
+        if (paiNovo.getFilhos().containsKey(nomeNovo)) {
+            throw new PermissaoException("Já existe um item no destino com esse nome.");
+        }
+
+        paiAntigo.removerFilho(nomeAntigo);
+        alvo.setNome(nomeNovo);
+        paiNovo.adicionarFilho(alvo);
     }
 
     @Override
-    public void ls(String caminho, String usuario, boolean recursivo) throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'ls'");
+    public void ls(String caminho, String usuario, boolean recursivo)
+            throws CaminhoNaoEncontradoException, PermissaoException {
+        Diretorio dir = navegar(caminho);
+
+        if (!dir.temPermissao(usuario, 'r')) {
+            throw new PermissaoException("Sem permissão de leitura para listar o diretório.");
+        }
+
+        String output = listar(dir, caminho, recursivo, usuario);
+        System.out.print(output);
+    }
+
+    private String listar(Diretorio dir, String caminho, boolean recursivo, String usuario) {
+        StringBuilder output = new StringBuilder();
+        output.append(caminho).append(":\n");
+        for (Map.Entry<String, Diretorio> entry : dir.getFilhos().entrySet()) {
+            Diretorio filho = entry.getValue();
+            output
+                .append("  ")
+                .append(filho.isArquivo() ? "A" : "D")
+                .append(" ")
+                .append(filho.getPermissoesUsuario(usuario))
+                .append(" ")
+                .append(filho.getDono())
+                .append(" ")
+                .append(filho.getNome())
+                .append("\n");
+            if (recursivo && !filho.isArquivo()) {
+                output.append(listar(filho, caminho + "/" + filho.getNome(), true, usuario));
+            }
+        }
+        return output.toString();
     }
 
     @Override
     public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'cp'");
+        Diretorio origem = navegar(caminhoOrigem);
+        Diretorio destino = navegar(caminhoDestino);
+
+        if (!origem.temPermissao(usuario, 'r')) {
+            throw new PermissaoException("Sem permissão de leitura na origem.");
+        }
+        if (!destino.temPermissao(usuario, 'w')) {
+            throw new PermissaoException("Sem permissão de escrita no destino.");
+        }
+
+        if (origem.isArquivo()) {
+            copiarArquivo((Arquivo) origem, destino);
+        } else {
+            if (!recursivo) {
+                throw new PermissaoException("Diretório precisa de recursividade para cópia.");
+            }
+            copiarDiretorio((Diretorio) origem, destino, usuario);
+        }
     }
 
-    public void addUser(String user) {
-        throw new UnsupportedOperationException("Método não implementado 'addUser'");
+    private void copiarArquivo(Arquivo origem, Diretorio destino) {
+        Arquivo copia = new Arquivo(origem.getNome(), origem.getPermissoes(), origem.getDono());
+        for (Arquivo.Bloco bloco : origem.getBlocos()) {
+            copia.addBloco(bloco);
+        }
+        destino.adicionarFilho(copia);
+    }
+
+    private void copiarDiretorio(Diretorio origem, Diretorio destino, String usuario) throws PermissaoException {
+        Diretorio copia = new Diretorio(origem.getNome(), origem.getPermissoes(), origem.getDono());
+        destino.adicionarFilho(copia);
+        for (Diretorio filho : origem.getFilhos().values()) {
+            if (filho.isArquivo()) {
+                copiarArquivo((Arquivo) filho, copia);
+            } else {
+                copiarDiretorio(filho, copia, usuario);
+            }
+        }
     }
 }
