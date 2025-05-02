@@ -181,30 +181,44 @@ public final class FileSystemImpl implements IFileSystem {
             }
 
             System.arraycopy(buffer, offset, bloco.dados, 0, length);
+            arquivo.addBloco(bloco);
             offset += length;
         }
     }
 
-    public void read(String caminho, String usuario, byte[] buffer)
+    public void read(String caminho, String usuario, byte[] buffer, Offset offset)
             throws CaminhoNaoEncontradoException, PermissaoException {
         Diretorio dir = navegar(caminho);
 
-        if (!dir.isArquivo()) throw new PermissaoException("Não é possível ler de um diretório.");
+        if (!dir.isArquivo()) throw new UnsupportedOperationException("Não é possível ler de um diretório.");
         if (!dir.temPermissao(usuario, 'r')) throw new PermissaoException("Sem permissão de leitura.");
 
         Arquivo arquivo = (Arquivo) dir;
-
         long fileSize = arquivo.getTamanho();
-        if (buffer.length < fileSize) {
-            throw new IllegalArgumentException("Buffer é menor que o tamanho do arquivo.");
+        offset.setMax((int) fileSize); // garante limite do offset
+
+        if (offset.getValue() >= fileSize) return;
+
+        int arquivoOffset = offset.getValue();
+        int bufferOffset = 0;
+
+        for (Arquivo.Bloco bloco : arquivo.getBlocos()) {
+            if (arquivoOffset >= bloco.dados.length) {
+                arquivoOffset -= bloco.dados.length;
+                continue;
+            }
+
+            int bytesDisponiveis = bloco.dados.length - arquivoOffset;
+            int bytesParaLer = Math.min(buffer.length - bufferOffset, bytesDisponiveis);
+            System.arraycopy(bloco.dados, arquivoOffset, buffer, bufferOffset, bytesParaLer);
+
+            bufferOffset += bytesParaLer;
+            arquivoOffset = 0;
+
+            if (bufferOffset >= buffer.length) break;
         }
 
-        int offset = 0;
-        for (Arquivo.Bloco bloco : arquivo.getBlocos()) {
-            int length = Math.min(buffer.length - offset, bloco.dados.length);
-            System.arraycopy(bloco.dados, 0, buffer, offset, length);
-            offset += length;
-        }
+        offset.add(bufferOffset); // avança o offset
     }
 
     @Override

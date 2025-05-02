@@ -1,4 +1,5 @@
 import filesys.IFileSystem;
+import filesys.Offset;
 import filesys.Usuario;
 
 import java.util.Scanner;
@@ -41,6 +42,10 @@ public class Main {
             return;
         }
         username = args[1];
+
+        // Cria o sistema de arquivos
+        // O sistema de arquivos é inteiramente virtual, ou seja, será reiniciado a cada execução do programa.
+        fileSystem = new FileSystem();
         
         // Carrega a lista de usuários do sistema a partir de arquivo
         // Formato do arquivo users:
@@ -86,11 +91,6 @@ public class Main {
 
             return;
         }
-        
-        // Finalmente cria o Sistema de Arquivos
-        // Lista de usuários é imutável durante a execução do programa
-        // Obs: Como passar a lista de usuários para o FileSystem?
-        fileSystem = new FileSystem(/*usuários?*/);
 
         // DESCOMENTE O BLOCO ABAIXO PARA CRIAR O DIRETÓRIO RAIZ ANTES DE RODAR O MENU
         // Cria o diretório raiz do sistema. Root sempre tem permissão total "rwx"
@@ -219,11 +219,23 @@ public class Main {
     public static void read() throws CaminhoNaoEncontradoException, PermissaoException {
         System.out.println("Insira o caminho do arquivo a ser lido:");
         String caminho = scanner.nextLine();
-        byte[] buffer = new byte[READ_BUFFER_SIZE]; // Exemplo de tamanho de buffer por load/leitura . O que acontece se o Buffer for menor que o conteúdo a ser lido?     
-        
-        fileSystem.read(caminho, username, buffer); // Lógica para ler arquivos maiores que o buffer deve ser implementada. 
-    }
+        byte[] buffer = new byte[READ_BUFFER_SIZE];
+    
+        Offset offset = new Offset(0);
+        int offsetAnterior;
+        int bytesLidos;
+    
+        do {
+            offsetAnterior = offset.getValue();
+            fileSystem.read(caminho, username, buffer, offset);
+            bytesLidos = offset.getValue() - offsetAnterior;
 
+            if (bytesLidos > 0) System.out.write(buffer, 0, bytesLidos);
+        } while (bytesLidos > 0);
+
+        System.out.flush();
+    }
+    
     public static void mv() throws CaminhoNaoEncontradoException, PermissaoException {
         System.out.println("Insira o caminho do arquivo a ser movido:");
         String caminhoAntigo = scanner.nextLine();
