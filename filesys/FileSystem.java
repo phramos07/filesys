@@ -66,7 +66,7 @@ final public class FileSystem implements IFileSystem {
     }
 
     @Override
-    public void addUser(Usuario user) {
+    public void addUser(Usuario user) throws CaminhoNaoEncontradoException {
         fileSystemImpl.addUser(user);
     }
 

@@ -14,16 +14,17 @@ public final class FileSystemImpl implements IFileSystem {
     private Diretorio root;
 
     public FileSystemImpl() {
-        root = new Diretorio("/", "rwx", ROOT_USER);
         users.add(new Usuario(ROOT_USER, "rwx", "/**"));
+        root = new Diretorio("/", "rwx", ROOT_USER);
     }
 
     @Override
-    public void addUser(Usuario user) {
+    public void addUser(Usuario user) throws CaminhoNaoEncontradoException {
         if (users.stream().anyMatch(u -> u.getNome().equals(user.getNome()))) {
             throw new IllegalArgumentException("Usuário com o mesmo nome já existe: " + user.getNome());
         }
         users.add(user);
+        navegar(user.getDir()).setPermissaoUsuario(user.getNome(), user.getPermissao());
     }
 
     @Override
@@ -34,7 +35,7 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     private Diretorio navegar(String caminho) throws CaminhoNaoEncontradoException {
-        if (caminho.equals("/")) {
+        if (caminho.equals("/") || caminho.isEmpty()) {
             return root;
         }
 
@@ -75,7 +76,7 @@ public final class FileSystemImpl implements IFileSystem {
                 .findFirst()
                 .orElseThrow(() -> new PermissaoException("Usuário não encontrado: " + usuario));
 
-        parent.adicionarFilho(new Diretorio(nomeDiretorio, user.getPermissao(), user.getNome()));
+        parent.adicionarFilho(new Diretorio(nomeDiretorio, parent.getPermissoes(), user.getNome()));
     }
 
     @Override
@@ -264,24 +265,18 @@ public final class FileSystemImpl implements IFileSystem {
     private String listar(Diretorio dir, String caminho, boolean recursivo, String usuario) {
         StringBuilder output = new StringBuilder();
         output.append(caminho).append(":\n");
+    
         for (Map.Entry<String, Diretorio> entry : dir.getFilhos().entrySet()) {
             Diretorio filho = entry.getValue();
-            output
-                .append("  ")
-                .append(filho.isArquivo() ? "A" : "D")
-                .append(" ")
-                .append(filho.getPermissoesUsuario(usuario))
-                .append(" ")
-                .append(filho.getDono())
-                .append(" ")
-                .append(filho.getNome())
-                .append("\n");
+            
+            output.append("  ").append(filho.toString()).append("\n");
+    
             if (recursivo && !filho.isArquivo()) {
-                output.append(listar(filho, caminho + "/" + filho.getNome(), true, usuario));
+                output.append(listar(filho, caminho + filho.getNome(), recursivo, usuario));
             }
         }
         return output.toString();
-    }
+    }    
 
     @Override
     public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo)

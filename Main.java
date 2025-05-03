@@ -19,7 +19,6 @@ public class Main {
     // Para esse tipo de execução, o tamanho max do buffer de 
     // leitura pode ser menor.
     private static final String ROOT_USER = "root";
-    private static final String ROOT_DIR = "/";
     private static final int READ_BUFFER_SIZE = 256;
 
     // Sistema de arquivos
@@ -65,7 +64,7 @@ public class Main {
                     String[] parts = line.split(" ");
                     if (parts.length == 3) {
                         String userListed = parts[0];
-                        String dir = parts[1];
+                        String dir = parts[1].substring(0, 1); // O primeiro caractere é o diretório
                         String dirPermission = parts[2];
                         
                         /* 
@@ -75,6 +74,11 @@ public class Main {
                         
                         System.out.println(userListed + " " + dir + " " + dirPermission); // Somente imprime o usuário, diretório e permissão
                         */
+
+                        if (userListed.equals(ROOT_USER)) {
+                            System.out.println("O usuário root já está adicionado.");
+                            continue;
+                        }
 
                         Usuario user = new Usuario(userListed, dirPermission, dir);
 
@@ -88,16 +92,9 @@ public class Main {
             userScanner.close();
         } catch (FileNotFoundException e) { // Retorna se o arquivo de usuários não for encontrado
             System.out.println("Arquivo de usuários não encontrado");
-
             return;
-        }
-
-        // DESCOMENTE O BLOCO ABAIXO PARA CRIAR O DIRETÓRIO RAIZ ANTES DE RODAR O MENU
-        // Cria o diretório raiz do sistema. Root sempre tem permissão total "rwx"
-        try {
-            fileSystem.mkdir(ROOT_DIR, ROOT_USER);
-        } catch (CaminhoJaExistenteException | PermissaoException | CaminhoNaoEncontradoException e) {
-            System.out.println(e.getMessage());
+        } catch (CaminhoNaoEncontradoException e) {
+            System.out.println("Erro ao adicionar usuário: " + e.getMessage());
         }
 
         // Menu interativo.

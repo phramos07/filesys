@@ -7,14 +7,16 @@ public class Diretorio {
   protected String nome;
   protected String permissoes;
   protected String dono;
+  protected Diretorio pai;
   protected Map<String, Diretorio> filhos;
-  protected Map<String, String> permissoesEspecificas = new HashMap<>();
+  protected Map<String, String> permissoesEspecificas;
 
   public Diretorio(String nome, String permissoes, String dono) {
     this.nome = nome;
     this.permissoes = permissoes;
     this.dono = dono;
     this.filhos = new HashMap<>();
+    this.permissoesEspecificas = new HashMap<>();
   }
 
   public void setPermissaoUsuario(String usuario, String permissao) {
@@ -32,13 +34,19 @@ public class Diretorio {
     // Dono tem todas as permissões
     if (usuario.equals(dono)) return true;
 
-    // Verifica permissões específicas do usuário
+    // Verifica permissões específicas do usuário no diretório atual
     String permissoesUsuario = permissoesEspecificas.get(usuario);
     if (permissoesUsuario != null && permissoesUsuario.indexOf(permissaoNecessaria) != -1) {
       return true;
     }
 
-    return false;
+    // Se não houver permissões específicas, verifica permissões herdadas do pai
+    Diretorio pai = getPai(); // Método para obter o diretório pai
+    if (pai != null) {
+      return pai.temPermissao(usuario, permissaoNecessaria);
+    }
+
+    return false; // Sem permissões
   }
 
   public String getPermissoesUsuario(String usuario) {
@@ -75,7 +83,16 @@ public class Diretorio {
     return filhos;
   }
 
+  public Diretorio getPai() {
+    return pai;
+  }
+
+  protected void setPai(Diretorio pai) {
+    this.pai = pai;
+  }
+
   public void adicionarFilho(Diretorio filho) {
+    filho.setPai(this);
     filhos.put(filho.getNome(), filho);
   }
 
@@ -85,5 +102,10 @@ public class Diretorio {
 
   public boolean isArquivo() {
     return false; // Por padrão, um `Diretorio` não é um arquivo
+  }
+
+  @Override
+  public String toString() {
+    return "D " + permissoes + " " + dono + " " + nome;
   }
 }

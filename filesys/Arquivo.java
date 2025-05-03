@@ -63,4 +63,9 @@ public class Arquivo extends Diretorio {
     public void removerFilho(String nome) {
         throw new UnsupportedOperationException("Arquivos não podem conter filhos.");
     }
+
+    @Override
+    public String toString() {
+        return "A " + permissoes + " " + dono + " " + nome + " " + tamanho + " bytes";
+    }
 }

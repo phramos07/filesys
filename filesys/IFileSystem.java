@@ -8,7 +8,7 @@ import exception.PermissaoException;
 // Documente & Justifique TODAS asalterações feitas.
 public interface IFileSystem {
     // Adiciona um usuário ao sistema. Se o usuário já existir, será lançada uma exceção.
-    void addUser(Usuario user);
+    void addUser(Usuario user) throws CaminhoNaoEncontradoException;
 
     // Remove um usuário do sistema.
     // O usuário root não pode ser removido.
