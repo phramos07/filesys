@@ -93,8 +93,6 @@ public class Main {
         } catch (FileNotFoundException e) { // Retorna se o arquivo de usuários não for encontrado
             System.out.println("Arquivo de usuários não encontrado");
             return;
-        } catch (CaminhoNaoEncontradoException e) {
-            System.out.println("Erro ao adicionar usuário: " + e.getMessage());
         }
 
         // Menu interativo.

@@ -79,12 +79,12 @@ class FileSystemTest {
   }
 
   @Test
-  void testAddUser() throws CaminhoNaoEncontradoException {
+  void testAddUser() {
     assertDoesNotThrow(() -> fileSystem.addUser(new Usuario("markids", "rwx", "/")));
   }
 
   @Test
-  void testRemoveUser() throws CaminhoNaoEncontradoException {;
+  void testRemoveUser() {;
     user = new Usuario("marceneiro", "---", "/");
     fileSystem.addUser(user);
     assertDoesNotThrow(() -> fileSystem.removeUser(user.getNome()));

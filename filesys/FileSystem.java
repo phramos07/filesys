@@ -4,7 +4,14 @@ import exception.CaminhoJaExistenteException;
 import exception.CaminhoNaoEncontradoException;
 import exception.PermissaoException;
 
-// Essa classe deve servir apenas como proxy para o FileSystemImpl
+/**
+ * Classe {@code FileSystem} atua como um proxy para a implementação real do sistema de arquivos {@link FileSystemImpl}.
+ * 
+ * <p>Essa classe encapsula a lógica interna e fornece uma interface padronizada para operações em sistemas de arquivos,
+ * delegando todas as chamadas de método à instância de {@code FileSystemImpl}.
+ *
+ * <p>Inicializa com um diretório raiz padrão ("/") e um usuário padrão ("root") com permissões completas.
+ */
 final public class FileSystem implements IFileSystem {
 
     private final IFileSystem fileSystemImpl;
@@ -66,7 +73,7 @@ final public class FileSystem implements IFileSystem {
     }
 
     @Override
-    public void addUser(Usuario user) throws CaminhoNaoEncontradoException {
+    public void addUser(Usuario user) {
         fileSystemImpl.addUser(user);
     }
 
