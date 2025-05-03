@@ -28,7 +28,11 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     @Override
-    public void removeUser(Usuario user) {
+    public void removeUser(String username) {
+        Usuario user = users.stream()
+                .filter(u -> u.getNome().equals(username))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado: " + username));
         if (user.getNome().equals(ROOT_USER))
             throw new IllegalArgumentException("Não é possível remover o usuário root.");
         users.remove(user);
@@ -174,17 +178,15 @@ public final class FileSystemImpl implements IFileSystem {
 
         int offset = 0;
         while (offset < buffer.length) {
-            Arquivo.Bloco bloco = new Arquivo.Bloco();
-            int length = Math.min(buffer.length - offset, bloco.dados.length);
-
-            if (length <= 0) {
-                throw new IllegalArgumentException("O tamanho do bloco não pode ser zero ou negativo.");
-            }
-
-            System.arraycopy(buffer, offset, bloco.dados, 0, length);
+            int length = Math.min(buffer.length - offset, arquivo.getTamMaxBloco()); // supondo um tamanho fixo
+            byte[] dados = new byte[length];
+            System.arraycopy(buffer, offset, dados, 0, length);
+        
+            Arquivo.Bloco bloco = new Arquivo.Bloco(dados); // criar com dados já definidos
             arquivo.addBloco(bloco);
+            arquivo.incrementTamnho(length); // incrementa o tamanho do arquivo
             offset += length;
-        }
+        }        
     }
 
     public void read(String caminho, String usuario, byte[] buffer, Offset offset)

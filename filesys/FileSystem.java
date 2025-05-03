@@ -71,7 +71,7 @@ final public class FileSystem implements IFileSystem {
     }
 
     @Override
-    public void removeUser(Usuario user) {
-        fileSystemImpl.removeUser(user);
+    public void removeUser(String username) {
+        fileSystemImpl.removeUser(username);
     }
 }

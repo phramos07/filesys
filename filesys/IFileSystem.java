@@ -12,7 +12,7 @@ public interface IFileSystem {
 
     // Remove um usuário do sistema.
     // O usuário root não pode ser removido.
-    void removeUser(Usuario user);
+    void removeUser(String username);
 
     // Altera as permissões de um arquivo ou diretório.
     // Configura a permissao do caminho para o usuarioAlvo.
