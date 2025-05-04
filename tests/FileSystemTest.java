@@ -2,6 +2,7 @@ package tests;
 
 import exception.CaminhoJaExistenteException;
 import exception.CaminhoNaoEncontradoException;
+import exception.OperacaoInvalidaException;
 import exception.PermissaoException;
 import filesys.*;
 
@@ -21,7 +22,7 @@ class FileSystemTest {
   }
 
   @Test
-  void testChmod() throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException {
+  void testChmod() throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException, OperacaoInvalidaException {
     fileSystem.mkdir("/chmodTest", "root");
     fileSystem.addUser(new Usuario("alvim", "r--", "/chmodTest"));
     assertDoesNotThrow(() -> fileSystem.chmod("/chmodTest", "root", "alvim", "rw-"));
@@ -33,19 +34,19 @@ class FileSystemTest {
   }
 
   @Test
-  void testRm() throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException {
+  void testRm() throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException, OperacaoInvalidaException {
     fileSystem.mkdir("/rmTest", "root");
     assertDoesNotThrow(() -> fileSystem.rm("/rmTest", "root", true));
   }
 
   @Test
-  void testTouch() throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
+  void testTouch() throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException, OperacaoInvalidaException {
     fileSystem.mkdir("/touchDir", "root");
     assertDoesNotThrow(() -> fileSystem.touch("/touchDir/file.txt", "root"));
   }
 
   @Test
-  void testWriteAndRead() throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException {
+  void testWriteAndRead() throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException, OperacaoInvalidaException {
     fileSystem.mkdir("/rwDir", "root");
     fileSystem.touch("/rwDir/file", "root");
     byte[] buffer = new byte[]{1, 2, 3};
@@ -58,19 +59,19 @@ class FileSystemTest {
   }
 
   @Test
-  void testMv() throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException {
+  void testMv() throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException, OperacaoInvalidaException {
     fileSystem.mkdir("/mvDir", "root");
     fileSystem.mv("/mvDir", "/mvDirRenamed", "root");
   }
 
   @Test
-  void testLs() throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException {
+  void testLs() throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException, OperacaoInvalidaException {
     fileSystem.mkdir("/lsTest", "root");
     assertDoesNotThrow(() -> fileSystem.ls("/lsTest", "root", true));
   }
 
   @Test
-  void testCp() throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException {
+  void testCp() throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException, OperacaoInvalidaException {
     fileSystem.mkdir("/cpSrc", "root");
     fileSystem.touch("/cpSrc/file.txt", "root");
     fileSystem.mkdir("/cpDest", "root");

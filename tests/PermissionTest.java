@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import exception.CaminhoJaExistenteException;
 import exception.CaminhoNaoEncontradoException;
+import exception.OperacaoInvalidaException;
 import exception.PermissaoException;
 import filesys.FileSystemImpl;
 import filesys.IFileSystem;
@@ -18,7 +19,7 @@ public class PermissionTest {
   private static IFileSystem fileSystem;
 
   @BeforeAll
-  public static void setUp() throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
+  public static void setUp() throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException, OperacaoInvalidaException {
     fileSystem = new FileSystemImpl();
     fileSystem.addUser(new Usuario("maria", "rw-", "/"));
     fileSystem.addUser(new Usuario("joao", "rwx", "/docs"));
@@ -74,7 +75,7 @@ public class PermissionTest {
   }
 
   @Test
-  public void testExecutePermission() throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException {
+  public void testExecutePermission() throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException, OperacaoInvalidaException {
     // João pode criar um arquivo em /docs porque tem permissão rwx;
     fileSystem.touch("/docs/file.txt", "joao");
 

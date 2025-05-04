@@ -8,7 +8,7 @@ import java.io.FileNotFoundException;
 import exception.PermissaoException;
 import exception.CaminhoJaExistenteException;
 import exception.CaminhoNaoEncontradoException;
-
+import exception.OperacaoInvalidaException;
 import filesys.FileSystem;
 
 // MENU INTERATIVO PARA O SISTEMA DE ARQUIVOS
@@ -154,7 +154,7 @@ public class Main {
                     default:
                         System.out.println("Comando inválido!");
                 } 
-            } catch (CaminhoNaoEncontradoException | CaminhoJaExistenteException | PermissaoException e) {
+            } catch (CaminhoNaoEncontradoException | CaminhoJaExistenteException | PermissaoException | OperacaoInvalidaException e) {
                 System.out.println("Erro: " + e.getMessage());
             }
 
@@ -176,7 +176,7 @@ public class Main {
         fileSystem.chmod(caminho, username, usuarioAlvo, permissoes);
     }
 
-    public static void mkdir() throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
+    public static void mkdir() throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException, OperacaoInvalidaException {
         System.out.println("Insira o caminho do diretório a ser criado:");
         String caminho = scanner.nextLine();
         
@@ -192,14 +192,14 @@ public class Main {
         fileSystem.rm(caminho, username, recursivo);
     }
 
-    public static void touch() throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
+    public static void touch() throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException, OperacaoInvalidaException {
         System.out.println("Insira o caminho do arquivo a ser criado:");
         String caminho = scanner.nextLine();
         
         fileSystem.touch(caminho, username);
     }
 
-    public static void write() throws CaminhoNaoEncontradoException, PermissaoException {
+    public static void write() throws CaminhoNaoEncontradoException, PermissaoException, OperacaoInvalidaException {
         System.out.println("Insira o caminho do arquivo a ser escrito:");
         String caminho = scanner.nextLine();
         System.out.println("Anexar? (true/false):");
@@ -211,7 +211,7 @@ public class Main {
         fileSystem.write(caminho, username, anexar, buffer);
     }
 
-    public static void read() throws CaminhoNaoEncontradoException, PermissaoException {
+    public static void read() throws CaminhoNaoEncontradoException, PermissaoException, OperacaoInvalidaException {
         System.out.println("Insira o caminho do arquivo a ser lido:");
         String caminho = scanner.nextLine();
         byte[] buffer = new byte[READ_BUFFER_SIZE];
@@ -229,6 +229,7 @@ public class Main {
         } while (bytesLidos > 0);
 
         System.out.flush();
+        System.out.println();
     }
     
     public static void mv() throws CaminhoNaoEncontradoException, PermissaoException {

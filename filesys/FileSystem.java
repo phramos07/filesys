@@ -2,6 +2,7 @@ package filesys;
 
 import exception.CaminhoJaExistenteException;
 import exception.CaminhoNaoEncontradoException;
+import exception.OperacaoInvalidaException;
 import exception.PermissaoException;
 
 /**
@@ -27,7 +28,7 @@ final public class FileSystem implements IFileSystem {
     }
 
     @Override
-    public void mkdir(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
+    public void mkdir(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException, OperacaoInvalidaException {
         fileSystemImpl.mkdir(caminho, usuario);
     }
 
@@ -38,19 +39,19 @@ final public class FileSystem implements IFileSystem {
     }
 
     @Override
-    public void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
+    public void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException, OperacaoInvalidaException {
         fileSystemImpl.touch(caminho, usuario);
     }
 
     @Override
     public void write(String caminho, String usuario, boolean anexar, byte[] buffer)
-            throws CaminhoNaoEncontradoException, PermissaoException {
+            throws CaminhoNaoEncontradoException, PermissaoException, OperacaoInvalidaException {
         fileSystemImpl.write(caminho, usuario, anexar, buffer);
     }
 
     @Override
     public void read(String caminho, String usuario, byte[] buffer, Offset offset)
-            throws CaminhoNaoEncontradoException, PermissaoException {
+            throws CaminhoNaoEncontradoException, PermissaoException, OperacaoInvalidaException {
         fileSystemImpl.read(caminho, usuario, buffer, offset);
     }
 

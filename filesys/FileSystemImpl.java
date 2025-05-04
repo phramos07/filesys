@@ -2,6 +2,7 @@ package filesys;
 
 import exception.CaminhoJaExistenteException;
 import exception.CaminhoNaoEncontradoException;
+import exception.OperacaoInvalidaException;
 import exception.PermissaoException;
 import java.util.HashSet;
 import java.util.Map;
@@ -56,7 +57,7 @@ public final class FileSystemImpl implements IFileSystem {
             try {
                 mkdir(user.getDir(), ROOT_USER);
                 navegar(user.getDir()).setPermissaoUsuario(user.getNome(), user.getPermissao());
-            } catch (CaminhoJaExistenteException | PermissaoException | CaminhoNaoEncontradoException ex) {
+            } catch (CaminhoJaExistenteException | PermissaoException | CaminhoNaoEncontradoException | OperacaoInvalidaException ex) {
                 throw new RuntimeException("Erro ao criar diretório para o usuário: " + user.getNome(), ex);
             }
         }
@@ -94,7 +95,7 @@ public final class FileSystemImpl implements IFileSystem {
 
     @Override
     public void mkdir(String caminho, String usuario)
-            throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
+            throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException, OperacaoInvalidaException {
         Diretorio parent = navegar(caminho.substring(0, caminho.lastIndexOf('/')));
         String nomeDiretorio = caminho.substring(caminho.lastIndexOf('/') + 1);
 
@@ -103,7 +104,7 @@ public final class FileSystemImpl implements IFileSystem {
         }
 
         if (parent.isArquivo()) {
-            throw new UnsupportedOperationException("Não é possível criar um diretório dentro de um arquivo.");
+            throw new OperacaoInvalidaException("Não é possível criar um diretório dentro de um arquivo.");
         }
 
         if (parent.getFilhos().containsKey(nomeDiretorio)) {
@@ -174,7 +175,7 @@ public final class FileSystemImpl implements IFileSystem {
 
     @Override
     public void touch(String caminho, String usuario)
-            throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
+            throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException, OperacaoInvalidaException {
         Diretorio parent = navegar(caminho.substring(0, caminho.lastIndexOf('/')));
         String nomeArquivo = caminho.substring(caminho.lastIndexOf('/') + 1);
 
@@ -183,7 +184,7 @@ public final class FileSystemImpl implements IFileSystem {
         }
 
         if (parent.isArquivo()) {
-            throw new UnsupportedOperationException("Não é possível criar um arquivo dentro de um arquivo.");
+            throw new OperacaoInvalidaException("Não é possível criar um arquivo dentro de um arquivo.");
         }
 
         if (parent.getFilhos().containsKey(nomeArquivo)) {
@@ -200,11 +201,11 @@ public final class FileSystemImpl implements IFileSystem {
 
     @Override
     public void write(String caminho, String usuario, boolean anexar, byte[] buffer)
-            throws CaminhoNaoEncontradoException, PermissaoException {
+            throws CaminhoNaoEncontradoException, PermissaoException, OperacaoInvalidaException {
         Diretorio dir = navegar(caminho);
 
         if (!dir.isArquivo())
-            throw new UnsupportedOperationException("Não é possível escrever em um diretório.");
+            throw new OperacaoInvalidaException("Não é possível escrever em um diretório.");
         if (!dir.temPermissao(usuario, 'w')) throw new PermissaoException("Sem permissão de escrita.");
 
         Arquivo arquivo = (Arquivo) dir;
@@ -225,10 +226,10 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     public void read(String caminho, String usuario, byte[] buffer, Offset offset)
-            throws CaminhoNaoEncontradoException, PermissaoException {
+            throws CaminhoNaoEncontradoException, PermissaoException, OperacaoInvalidaException {
         Diretorio dir = navegar(caminho);
 
-        if (!dir.isArquivo()) throw new UnsupportedOperationException("Não é possível ler de um diretório.");
+        if (!dir.isArquivo()) throw new OperacaoInvalidaException("Não é possível ler de um diretório.");
         if (!dir.temPermissao(usuario, 'r')) throw new PermissaoException("Sem permissão de leitura.");
 
         Arquivo arquivo = (Arquivo) dir;
@@ -303,17 +304,25 @@ public final class FileSystemImpl implements IFileSystem {
         StringBuilder output = new StringBuilder();
         output.append(caminho).append(":\n");
     
+        // Listar arquivos e diretórios filhos
         for (Map.Entry<String, Diretorio> entry : dir.getFilhos().entrySet()) {
             Diretorio filho = entry.getValue();
-            
             output.append("  ").append(filho.toString()).append("\n");
+        }
     
-            if (recursivo && !filho.isArquivo()) {
-                output.append(listar(filho, caminho + filho.getNome(), recursivo, usuario));
+        // Recursão: somente depois de listar os filhos diretos
+        if (recursivo) {
+            for (Map.Entry<String, Diretorio> entry : dir.getFilhos().entrySet()) {
+                Diretorio filho = entry.getValue();
+                if (!filho.isArquivo()) {
+                    String novoCaminho = caminho.equals("/") ? "/" + filho.getNome() : caminho + "/" + filho.getNome();
+                    output.append(listar(filho, novoCaminho, true, usuario));
+                }
             }
         }
+    
         return output.toString();
-    }    
+    }      
 
     @Override
     public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo)
@@ -342,6 +351,7 @@ public final class FileSystemImpl implements IFileSystem {
         Arquivo copia = new Arquivo(origem.getNome(), origem.getPermissoes(), origem.getDono());
         for (Arquivo.Bloco bloco : origem.getBlocos()) {
             copia.addBloco(bloco);
+            copia.incrementTamnho(bloco.dados.length);
         }
         destino.adicionarFilho(copia);
     }

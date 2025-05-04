@@ -2,6 +2,7 @@ package filesys;
 
 import exception.CaminhoJaExistenteException;
 import exception.CaminhoNaoEncontradoException;
+import exception.OperacaoInvalidaException;
 import exception.PermissaoException;
 
 /**
@@ -56,9 +57,10 @@ public interface IFileSystem {
      * @throws CaminhoJaExistenteException Se o diretório já existir.
      * @throws PermissaoException Se o usuário não tiver permissão para criar o diretório.
      * @throws CaminhoNaoEncontradoException Se o caminho pai não existir.
+     * @throws OperacaoInvalidaException 
      */
     void mkdir(String caminho, String usuario)
-            throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException;
+            throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException, OperacaoInvalidaException;
 
     /**
      * Remove um arquivo ou diretório.
@@ -82,9 +84,10 @@ public interface IFileSystem {
      * @throws CaminhoJaExistenteException Se o arquivo já existir.
      * @throws PermissaoException Se o usuário não tiver permissão de criação.
      * @throws CaminhoNaoEncontradoException Se o caminho pai não existir.
+     * @throws OperacaoInvalidaException 
      */
     void touch(String caminho, String usuario)
-            throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException;
+            throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException, OperacaoInvalidaException;
 
     /**
      * Escreve dados em um arquivo.
@@ -100,9 +103,10 @@ public interface IFileSystem {
      * @param buffer Dados a serem escritos.
      * @throws CaminhoNaoEncontradoException Se o arquivo não existir.
      * @throws PermissaoException Se o usuário não tiver permissão de escrita.
+     * @throws OperacaoInvalidaException 
      */
     void write(String caminho, String usuario, boolean anexar, byte[] buffer)
-            throws CaminhoNaoEncontradoException, PermissaoException;
+            throws CaminhoNaoEncontradoException, PermissaoException, OperacaoInvalidaException;
 
     /**
      * Lê dados de um arquivo sequencialmente.
@@ -116,9 +120,10 @@ public interface IFileSystem {
      * @param offset Objeto que representa o deslocamento atual da leitura.
      * @throws CaminhoNaoEncontradoException Se o arquivo não existir.
      * @throws PermissaoException Se o usuário não tiver permissão de leitura.
+     * @throws OperacaoInvalidaException 
      */
     void read(String caminho, String usuario, byte[] buffer, Offset offset)
-            throws CaminhoNaoEncontradoException, PermissaoException;
+            throws CaminhoNaoEncontradoException, PermissaoException, OperacaoInvalidaException;
 
     /**
      * Move ou renomeia um arquivo ou diretório.
