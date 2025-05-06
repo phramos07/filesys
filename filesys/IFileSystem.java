@@ -60,7 +60,7 @@ public interface IFileSystem {
      * @throws OperacaoInvalidaException 
      */
     void mkdir(String caminho, String usuario)
-            throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException, OperacaoInvalidaException;
+            throws CaminhoJaExistenteException, PermissaoException, OperacaoInvalidaException;
 
     /**
      * Remove um arquivo ou diretório.

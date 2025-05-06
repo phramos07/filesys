@@ -95,29 +95,40 @@ public final class FileSystemImpl implements IFileSystem {
 
     @Override
     public void mkdir(String caminho, String usuario)
-            throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException, OperacaoInvalidaException {
-        Diretorio parent = navegar(caminho.substring(0, caminho.lastIndexOf('/')));
-        String nomeDiretorio = caminho.substring(caminho.lastIndexOf('/') + 1);
-
-        if (!parent.temPermissao(usuario, 'w')) {
-            throw new PermissaoException("Sem permissão para criar diretório em: " + caminho);
+            throws CaminhoJaExistenteException, PermissaoException, OperacaoInvalidaException {
+        if (caminho.equals("/")) return;
+    
+        StringTokenizer tokenizer = new StringTokenizer(caminho, "/");
+        Diretorio atual = root;
+        StringBuilder caminhoAtual = new StringBuilder();
+    
+        while (tokenizer.hasMoreTokens()) {
+            String parte = tokenizer.nextToken();
+            caminhoAtual.append("/").append(parte);
+    
+            Map<String, Diretorio> filhos = atual.getFilhos();
+    
+            if (!filhos.containsKey(parte)) {
+                if (!atual.temPermissao(usuario, 'w')) {
+                    throw new PermissaoException("Sem permissão para criar em: " + caminhoAtual);
+                }
+    
+                Usuario user = users.stream()
+                        .filter(u -> u.getNome().equals(usuario))
+                        .findFirst()
+                        .orElseThrow(() -> new PermissaoException("Usuário não encontrado: " + usuario));
+    
+                Diretorio novo = new Diretorio(parte, atual.getPermissoes(), user.getNome());
+                atual.adicionarFilho(novo);
+                atual = novo;
+            } else {
+                if (filhos.get(parte).isArquivo()) {
+                    throw new OperacaoInvalidaException("Não é possível criar um diretório dentro de um arquivo.");
+                }
+                atual = filhos.get(parte);
+            }
         }
-
-        if (parent.isArquivo()) {
-            throw new OperacaoInvalidaException("Não é possível criar um diretório dentro de um arquivo.");
-        }
-
-        if (parent.getFilhos().containsKey(nomeDiretorio)) {
-            throw new CaminhoJaExistenteException("Diretório já existe: " + nomeDiretorio);
-        }
-
-        Usuario user = users.stream()
-                .filter(u -> u.getNome().equals(usuario))
-                .findFirst()
-                .orElseThrow(() -> new PermissaoException("Usuário não encontrado: " + usuario));
-
-        parent.adicionarFilho(new Diretorio(nomeDiretorio, parent.getPermissoes(), user.getNome()));
-    }
+    }    
 
     @Override
     public void chmod(String caminho, String usuario, String usuarioAlvo, String permissao)
@@ -176,11 +187,21 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void touch(String caminho, String usuario)
             throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException, OperacaoInvalidaException {
-        Diretorio parent = navegar(caminho.substring(0, caminho.lastIndexOf('/')));
-        String nomeArquivo = caminho.substring(caminho.lastIndexOf('/') + 1);
+        if (caminho.equals("/") || caminho.endsWith("/")) {
+            throw new OperacaoInvalidaException("Nome de arquivo inválido.");
+        }
+
+        int lastSlash = caminho.lastIndexOf('/');
+        String caminhoPai = (lastSlash <= 0) ? "/" : caminho.substring(0, lastSlash);
+        String nomeArquivo = caminho.substring(lastSlash + 1);
+
+        // Cria os diretórios intermediários (como mkdir -p)
+        mkdir(caminhoPai, usuario);
+
+        Diretorio parent = navegar(caminhoPai);
 
         if (!parent.temPermissao(usuario, 'w')) {
-            throw new PermissaoException("Sem permissão para criar arquivo em: " + caminho);
+            throw new PermissaoException("Sem permissão para criar arquivo em: " + caminhoPai);
         }
 
         if (parent.isArquivo()) {

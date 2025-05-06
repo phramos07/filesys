@@ -31,6 +31,7 @@ class FileSystemTest {
   @Test
   void testMkdir() throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
     assertDoesNotThrow(() -> fileSystem.mkdir("/mkdirTest", "root"));
+    assertDoesNotThrow(() -> fileSystem.mkdir("/mkdirTest2/subdir", "root"));
   }
 
   @Test
@@ -43,6 +44,7 @@ class FileSystemTest {
   void testTouch() throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException, OperacaoInvalidaException {
     fileSystem.mkdir("/touchDir", "root");
     assertDoesNotThrow(() -> fileSystem.touch("/touchDir/file.txt", "root"));
+    assertDoesNotThrow(() -> fileSystem.touch("/touchDir2/file2.txt", "root"));
   }
 
   @Test
