@@ -3,6 +3,7 @@ package filesys;
 import exception.CaminhoJaExistenteException;
 import exception.CaminhoNaoEncontradoException;
 import exception.PermissaoException;
+import model.Diretorio;
 
 // Implemente nesta classe o seu código do FileSystem.
 // A classe pode ser alterada.
@@ -10,11 +11,20 @@ import exception.PermissaoException;
 // e atributos & métodos privados podem ser adicionados
 public final class FileSystemImpl implements IFileSystem {
     private static final String ROOT_USER = "root"; // pode ser necessário
-
-    public FileSystemImpl() {}
+    private Diretorio raiz; 
+    
+    public FileSystemImpl() {
+        //cria o diretório raiz
+        raiz = new Diretorio("","/", "root");
+    }
 
     @Override
     public void mkdir(String caminho, String nome) throws CaminhoJaExistenteException, PermissaoException {
+        if (raiz == null) {
+            throw new IllegalStateException("Diretório raiz não inicializado.");
+        }
+
+        System.out.println("Criando diretório em: " + raiz.getNome());
         throw new UnsupportedOperationException("Método não implementado 'mkdir'");
     }
 
