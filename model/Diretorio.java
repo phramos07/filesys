@@ -1,54 +1,77 @@
 package model;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
-public class Diretorio {
-    //representa uma pasta
-    private String nome;
-    private String caminhoCompleto;
-    private String dono;
-    private Map<String, Diretorio> subdiretorios;
-    private Map<String, Arquivo> arquivos;
-    private Permissao permissoes;
+public class Diretorio extends ElementoFS {
+    private Diretorio diretorioPai;
+    private Map<String, ElementoFS> filhos;
+    private Map<String, String> acessosPorUsuario; // permissões específicas
 
-    public Diretorio(String nome, String caminhoCompleto, String dono) {
-        this.nome = nome;
-        this.caminhoCompleto = caminhoCompleto;
-        this.dono = dono;
-        this.subdiretorios = new HashMap<>();
-        this.arquivos = new HashMap<>();
-        this.permissoes = new Permissao();
-        this.permissoes.definirPermissao(dono, "rw"); // dono pode tudo
+    public Diretorio(String nome, String permissoes, String dono) {
+        super(nome, permissoes, dono);
+        if (permissoes == null || permissoes.length() != 3) {
+            throw new IllegalArgumentException("Permissões devem conter 3 caracteres (rwx)");
+        }
+        this.filhos = new HashMap<>();
+        this.acessosPorUsuario = new HashMap<>();
     }
 
-    public String getNome() { return nome; }
-    public String getCaminhoCompleto() { return caminhoCompleto; }
-    public String getDono() { return dono; }
-    public Map<String, Diretorio> getSubdiretorios() { return subdiretorios; }
-    public Map<String, Arquivo> getArquivos() { return arquivos; }
-    public Permissao getPermissoes() { return permissoes; }
-
-    public void adicionarDiretorio(Diretorio dir) {
-        subdiretorios.put(dir.getNome(), dir);
+    public void setPermissaoUsuario(String nomeUsuario, String permissoes) {
+        if (permissoes == null || permissoes.length() != 3) {
+            throw new IllegalArgumentException("Permissões devem conter 3 caracteres (rwx)");
+        }
+        acessosPorUsuario.put(nomeUsuario, permissoes);
     }
 
-    public void adicionarArquivo(Arquivo arq) {
-        arquivos.put(arq.getNome(), arq);
+    public boolean temPermissao(String usuario, char tipoPermissao) {
+        if ("root".equals(usuario)) return true;
+        if (usuario.equals(donoDiretorio)) return permissoesPadrao.indexOf(tipoPermissao) >= 0;
+        String permissoesUsuario = acessosPorUsuario.get(usuario);
+        if (permissoesUsuario != null && permissoesUsuario.indexOf(tipoPermissao) >= 0) return true;
+        if (diretorioPai != null) return diretorioPai.temPermissao(usuario, tipoPermissao);
+        return false;
     }
 
-    public Diretorio getSubdiretorio(String nome) {
-        return subdiretorios.get(nome);
+    public String obterPermissoesDoUsuario(String usuario) {
+        if ("root".equals(usuario)) return "rwx";
+        if (usuario.equals(donoDiretorio)) return permissoesPadrao;
+        return acessosPorUsuario.getOrDefault(usuario, "---");
     }
 
-    public Arquivo getArquivo(String nome) {
-        return arquivos.get(nome);
+    public void adicionarFilho(ElementoFS filho) {
+        if (filhos.containsKey(filho.getNomeDiretorio())) {
+            throw new IllegalArgumentException("Já existe um filho com este nome: " + filho.getNomeDiretorio());
+        }
+        if (filho instanceof Diretorio) {
+            ((Diretorio) filho).setDiretorioPai(this);
+        }
+        filhos.put(filho.getNomeDiretorio(), filho);
     }
 
-    public boolean contemDiretorio(String nome) {
-        return subdiretorios.containsKey(nome);
+    public void removerFilho(String nomeFilho) {
+        filhos.remove(nomeFilho);
     }
 
-    public boolean contemArquivo(String nome) {
-        return arquivos.containsKey(nome);
+    public Map<String, ElementoFS> getFilhos() {
+        return filhos;
+    }
+
+    public Diretorio getDiretorioPai() {
+        return diretorioPai;
+    }
+
+    public void setDiretorioPai(Diretorio diretorioPai) {
+        this.diretorioPai = diretorioPai;
+    }
+
+    @Override
+    public boolean isArquivo() {
+        return false;
+    }
+
+    @Override
+    public String toString() {
+        return "Dir: " + nomeDiretorio + " | Owner: " + donoDiretorio + " | Perms: " + permissoesPadrao;
     }
 }
