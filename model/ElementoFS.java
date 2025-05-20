@@ -1,49 +1,39 @@
 package model;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public abstract class ElementoFS {
-    protected String nome;
-    protected String caminho;
-    protected String dono;
-    protected Map<String, String> permissoes; // Ex: usuario → "rw"
+    protected String nomeDiretorio;
+    protected String permissoesPadrao;
+    protected String donoDiretorio;
 
-    public ElementoFS(String nome, String caminho, String dono) {
-        this.nome = nome;
-        this.caminho = caminho;
-        this.dono = dono;
-        this.permissoes = new HashMap<>();
-        this.permissoes.put(dono, "rw"); // Dono começa com permissão total
+    public ElementoFS(String nomeDiretorio, String permissoesPadrao, String donoDiretorio) {
+        this.nomeDiretorio = nomeDiretorio;
+        this.permissoesPadrao = permissoesPadrao;
+        this.donoDiretorio = donoDiretorio;
     }
 
-    public String getNome() {
-        return nome;
+    public String getNomeDiretorio() {
+        return nomeDiretorio;
     }
 
-    public String getCaminho() {
-        return caminho;
+    public void setNomeDiretorio(String nomeDiretorio) {
+        this.nomeDiretorio = nomeDiretorio;
     }
 
-    public String getDono() {
-        return dono;
+    public String getPermissoesPadrao() {
+        return permissoesPadrao;
     }
 
-    public void setPermissao(String usuario, String permissao) {
-        permissoes.put(usuario, permissao);
+    public void setPermissoesPadrao(String permissoesPadrao) {
+        this.permissoesPadrao = permissoesPadrao;
     }
 
-    public String getPermissao(String usuario) {
-        return permissoes.getOrDefault(usuario, "");
+    public String getDonoDiretorio() {
+        return donoDiretorio;
     }
 
-    public boolean temPermissaoLeitura(String usuario) {
-        return getPermissao(usuario).contains("r") || usuario.equals("root");
+    public void setDonoDiretorio(String donoDiretorio) {
+        this.donoDiretorio = donoDiretorio;
     }
 
-    public boolean temPermissaoEscrita(String usuario) {
-        return getPermissao(usuario).contains("w") || usuario.equals("root");
-    }
-
-    public abstract boolean ehDiretorio(); // Pra saber se é pasta ou não
+    public abstract boolean isArquivo();
 }
