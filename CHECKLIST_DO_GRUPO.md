@@ -69,12 +69,7 @@ Ele permite digitar comandos como `mkdir`, `touch`, `ls`, etc., e mostra o resul
 
 ---
 
-## 5. Comentários e Documentação
-
-- Comentar o código explicando o que cada método faz, principalmente os mais importantes.
-- Se mudarmos algo na interface fornecida pelo professor, justificar com um comentário.
-
-nao lembro se eu fiz isso, aaaaaaaaa, FAÇAM!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Não mudem a classe **FileSystem.java**!!!
 
 ---
 
