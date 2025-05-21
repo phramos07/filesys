@@ -11,32 +11,6 @@ import model.Usuario;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Classe {@code FileSystemImpl} implementa a interface {@link IFileSystem} e fornece a lógica para um sistema de arquivos
- * hierárquico com suporte a permissões de usuários, manipulação de arquivos e diretórios.
- * 
- * <p>Essa classe gerencia um conjunto de usuários, um diretório raiz e oferece métodos para operações como criação,
- * remoção, leitura, escrita, cópia e movimentação de arquivos e diretórios. Além disso, permite a configuração de
- * permissões específicas para usuários em diferentes caminhos do sistema de arquivos.
- * 
- * <p>O sistema de arquivos é inicializado com um diretório raiz ("/") e um usuário padrão ("root") com permissões
- * completas. Usuários adicionais podem ser adicionados e gerenciados dinamicamente.
- * 
- * <p>Principais funcionalidades:
- * <ul>
- *   <li>Gerenciamento de usuários e permissões.</li>
- *   <li>Criação e remoção de arquivos e diretórios.</li>
- *   <li>Leitura e escrita em arquivos.</li>
- *   <li>Movimentação e cópia de arquivos e diretórios.</li>
- *   <li>Listagem de conteúdo de diretórios com suporte a recursividade.</li>
- * </ul>
- * 
- * <p>Exceções específicas são lançadas para tratar erros como permissões insuficientes, caminhos inexistentes,
- * ou tentativas de operações inválidas.
- * 
- * <p>Essa classe é imutável no sentido de que não permite a modificação direta de seus atributos internos,
- * mas fornece métodos para manipular o estado do sistema de arquivos de forma controlada.
- */
 public final class FileSystemImpl implements IFileSystem {
     private static final String ROOT_USER = "root"; // pode ser necessário
     private Diretorio raiz;
