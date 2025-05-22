@@ -116,6 +116,18 @@ class FileSystemImplTest {
         assertEquals(6, arq.getTamanho());
     }
 
+    @Test
+    void read_LeituraSimplesDeArquivo() throws Exception {
+        fs.mkdir("/docs", "root");
+        fs.touch("/docs/arquivo.txt", "root");
+        byte[] dados = "Hello, World!".getBytes();
+        fs.write("/docs/arquivo.txt", "root", false, dados);
+
+        byte[] buffer = new byte[dados.length];
+        fs.read("/docs/arquivo.txt", "root", buffer);
+        assertArrayEquals(dados, buffer);
+    }
+
     // TODO: Adicionar testes unitários para mv
     // TODO: Adicionar testes unitários para ls
     // TODO: Adicionar testes unitários para cp

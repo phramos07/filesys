@@ -166,8 +166,25 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void read(String caminho, String usuario, byte[] buffer)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        // TODO: Implementar lógica de leitura (ler em blocos, permissões, tratar arquivos grandes)
-        throw new UnsupportedOperationException("Método não implementado 'read'");
+        ElementoFS elemento = navegar(caminho);
+
+        if (!elemento.isArquivo()) {
+            throw new CaminhoNaoEncontradoException("O caminho não é um arquivo.");
+        }
+        Arquivo arquivo = (Arquivo) elemento;
+
+        if (!arquivo.temPermissao(usuario, 'r')) {
+            throw new PermissaoException("Sem permissão de leitura no arquivo.");
+        }
+
+        // Lê os blocos do arquivo e copia para o buffer até preencher ou acabar o arquivo
+        int posBuffer = 0;
+        for (byte[] bloco : arquivo.getBlocos()) {
+            int bytesParaCopiar = Math.min(bloco.length, buffer.length - posBuffer);
+            System.arraycopy(bloco, 0, buffer, posBuffer, bytesParaCopiar);
+            posBuffer += bytesParaCopiar;
+            if (posBuffer >= buffer.length) break; // buffer cheio
+        }
     }
 
     // TODO: Implementar método mv (movimentação/renomeação)
