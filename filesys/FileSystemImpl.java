@@ -40,6 +40,10 @@ public final class FileSystemImpl implements IFileSystem {
         return atual;
     }
 
+    public ElementoFS navegarParaTeste(String caminho) throws CaminhoNaoEncontradoException {
+        return navegar(caminho);
+    }
+
     @Override
     public void mkdir(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException {
         if (caminho.equals("/")) return;
@@ -76,8 +80,36 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void rm(String caminho, String usuario, boolean recursivo)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        // TODO: Implementar lógica de remoção (verificar se é arquivo ou diretório, permissões, recursividade)
-        throw new UnsupportedOperationException("Método não implementado 'rm'");
+        if (caminho.equals("/")) {
+            throw new PermissaoException("Não é permitido remover o diretório raiz.");
+        }
+        // Navega até o elemento a ser removido
+        ElementoFS elemento = navegar(caminho);
+
+        // Descobre o diretório pai
+        int lastSlash = caminho.lastIndexOf('/');
+        String caminhoPai = (lastSlash <= 0) ? "/" : caminho.substring(0, lastSlash);
+        Diretorio pai = (Diretorio) navegar(caminhoPai);
+
+        // Verifica permissão de escrita no pai
+        if (!pai.temPermissao(usuario, 'w')) {
+            throw new PermissaoException("Sem permissão para remover em: " + caminhoPai);
+        }
+
+        if (!elemento.isArquivo()) {
+            Diretorio dir = (Diretorio) elemento;
+            if (!recursivo && !dir.getFilhos().isEmpty()) {
+                throw new PermissaoException("Diretório não está vazio. Use recursivo=true para remover tudo.");
+            }
+            // Remover recursivamente todos os filhos
+            if (recursivo) {
+                for (String filho : new java.util.ArrayList<>(dir.getFilhos().keySet())) {
+                    rm(caminho + "/" + filho, usuario, true);
+                }
+            }
+        }
+        // Remove do pai
+        pai.removerFilho(elemento.getNomeDiretorio());
     }
 
     @Override
@@ -102,8 +134,32 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void write(String caminho, String usuario, boolean anexar, byte[] buffer)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        // TODO: Implementar lógica de escrita (dividir em blocos, verificar permissões, append ou sobrescrever)
-        throw new UnsupportedOperationException("Método não implementado 'write'");
+        ElementoFS elemento = navegar(caminho);
+
+        if (!elemento.isArquivo()) {
+            throw new CaminhoNaoEncontradoException("O caminho não é um arquivo.");
+        }
+        Arquivo arquivo = (Arquivo) elemento;
+
+        if (!arquivo.temPermissao(usuario, 'w')) {
+            throw new PermissaoException("Sem permissão de escrita no arquivo.");
+        }
+
+        final int TAMANHO_BLOCO = 4096;
+
+        if (!anexar) {
+            arquivo.limparBlocos();
+        }
+
+        int pos = 0;
+        while (pos < buffer.length) {
+            int tamanhoRestante = buffer.length - pos;
+            int tamanhoBloco = Math.min(TAMANHO_BLOCO, tamanhoRestante);
+            byte[] bloco = new byte[tamanhoBloco];
+            System.arraycopy(buffer, pos, bloco, 0, tamanhoBloco);
+            arquivo.adicionarBloco(bloco);
+            pos += tamanhoBloco;
+        }
     }
 
     // TODO: Implementar método read (leitura de arquivos)

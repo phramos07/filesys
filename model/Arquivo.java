@@ -6,6 +6,7 @@ import java.util.List;
 public class Arquivo extends ElementoFS {
     private List<byte[]> blocos;
     private long tamanho;
+    
 
     public Arquivo(String nome, String permissoes, String dono) {
         super(nome, permissoes, dono);
@@ -70,4 +71,13 @@ public class Arquivo extends ElementoFS {
         throw new UnsupportedOperationException("Não é possível remover filhos de um arquivo.");
     }
     
+    @Override
+    public boolean temPermissao(String usuario, char tipoPermissao) {
+        if ("root".equals(usuario)) return true;
+        if (usuario.equals(donoDiretorio)) {
+            return permissoesPadrao.indexOf(tipoPermissao) >= 0;
+        }
+        // Arquivo não tem permissões específicas para outros usuários, só o dono pode acessar
+        return false;
+    }
 }

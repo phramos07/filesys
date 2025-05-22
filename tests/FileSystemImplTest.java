@@ -65,8 +65,57 @@ class FileSystemImplTest {
         assertThrows(CaminhoNaoEncontradoException.class, () -> fs.chmod("/naoexiste", "root", "root", "rwx"));
     }
 
-    // TODO: Adicionar testes unitários para rm
-    // TODO: Adicionar testes unitários para write/read
+    @Test
+    void rm_RemoveArquivoComSucesso() throws Exception {
+        fs.mkdir("/docs", "root");
+        fs.touch("/docs/arquivo.txt", "root");
+        assertDoesNotThrow(() -> fs.rm("/docs/arquivo.txt", "root", false));
+        // Verifica se realmente foi removido
+        assertThrows(exception.CaminhoNaoEncontradoException.class, () -> {
+            fs.rm("/docs/arquivo.txt", "root", false);
+        });
+    }
+
+    @Test
+    void rm_RemoveDiretorioRecursivo() throws Exception {
+        fs.mkdir("/docs", "root");
+        fs.mkdir("/docs/sub", "root");
+        fs.touch("/docs/sub/arquivo.txt", "root");
+        assertDoesNotThrow(() -> fs.rm("/docs", "root", true));
+        assertThrows(exception.CaminhoNaoEncontradoException.class, () -> {
+            fs.rm("/docs", "root", false);
+        });
+    }
+
+    @Test
+    void rm_LancaExcecaoSeDiretorioNaoVazioSemRecursivo() throws Exception {
+        fs.mkdir("/docs", "root");
+        fs.touch("/docs/arquivo.txt", "root");
+        assertThrows(exception.PermissaoException.class, () -> fs.rm("/docs", "root", false));
+    }
+
+    @Test
+    void write_EscritaSimplesEmArquivo() throws Exception {
+        fs.mkdir("/docs", "root");
+        fs.touch("/docs/arquivo.txt", "root");
+        byte[] dados = "Hello, World!".getBytes();
+        fs.write("/docs/arquivo.txt", "root", false, dados);
+        model.Arquivo arq = (model.Arquivo) fs.navegarParaTeste("/docs/arquivo.txt");
+        assertEquals(dados.length, arq.getTamanho());
+    }
+
+    @Test
+    void write_AppendEmArquivo() throws Exception {
+        fs.mkdir("/docs", "root");
+        fs.touch("/docs/arquivo.txt", "root");
+        byte[] dados1 = "ABC".getBytes();
+        byte[] dados2 = "DEF".getBytes();
+        fs.write("/docs/arquivo.txt", "root", false, dados1);
+        fs.write("/docs/arquivo.txt", "root", true, dados2);
+        model.Arquivo arq = (model.Arquivo) fs.navegarParaTeste("/docs/arquivo.txt");
+        assertEquals(6, arq.getTamanho());
+    }
+
     // TODO: Adicionar testes unitários para mv
     // TODO: Adicionar testes unitários para ls
     // TODO: Adicionar testes unitários para cp

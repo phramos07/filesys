@@ -36,4 +36,5 @@ public abstract class ElementoFS {
     }
 
     public abstract boolean isArquivo();
+    public abstract boolean temPermissao(String usuario, char tipoPermissao);
 }

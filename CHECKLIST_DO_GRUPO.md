@@ -12,8 +12,8 @@ Ainda precisamos implementar os métodos principais que fazem o sistema funciona
 Esses métodos são chamados quando o usuário executa comandos como criar, remover, copiar, mover arquivos e diretórios.
 
 **Faltam implementar:**
-- `rm` — Remover arquivos ou diretórios (com opção de apagar tudo dentro, se for recursivo)
-- `write` — Escrever dados em um arquivo (pode ser para sobrescrever ou adicionar ao final)
+- 
+-
 - `read` — Ler dados de um arquivo (precisa ler em partes se o arquivo for grande)
 - `mv` — Mover ou renomear arquivos/diretórios
 - `ls` — Listar o conteúdo de um diretório (mostrar arquivos e subdiretórios)
