@@ -191,23 +191,117 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void mv(String caminhoAntigo, String caminhoNovo, String usuario)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        // TODO: Implementar lógica de movimentação/renomeação (verificar permissões, atualizar árvore)
-        throw new UnsupportedOperationException("Método não implementado 'mv'");
+        if (caminhoAntigo.equals("/") || caminhoNovo.equals("/")) {
+            throw new PermissaoException("Não é permitido mover ou renomear o diretório raiz.");
+        }
+
+        // Navega até o elemento a ser movido
+        ElementoFS elemento = navegar(caminhoAntigo);
+
+        // Descobre o diretório pai do antigo e do novo caminho
+        int lastSlashAntigo = caminhoAntigo.lastIndexOf('/');
+        String caminhoPaiAntigo = (lastSlashAntigo <= 0) ? "/" : caminhoAntigo.substring(0, lastSlashAntigo);
+        Diretorio paiAntigo = (Diretorio) navegar(caminhoPaiAntigo);
+
+        int lastSlashNovo = caminhoNovo.lastIndexOf('/');
+        String caminhoPaiNovo = (lastSlashNovo <= 0) ? "/" : caminhoNovo.substring(0, lastSlashNovo);
+        Diretorio paiNovo = (Diretorio) navegar(caminhoPaiNovo);
+
+        String nomeNovo = caminhoNovo.substring(lastSlashNovo + 1);
+
+        // Permissão de escrita nos dois diretórios
+        if (!paiAntigo.temPermissao(usuario, 'w')) {
+            throw new PermissaoException("Sem permissão para remover do diretório antigo: " + caminhoPaiAntigo);
+        }
+        if (!paiNovo.temPermissao(usuario, 'w')) {
+            throw new PermissaoException("Sem permissão para criar no diretório novo: " + caminhoPaiNovo);
+        }
+
+        // Remove do diretório antigo
+        paiAntigo.removerFilho(elemento.getNomeDiretorio());
+
+        // Renomeia se necessário
+        elemento.setNomeDiretorio(nomeNovo);
+
+        // Adiciona ao novo diretório
+        paiNovo.adicionarFilho(elemento);
     }
 
     // TODO: Implementar método ls (listagem de diretórios)
     @Override
     public void ls(String caminho, String usuario, boolean recursivo) throws CaminhoNaoEncontradoException, PermissaoException {
-        // TODO: Implementar lógica de listagem (mostrar arquivos/diretórios, recursivo ou não, permissões)
-        throw new UnsupportedOperationException("Método não implementado 'ls'");
+        ElementoFS elemento = navegar(caminho);
+
+        if (elemento.isArquivo()) {
+            if (!elemento.temPermissao(usuario, 'r')) {
+                throw new PermissaoException("Sem permissão de leitura no arquivo.");
+            }
+            System.out.println(elemento.getNomeDiretorio());
+            return;
+        }
+
+        Diretorio dir = (Diretorio) elemento;
+        if (!dir.temPermissao(usuario, 'r')) {
+            throw new PermissaoException("Sem permissão de leitura no diretório.");
+        }
+
+        listarDiretorio(dir, caminho.equals("/") ? "" : caminho, usuario, recursivo, 0);
+    }
+
+    private void listarDiretorio(Diretorio dir, String caminho, String usuario, boolean recursivo, int nivel) {
+        String prefixo = "  ".repeat(nivel);
+        for (ElementoFS filho : dir.getFilhos().values()) {
+            System.out.println(prefixo + filho.getNomeDiretorio() +
+                    (filho.isArquivo() ? "" : "/") +
+                    " [owner=" + filho.getDonoDiretorio() + ", perms=" + filho.getPermissoesPadrao() + "]");
+            if (recursivo && !filho.isArquivo()) {
+                listarDiretorio((Diretorio) filho, caminho + "/" + filho.getNomeDiretorio(), usuario, true, nivel + 1);
+            }
+        }
     }
 
     // TODO: Implementar método cp (cópia de arquivos/diretórios)
     @Override
     public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        // TODO: Implementar lógica de cópia (copiar arquivos/diretórios, recursivo, permissões)
-        throw new UnsupportedOperationException("Método não implementado 'cp'");
+        ElementoFS origem = navegar(caminhoOrigem);
+
+        int lastSlash = caminhoDestino.lastIndexOf('/');
+        String caminhoPaiDestino = (lastSlash <= 0) ? "/" : caminhoDestino.substring(0, lastSlash);
+        String nomeDestino = caminhoDestino.substring(lastSlash + 1);
+        Diretorio paiDestino = (Diretorio) navegar(caminhoPaiDestino);
+
+        if (!origem.temPermissao(usuario, 'r')) {
+            throw new PermissaoException("Sem permissão de leitura na origem.");
+        }
+        if (!paiDestino.temPermissao(usuario, 'w')) {
+            throw new PermissaoException("Sem permissão de escrita no destino.");
+        }
+
+        if (origem.isArquivo()) {
+            // Copia arquivo
+            Arquivo arqOrigem = (Arquivo) origem;
+            Arquivo novoArquivo = new Arquivo(nomeDestino, arqOrigem.getPermissoesPadrao(), usuario);
+            // Copia blocos
+            for (byte[] bloco : arqOrigem.getBlocos()) {
+                novoArquivo.adicionarBloco(bloco.clone());
+            }
+            paiDestino.adicionarFilho(novoArquivo);
+        } else {
+            // Copia diretório
+            if (!recursivo) {
+                throw new PermissaoException("Diretório só pode ser copiado com recursivo=true.");
+            }
+            Diretorio dirOrigem = (Diretorio) origem;
+            Diretorio novoDir = new Diretorio(nomeDestino, dirOrigem.getPermissoesPadrao(), usuario);
+            paiDestino.adicionarFilho(novoDir);
+            // Copia recursivamente os filhos
+            for (ElementoFS filho : dirOrigem.getFilhos().values()) {
+                cp(caminhoOrigem + "/" + filho.getNomeDiretorio(),
+                   caminhoDestino + "/" + filho.getNomeDiretorio(),
+                   usuario, true);
+            }
+        }
     }
 
     // TODO: Implementar carregamento de usuários a partir do arquivo users/users se necessário

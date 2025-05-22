@@ -12,12 +12,6 @@ Ainda precisamos implementar os métodos principais que fazem o sistema funciona
 Esses métodos são chamados quando o usuário executa comandos como criar, remover, copiar, mover arquivos e diretórios.
 
 **Faltam implementar:**
-- 
--
-- `read` — Ler dados de um arquivo (precisa ler em partes se o arquivo for grande)
-- `mv` — Mover ou renomear arquivos/diretórios
-- `ls` — Listar o conteúdo de um diretório (mostrar arquivos e subdiretórios)
-- `cp` — Copiar arquivos ou diretórios (com opção de copiar tudo dentro, se for recursivo)
 
 **No código, já deixei `// TODO` nesses métodos para facilitar achar onde falta implementar.  
 O VS Code mostra uma linha azul do lado esquerdo nesses pontos.**
@@ -27,11 +21,6 @@ O VS Code mostra uma linha azul do lado esquerdo nesses pontos.**
 ## 2. Testes Unitários
 
 **Faltam testes para:**
-- Remover arquivos/diretórios (`rm`)
-- Escrever e ler arquivos (`write` e `read`)
-- Mover/renomear (`mv`)
-- Listar diretórios (`ls`)
-- Copiar arquivos/diretórios (`cp`)
 - Testar casos de erro (ex: tentar remover sem permissão, tentar ler arquivo inexistente, etc.)
 - **Testes de permissão:** Já existe um arquivo chamado `PermissionTest.java` que testa se o sistema está respeitando as permissões de leitura, escrita 
 e execução para cada usuário. - mas olhem la 

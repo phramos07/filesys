@@ -7,6 +7,9 @@ import filesys.FileSystemImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class FileSystemImplTest {
@@ -128,7 +131,83 @@ class FileSystemImplTest {
         assertArrayEquals(dados, buffer);
     }
 
-    // TODO: Adicionar testes unitários para mv
-    // TODO: Adicionar testes unitários para ls
-    // TODO: Adicionar testes unitários para cp
+    @Test
+    void mv_MoverArquivoComSucesso() throws Exception {
+        fs.mkdir("/docs", "root");
+        fs.touch("/docs/arquivo.txt", "root");
+        fs.mkdir("/destino", "root");
+        fs.mv("/docs/arquivo.txt", "/destino/novo.txt", "root");
+        assertThrows(exception.CaminhoNaoEncontradoException.class, () -> fs.rm("/docs/arquivo.txt", "root", false));
+        // Verifica se existe no novo local
+        fs.rm("/destino/novo.txt", "root", false);
+    }
+
+    @Test
+    void ls_ListagemSimplesDeDiretorio() throws Exception {
+        fs.mkdir("/docs", "root");
+        fs.touch("/docs/arquivo1.txt", "root");
+        fs.touch("/docs/arquivo2.txt", "root");
+
+        // Redireciona a saída padrão para capturar o resultado do ls
+        ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+        PrintStream originalOut = System.out;
+        System.setOut(new PrintStream(outContent));
+
+        fs.ls("/docs", "root", false);
+
+        System.setOut(originalOut); // Restaura saída padrão
+
+        String output = outContent.toString();
+        assertTrue(output.contains("arquivo1.txt"));
+        assertTrue(output.contains("arquivo2.txt"));
+    }
+
+    @Test
+    void ls_ListagemRecursiva() throws Exception {
+        fs.mkdir("/docs", "root");
+        fs.touch("/docs/arquivo1.txt", "root");
+        fs.mkdir("/docs/subdir", "root");
+        fs.touch("/docs/subdir/arquivo2.txt", "root");
+
+        ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+        PrintStream originalOut = System.out;
+        System.setOut(new PrintStream(outContent));
+
+        fs.ls("/docs", "root", true);
+
+        System.setOut(originalOut);
+
+        String output = outContent.toString();
+        assertTrue(output.contains("arquivo1.txt"));
+        assertTrue(output.contains("subdir/"));
+        assertTrue(output.contains("arquivo2.txt"));
+    }
+
+    @Test
+    void cp_CopiaArquivoComSucesso() throws Exception {
+        fs.mkdir("/docs", "root");
+        fs.touch("/docs/arquivo.txt", "root");
+        byte[] dados = "abc".getBytes();
+        fs.write("/docs/arquivo.txt", "root", false, dados);
+
+        fs.cp("/docs/arquivo.txt", "/docs/copia.txt", "root", false);
+
+        model.Arquivo arq = (model.Arquivo) fs.navegarParaTeste("/docs/copia.txt");
+        assertEquals(dados.length, arq.getTamanho());
+    }
+
+    @Test
+    void cp_CopiaDiretorioRecursivo() throws Exception {
+        fs.mkdir("/docs", "root");
+        fs.touch("/docs/arquivo.txt", "root");
+        fs.mkdir("/docs/subdir", "root");
+        fs.touch("/docs/subdir/arquivo2.txt", "root");
+        fs.cp("/docs", "/backup", "root", true);
+
+        // Verifica se os arquivos foram copiados
+        model.Arquivo arq1 = (model.Arquivo) fs.navegarParaTeste("/backup/arquivo.txt");
+        model.Arquivo arq2 = (model.Arquivo) fs.navegarParaTeste("/backup/subdir/arquivo2.txt");
+        assertNotNull(arq1);
+        assertNotNull(arq2);
+    }
 }
