@@ -1,5 +1,7 @@
-import filesys.IFileSystem;
+import filesys.*;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Scanner;
 import java.io.FileNotFoundException;
 
@@ -11,11 +13,13 @@ import filesys.FileSystem;
 
 // MENU INTERATIVO PARA O SISTEMA DE ARQUIVOS
 // SINTA-SE LIVRE PARA ALTERAR A CLASSE MAIN
+
 public class Main {
 
     // Constantes úteis para a versão interativa. 
     // Para esse tipo de execução, o tamanho max do buffer de 
     // leitura pode ser menor.
+
     private static final String ROOT_USER = "root";
     private static final String ROOT_DIR = "/";
     private static final int READ_BUFFER_SIZE = 256;
@@ -31,6 +35,7 @@ public class Main {
 
     // O sistema de arquivos é inteiramente virtual, ou seja, será reiniciado a cada execução do programa.
     // Logo, não é necessário salvar os arquivos em disco. O sistema será uma simulação em memória.
+
     public static void main(String[] args) {
         // Usuário que está executando o programa.
         // Para quaisquer operações que serão feitas por esse usuário em um caminho /path/**,
@@ -51,6 +56,9 @@ public class Main {
         // A partir do momento que um usuário cria outro diretório ou arquivo, 
         // a permissão desse usuário é de leitura, escrita e execução nesse novo diretório/arquivo,
         // e sempre será rwx para o usuário root.
+
+        Map<String, Map<String, String>> permissoesUsuarios = new HashMap<>();
+
         try {
             Scanner userScanner = new Scanner(new java.io.File("users/users"));
             while (userScanner.hasNextLine()) {
@@ -66,6 +74,8 @@ public class Main {
                          * Processar a permissão de todos os usuários existentes por diretório.
                          * Por enquanto esse código somente imprime as permissões contidas no arquivo users.
                         */
+                        permissoesUsuarios.putIfAbsent(userListed, new HashMap<>());
+                        permissoesUsuarios.get(userListed).put(dir, dirPermission);
                         System.out.println(userListed + " " + dir + " " + dirPermission); // Somente imprime o usuário, diretório e permissão
 
 
@@ -81,18 +91,19 @@ public class Main {
             return;
         }
         
+        // Usuário Importante
         // Finalmente cria o Sistema de Arquivos
         // Lista de usuários é imutável durante a execução do programa
         // Obs: Como passar a lista de usuários para o FileSystem?
-        fileSystem = new FileSystem(/*usuários?*/);
+        fileSystem = new FileSystem(permissoesUsuarios); // passar o mapa de permissoes ao criar o FileSystem ; fileSystem = new FileSystem(/*usuários?*/);
 
         // // DESCOMENTE O BLOCO ABAIXO PARA CRIAR O DIRETÓRIO RAIZ ANTES DE RODAR O MENU
         // // Cria o diretório raiz do sistema. Root sempre tem permissão total "rwx"
-        // try {
-        //     fileSystem.mkdir(ROOT_DIR, ROOT_USER);
-        // } catch (CaminhoJaExistenteException | PermissaoException e) {
-        //     System.out.println(e.getMessage());
-        // }
+        try {
+             fileSystem.mkdir(ROOT_DIR, ROOT_USER);
+         } catch (CaminhoJaExistenteException | PermissaoException e) {
+             System.out.println(e.getMessage());
+        }
 
         // Menu interativo.
         menu();
@@ -101,6 +112,7 @@ public class Main {
     // Menu interativo para fins de teste.
     // Os testes junit não são feitos com esse menu,
     // mas diretamente na interface IFileSystem
+    
     public static void menu() {
         while (true) {
             System.out.println("\nComandos disponíveis:");
@@ -246,4 +258,5 @@ public class Main {
         
         fileSystem.cp(caminhoOrigem, caminhoDestino, user, recursivo);
     }
+
 }
