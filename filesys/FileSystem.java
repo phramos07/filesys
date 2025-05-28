@@ -1,5 +1,7 @@
 package filesys;
 
+import java.util.List;
+
 import exception.CaminhoJaExistenteException;
 import exception.CaminhoNaoEncontradoException;
 import exception.PermissaoException;
@@ -11,6 +13,10 @@ final public class FileSystem implements IFileSystem {
 
     public FileSystem() {
         fileSystemImpl = new FileSystemImpl();
+    }
+
+    public FileSystem(List<Usuario> usuarios, String user) {
+        fileSystemImpl = new FileSystemImpl(usuarios, user);
     }
 
     @Override

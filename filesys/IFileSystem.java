@@ -5,7 +5,7 @@ import exception.CaminhoNaoEncontradoException;
 import exception.PermissaoException;
 
 // Apenas modifique essa interface caso seja EXTREMAMENTE necessário.
-// Documente & Justifique TODAS asalterações feitas.
+// Documente & Justifique TODAS as alterações feitas.
 public interface IFileSystem {
     // Altera as permissões de um arquivo ou diretório.
     // Configura a permissao do caminho para o usuarioAlvo.

@@ -1,5 +1,8 @@
 import filesys.IFileSystem;
+import filesys.Usuario;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 import java.io.FileNotFoundException;
 
@@ -28,6 +31,9 @@ public class Main {
 
     // Usuário que está executando o programa
     private static String user;
+
+    // Lista de usuários
+    private static List<Usuario> usuarios = new ArrayList<>();
 
     // O sistema de arquivos é inteiramente virtual, ou seja, será reiniciado a cada execução do programa.
     // Logo, não é necessário salvar os arquivos em disco. O sistema será uma simulação em memória.
@@ -68,7 +74,8 @@ public class Main {
                         */
                         System.out.println(userListed + " " + dir + " " + dirPermission); // Somente imprime o usuário, diretório e permissão
 
-
+                        // Adicionar usuário à lista
+                        usuarios.add(new Usuario(userListed, dir, dirPermission));
                     } else {
                         System.out.println("Formato ruim no arquivo de usuários. Linha: " + line);
                     }
@@ -80,19 +87,24 @@ public class Main {
 
             return;
         }
-        
+
+        System.out.println("Usuários carregados:");
+        for (Usuario user : usuarios) {
+            System.out.println(user);
+        }
+
         // Finalmente cria o Sistema de Arquivos
         // Lista de usuários é imutável durante a execução do programa
         // Obs: Como passar a lista de usuários para o FileSystem?
-        fileSystem = new FileSystem(/*usuários?*/);
+        fileSystem = new FileSystem(usuarios, user);
 
         // // DESCOMENTE O BLOCO ABAIXO PARA CRIAR O DIRETÓRIO RAIZ ANTES DE RODAR O MENU
-        // // Cria o diretório raiz do sistema. Root sempre tem permissão total "rwx"
-        // try {
-        //     fileSystem.mkdir(ROOT_DIR, ROOT_USER);
-        // } catch (CaminhoJaExistenteException | PermissaoException e) {
-        //     System.out.println(e.getMessage());
-        // }
+        // Cria o diretório raiz do sistema. Root sempre tem permissão total "rwx"
+        try {
+            fileSystem.mkdir(ROOT_DIR, ROOT_USER);
+        } catch (CaminhoJaExistenteException | PermissaoException e) {
+            System.out.println(e.getMessage());
+        }
 
         // Menu interativo.
         menu();
