@@ -15,8 +15,8 @@ final public class FileSystem implements IFileSystem {
         fileSystemImpl = new FileSystemImpl();
     }
 
-    public FileSystem(List<Usuario> usuarios, String user) {
-        fileSystemImpl = new FileSystemImpl(usuarios, user);
+    public FileSystem(List<Usuario> usuarios) {
+        fileSystemImpl = new FileSystemImpl(usuarios);
     }
 
     @Override

@@ -88,15 +88,17 @@ public class Main {
             return;
         }
 
+        /* REMOVER ISSO PQ NÃO PRECISA
         System.out.println("Usuários carregados:");
         for (Usuario user : usuarios) {
             System.out.println(user);
         }
+        */
 
         // Finalmente cria o Sistema de Arquivos
         // Lista de usuários é imutável durante a execução do programa
         // Obs: Como passar a lista de usuários para o FileSystem?
-        fileSystem = new FileSystem(usuarios, user);
+        fileSystem = new FileSystem(usuarios);
 
         // // DESCOMENTE O BLOCO ABAIXO PARA CRIAR O DIRETÓRIO RAIZ ANTES DE RODAR O MENU
         // Cria o diretório raiz do sistema. Root sempre tem permissão total "rwx"
@@ -222,6 +224,7 @@ public class Main {
         fileSystem.write(caminho, user, anexar, buffer);
     }
 
+    // Read foi modificado
     public static void read() throws CaminhoNaoEncontradoException, PermissaoException {
         System.out.println("Insira o caminho do arquivo a ser lido:");
         String caminho = scanner.nextLine();

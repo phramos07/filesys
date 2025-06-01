@@ -1,5 +1,6 @@
 package filesys;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,26 +18,25 @@ import java.nio.file.Paths;
 // O construtor, argumentos do construtor podem ser modificados 
 // e atributos & métodos privados podem ser adicionados
 public final class FileSystemImpl implements IFileSystem {
-    private static final String ROOT_USER = "root"; // pode ser necessário
+    private static final String ROOT_USER = "root";
 
-    private List<Usuario> usuarios;
-    private String user;
-    private Map<String, List<String>> permissoesPorCaminho = new HashMap<>();
+    private List<Usuario> usuarios = new ArrayList<>();
+    private Dir raiz; // Diretório raiz
 
-    public FileSystemImpl() {}
-
-    public FileSystemImpl(List<Usuario> usuarios, String user) {
-        if (usuarios == null) {
-            throw new IllegalArgumentException("Lista de usuários não pode ser nula");
-        }
-        this.usuarios = usuarios;
-
-        if (user == null) {
-            throw new IllegalArgumentException("Usuário atual não recebido");
-        }
-        this.user = user;
+    public FileSystemImpl() {
+        this.raiz = new Dir("/", ROOT_USER, "rwx");
+        usuarios.add(new Usuario(ROOT_USER, "/", "rwx")); // Adiciona o usuário root com permissões totais
     }
 
+    public FileSystemImpl(List<Usuario> usuarios) {
+        if (usuarios.isEmpty()) {
+            throw new IllegalArgumentException("Lista de usuários não pode ser nula");
+        }
+
+        this.usuarios = usuarios;
+    }
+
+    /*
     @Override
     public void mkdir(String caminho, String nome) throws CaminhoJaExistenteException, PermissaoException {
         // throw new UnsupportedOperationException("Método não implementado 'mkdir'");
@@ -54,14 +54,12 @@ public final class FileSystemImpl implements IFileSystem {
         // Se o usuário não tiver permissão, lance PermissaoException
 
         // OBS: o contrato para esta interface exige que caminhos intermediários sejam criados por padrão durante a chamada à mkdir. É como se a flag '-p' fosse passada por padrão na nossa interface:
-        /*
-            -p     Create intermediate directories as required.  If this option is not specified, 
-                the full path prefix of each operand must already exist.  On the other hand, 
-                with this option specified, no error will be reported if a directory given as 
-                an operand already exists.  Intermediate directories are created with 
-                permission bits of “rwxrwxrwx” (0777) as modified by the current umask, plus 
-                write and search permission for the owner.
-        */
+            // -p     Create intermediate directories as required.  If this option is not specified, 
+            //     the full path prefix of each operand must already exist.  On the other hand, 
+            //     with this option specified, no error will be reported if a directory given as 
+            //     an operand already exists.  Intermediate directories are created with 
+            //     permission bits of “rwxrwxrwx” (0777) as modified by the current umask, plus 
+            //     write and search permission for the owner.
 
         // Verifique se o diretório já existe
         if (diretorioExiste(caminho + nome)) {
@@ -136,6 +134,13 @@ public final class FileSystemImpl implements IFileSystem {
             }
         }
         throw new IllegalArgumentException("Usuário não encontrado: " + user);
+    }
+    */
+
+    @Override
+    public void mkdir(String caminho, String usuario)
+            throws CaminhoJaExistenteException, PermissaoException {
+        throw new UnsupportedOperationException("Método não implementado 'chmod'");
     }
 
     @Override
