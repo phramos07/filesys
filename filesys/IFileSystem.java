@@ -36,6 +36,7 @@ public interface IFileSystem {
     // Move ou renomeia um arquivo ou diretório. Se o diretório não existir, será lançada uma exceção.
     // Se o diretório já existir, será sobrescrito.
     // mv é naturalmente recursivo.
+    // arlindo
     void mv(String caminhoAntigo, String caminhoNovo, String usuario) throws CaminhoNaoEncontradoException, PermissaoException;
 
     // Lista o conteúdo de um diretório. Se o diretório não existir, será lançada uma exceção.
