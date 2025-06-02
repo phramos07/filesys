@@ -41,6 +41,7 @@ public interface IFileSystem {
 
     // Lista o conteúdo de um diretório. Se o diretório não existir, será lançada uma exceção.
     // Caso recursivo seja true, todo o conteúdo do diretório será listado recursivamente.
+    //joaquim
     void ls(String caminho, String usuario, boolean recursivo) throws CaminhoNaoEncontradoException, PermissaoException;
 
     // Copia um arquivo ou diretório. Se o diretório não existir, será lançada uma exceção.
