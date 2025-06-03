@@ -9,6 +9,7 @@ import model.ElementoFS;
 import model.Usuario;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public final class FileSystemImpl implements IFileSystem {
@@ -16,9 +17,12 @@ public final class FileSystemImpl implements IFileSystem {
     private Diretorio raiz;
     private Map<String, Usuario> usuarios = new HashMap<>();
 
-    public FileSystemImpl() {
+    public FileSystemImpl(List<Usuario> usuarios) {
         this.raiz = new Diretorio("/", "rwx", ROOT_USER);
-        usuarios.put(ROOT_USER, new Usuario(ROOT_USER, "rwx", "/"));
+        this.usuarios.put(ROOT_USER, new Usuario(ROOT_USER, "rwx", "/"));
+        for (Usuario usuario : usuarios) {
+            this.usuarios.put(usuario.getNome(), usuario);
+        }
         // TODO: Carregar usuários adicionais do arquivo users/users se necessário
     }
 

@@ -2,6 +2,9 @@ package tests;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -10,13 +13,15 @@ import exception.CaminhoNaoEncontradoException;
 import exception.PermissaoException;
 import filesys.FileSystemImpl;
 import filesys.IFileSystem;
+import model.Usuario;
 
 public class PermissionTest {
     private static IFileSystem fileSystem;
+   static List<Usuario> usuarios = new ArrayList<>();
 
     @BeforeAll
     public static void setUp() {
-        fileSystem = new FileSystemImpl();
+        fileSystem = new FileSystemImpl(usuarios);
     }
 
     @Test

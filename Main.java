@@ -1,5 +1,8 @@
 import filesys.IFileSystem;
+import model.Usuario;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 import java.io.FileNotFoundException;
 
@@ -40,6 +43,8 @@ public class Main {
             return;
         }
         user = args[1];
+
+        List<Usuario> usuarios = new ArrayList<>();
         
         // Carrega a lista de usuários do sistema a partir de arquivo
         // Formato do arquivo users:
@@ -62,12 +67,12 @@ public class Main {
                         String dir = parts[1];
                         String dirPermission = parts[2];
                         
-                        /* A FAZER:
+                        /* FEITO:
                          * Processar a permissão de todos os usuários existentes por diretório.
                          * Por enquanto esse código somente imprime as permissões contidas no arquivo users.
                         */
                         System.out.println(userListed + " " + dir + " " + dirPermission); // Somente imprime o usuário, diretório e permissão
-
+                        usuarios.add( new Usuario(userListed, dirPermission, dir));
 
                     } else {
                         System.out.println("Formato ruim no arquivo de usuários. Linha: " + line);
@@ -84,16 +89,15 @@ public class Main {
         // Finalmente cria o Sistema de Arquivos
         // Lista de usuários é imutável durante a execução do programa
         // Obs: Como passar a lista de usuários para o FileSystem?
-        fileSystem = new FileSystem(/*usuários?*/);
+        fileSystem = new FileSystem(usuarios);
 
         // // DESCOMENTE O BLOCO ABAIXO PARA CRIAR O DIRETÓRIO RAIZ ANTES DE RODAR O MENU
         // // Cria o diretório raiz do sistema. Root sempre tem permissão total "rwx"
         // try {
         //     fileSystem.mkdir(ROOT_DIR, ROOT_USER);
         // } catch (CaminhoJaExistenteException | PermissaoException e) {
-        //     System.out.println(e.getMessage());
+        //   System.out.println(e.getMessage());
         // }
-
         // Menu interativo.
         menu();
     }

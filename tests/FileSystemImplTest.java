@@ -4,20 +4,25 @@ import exception.CaminhoJaExistenteException;
 import exception.CaminhoNaoEncontradoException;
 import exception.PermissaoException;
 import filesys.FileSystemImpl;
+import model.Usuario;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class FileSystemImplTest {
     private FileSystemImpl fs;
+    List<Usuario> usuarios = new ArrayList<>();
 
     @BeforeEach
     void setUp() {
-        fs = new FileSystemImpl();
+        fs = new FileSystemImpl(usuarios);
     }
 
     @Test
