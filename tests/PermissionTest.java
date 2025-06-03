@@ -13,7 +13,7 @@ import filesys.Usuario;
 
 // Essa classe testa cenários de permissão
 public class PermissionTest {
-   private static IFileSystem fileSystem;
+    private static IFileSystem fileSystem;
 
     @BeforeAll
     public static void setUp() {

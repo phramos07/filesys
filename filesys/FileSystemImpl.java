@@ -375,7 +375,90 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo)
             throws CaminhoNaoEncontradoException, PermissaoException {
+        ElementoFS origem = navegar(caminhoOrigem);
 
+        // Verifica permissão de leitura na origem
+        if (origem.isArquivo()) {
+            if (!usuario.equals(ROOT_USER) && !origem.donoDiretorio.equals(usuario)
+                    && !origem.permissoesPadrao.contains("r")) {
+                throw new PermissaoException("Sem permissão de leitura em: " + caminhoOrigem);
+            }
+            try {
+                copiarArquivo((Arquivo) origem, caminhoDestino, usuario);
+            } catch (CaminhoJaExistenteException e) {
+                throw new PermissaoException("Já existe arquivo ou diretório em: " + caminhoDestino);
+            }
+        } else {
+            Diretorio dirOrigem = (Diretorio) origem;
+            if (!usuario.equals(ROOT_USER) && !dirOrigem.donoDiretorio.equals(usuario)
+                    && !dirOrigem.permissoesPadrao.contains("r")) {
+                throw new PermissaoException("Sem permissão de leitura em: " + caminhoOrigem);
+            }
+            if (!recursivo) {
+                throw new PermissaoException("Cópia de diretório requer opção recursiva.");
+            }
+            try {
+                copiarDiretorioRecursivo(dirOrigem, caminhoDestino, usuario);
+            } catch (CaminhoJaExistenteException e) {
+                throw new PermissaoException("Já existe arquivo ou diretório em: " + caminhoDestino);
+            }
+        }
+    }
+
+    private void copiarArquivo(Arquivo origem, String caminhoDestino, String usuario)
+            throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException {
+        // Verifica se já existe algo no destino
+        try {
+            navegar(caminhoDestino);
+            throw new CaminhoJaExistenteException("Já existe arquivo ou diretório em: " + caminhoDestino);
+        } catch (CaminhoNaoEncontradoException e) {
+            // ok, pode criar
+        }
+
+        // Descobre diretório pai e nome do novo arquivo
+        int idx = caminhoDestino.lastIndexOf("/");
+        String paiPath = (idx == 0) ? "/" : caminhoDestino.substring(0, idx);
+        String nomeArquivo = caminhoDestino.substring(idx + 1);
+
+        ElementoFS pai = navegar(paiPath);
+        if (!(pai instanceof Diretorio)) {
+            throw new CaminhoNaoEncontradoException("Diretório pai não encontrado: " + paiPath);
+        }
+        Diretorio dirPai = (Diretorio) pai;
+
+        // Cria novo arquivo com mesmo conteúdo e permissões do usuário
+        Arquivo novoArq = new Arquivo(nomeArquivo, origem.permissoesPadrao, usuario);
+        for (byte[] bloco : origem.getBlocos()) {
+            novoArq.adicionarBloco(bloco.clone());
+        }
+        dirPai.adicionarFilho(novoArq);
+    }
+
+    private void copiarDiretorioRecursivo(Diretorio origem, String caminhoDestino, String usuario)
+            throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException {
+        // Descobre diretório pai e nome do novo diretório
+        int idx = caminhoDestino.lastIndexOf("/");
+        String paiPath = (idx == 0) ? "/" : caminhoDestino.substring(0, idx);
+        String nomeDir = caminhoDestino.substring(idx + 1);
+
+        ElementoFS pai = navegar(paiPath);
+        if (!(pai instanceof Diretorio)) {
+            throw new CaminhoNaoEncontradoException("Diretório pai não encontrado: " + paiPath);
+        }
+        Diretorio dirPai = (Diretorio) pai;
+
+        // Cria novo diretório
+        Diretorio novoDir = new Diretorio(nomeDir, origem.permissoesPadrao, usuario);
+        dirPai.adicionarFilho(novoDir);
+
+        // Copia arquivos
+        for (ElementoFS filho : origem.getFilhos().values()) {
+            if (filho.isArquivo()) {
+                copiarArquivo((Arquivo) filho, caminhoDestino + "/" + filho.nomeDiretorio, usuario);
+            } else {
+                copiarDiretorioRecursivo((Diretorio) filho, caminhoDestino + "/" + filho.nomeDiretorio, usuario);
+            }
+        }
     }
 
 }
