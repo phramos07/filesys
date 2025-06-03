@@ -79,22 +79,28 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     /**
-     * chmod: altera a permissão de 'usuarioAlvo' no arquivo ou diretório em 'caminho'.
+     * chmod: altera a permissão de 'usuarioAlvo' no arquivo ou diretório em
+     * 'caminho'.
      *
-     * @param caminho       caminho absoluto para um arquivo OU diretório (ex: "/usr/bin/arquivo.txt" ou "/usr/bin")
-     * @param usuario       quem está executando o comando (deve ser root OU dono do objeto)
-     * @param usuarioAlvo   usuário cujas permissões serão ajustadas
-     * @param permissao     string de 3 caracteres, cada um em { 'r', 'w', 'x' } ou '-'
-     *                      Ex.: "rwx", "r--", "-w-", "---"
+     * @param caminho     caminho absoluto para um arquivo OU diretório (ex:
+     *                    "/usr/bin/arquivo.txt" ou "/usr/bin")
+     * @param usuario     quem está executando o comando (deve ser root OU dono do
+     *                    objeto)
+     * @param usuarioAlvo usuário cujas permissões serão ajustadas
+     * @param permissao   string de 3 caracteres, cada um em { 'r', 'w', 'x' } ou
+     *                    '-'
+     *                    Ex.: "rwx", "r--", "-w-", "---"
      *
-     * @throws CaminhoNaoEncontradoException se não encontrar o arquivo/diretório em 'caminho'
-     * @throws PermissaoException            se 'usuario' não for root nem dono do objeto
+     * @throws CaminhoNaoEncontradoException se não encontrar o arquivo/diretório em
+     *                                       'caminho'
+     * @throws PermissaoException            se 'usuario' não for root nem dono do
+     *                                       objeto
      */
     @Override
     public void chmod(String caminho, String usuario, String usuarioAlvo, String permissao)
-            throws CaminhoNaoEncontradoException, PermissaoException 
-    {
-        // 1) Validar string de permissão: deve ter exatamente 3 caracteres, cada um seja 'r','w','x' ou '-'
+            throws CaminhoNaoEncontradoException, PermissaoException {
+        // 1) Validar string de permissão: deve ter exatamente 3 caracteres, cada um
+        // seja 'r','w','x' ou '-'
         if (permissao == null || permissao.length() != 3) {
             throw new IllegalArgumentException("Permissão inválida (deve ter 3 chars): " + permissao);
         }
@@ -119,23 +125,23 @@ public final class FileSystemImpl implements IFileSystem {
         }
 
         // 3) Verificar se 'usuario' tem permissão para executar chmod:
-        //    - Se for ROOT_USER, sempre permitido.
-        //    - Caso contrário, somente se for dono do objeto
+        // - Se for ROOT_USER, sempre permitido.
+        // - Caso contrário, somente se for dono do objeto
         String dono = mdAlvo.getDono();
         if (!usuario.equals(ROOT_USER) && !usuario.equals(dono)) {
             throw new PermissaoException(
-                "Usuário '" + usuario + "' não tem permissão para alterar direitos em: " 
-                + caminho
-            );
+                    "Usuário '" + usuario + "' não tem permissão para alterar direitos em: "
+                            + caminho);
         }
 
         // 4) Alterar (ou inserir) a permissão de 'usuarioAlvo' para 'permissao'
-        //    Se o usuárioAlvo for "root", deixamos que ele fique “rwx” obrigatoriamente,
-        //    independentemente do que se passe em 'permissao'? 
-        //    Depende do requisito, mas aqui vamos aceitar qualquer string para qualquer usuárioAlvo,
-        //    pois, se o root quiser revogar até de si mesmo, é opção dele.
+        // Se o usuárioAlvo for "root", deixamos que ele fique “rwx” obrigatoriamente,
+        // independentemente do que se passe em 'permissao'?
+        // Depende do requisito, mas aqui vamos aceitar qualquer string para qualquer
+        // usuárioAlvo,
+        // pois, se o root quiser revogar até de si mesmo, é opção dele.
         //
-        //    Simplesmente atualizamos o HashMap<String,String>:
+        // Simplesmente atualizamos o HashMap<String,String>:
         HashMap<String, String> mapaPerm = mdAlvo.getPermissoes();
         mapaPerm.put(usuarioAlvo, permissao);
         mdAlvo.setPermissoes(mapaPerm);
@@ -150,12 +156,11 @@ public final class FileSystemImpl implements IFileSystem {
     /**
      * Método touch: cria um arquivo vazio em 'caminho'.
      * Exemplo: touch("/usr/local/meuarquivo.txt", "alice")
-     *  -> pai = "/usr/local", nome = "meuarquivo.txt"
+     * -> pai = "/usr/local", nome = "meuarquivo.txt"
      */
     @Override
-    public void touch(String caminho, String usuario) 
-            throws CaminhoJaExistenteException, PermissaoException 
-    {
+    public void touch(String caminho, String usuario)
+            throws CaminhoJaExistenteException, PermissaoException {
         // 1) Separar o caminho em 'pai' e 'nomeDoArquivo'
         String path = caminho.trim();
         if (!path.startsWith("/")) {
@@ -184,12 +189,10 @@ public final class FileSystemImpl implements IFileSystem {
             if (!(o instanceof Diretorio)) {
                 // Se não for diretório (por exemplo, for um arquivo), não podemos criar dentro
                 throw new CaminhoJaExistenteException(
-                    "Caminho pai não é um diretório: " + paiPath
-                );
+                        "Caminho pai não é um diretório: " + paiPath);
             }
             dirPai = (Diretorio) o;
-        }
-        catch (CaminhoNaoEncontradoException e) {
+        } catch (CaminhoNaoEncontradoException e) {
             // Se pai não existe, relançamos como CaminhoJaExistenteException
             throw new CaminhoJaExistenteException("Caminho não encontrado: " + paiPath);
         }
@@ -198,10 +201,9 @@ public final class FileSystemImpl implements IFileSystem {
         MetaDados mdPai = dirPai.getMetaDados();
         if (!mdPai.hasPermissao(usuario, "w")) {
             throw new PermissaoException(
-                "Usuário '" + usuario 
-                + "' não tem permissão de escrita em: " 
-                + paiPath
-            );
+                    "Usuário '" + usuario
+                            + "' não tem permissão de escrita em: "
+                            + paiPath);
         }
 
         // 4) Verificar se já existe um arquivo ou diretório com esse nome em dirPai
@@ -209,33 +211,31 @@ public final class FileSystemImpl implements IFileSystem {
         for (Diretorio sub : dirPai.getSubDirs()) {
             if (sub.getMetaDados().getNome().equals(nomeArquivo)) {
                 throw new CaminhoJaExistenteException(
-                    "Já existe arquivo ou diretório chamado '" + nomeArquivo 
-                    + "' em: " + paiPath
-                );
+                        "Já existe arquivo ou diretório chamado '" + nomeArquivo
+                                + "' em: " + paiPath);
             }
         }
         // 4.2) Checa arquivos
         for (Arquivo arq : dirPai.getArquivos()) {
             if (arq.getMetaDados().getNome().equals(nomeArquivo)) {
                 throw new CaminhoJaExistenteException(
-                    "Já existe arquivo ou diretório chamado '" + nomeArquivo 
-                    + "' em: " + paiPath
-                );
+                        "Já existe arquivo ou diretório chamado '" + nomeArquivo
+                                + "' em: " + paiPath);
             }
         }
 
         // 5) Se chegamos aqui, podemos criar o novo arquivo vazio
-        //    5.1) Criar MetaDados com tamanho = 0
+        // 5.1) Criar MetaDados com tamanho = 0
         MetaDados metaArq = new MetaDados(nomeArquivo, 0, usuario);
-        //         conceder permissão “rw” para o dono
+        // conceder permissão “rw” para o dono
         HashMap<String, String> mapaPerm = new HashMap<>();
         mapaPerm.put(usuario, "rw");
         metaArq.setPermissoes(mapaPerm);
 
-        //    5.2) Criar o objeto Arquivo com 0 blocos (array vazio)
+        // 5.2) Criar o objeto Arquivo com 0 blocos (array vazio)
         Arquivo novoArq = new Arquivo(metaArq, new Bloco[0]);
 
-        //    5.3) Adicionar ao diretório pai
+        // 5.3) Adicionar ao diretório pai
         dirPai.addArquivo(novoArq);
     }
 
@@ -254,22 +254,101 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void mv(String caminhoAntigo, String caminhoNovo, String usuario)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'mv'");
+        // Não permite mover a raiz
+        if (caminhoAntigo.equals("/") || caminhoNovo.equals("/")) {
+            throw new PermissaoException("Não é possível mover o diretório raiz.");
+        }
+
+        // 1) Localiza o pai e o objeto de origem
+        String caminhoPaiAntigo = getParentPath(caminhoAntigo);
+        String nomeAntigo = getNameFromPath(caminhoAntigo);
+        Diretorio paiAntigo = (Diretorio) buscarPorCaminho(caminhoPaiAntigo);
+
+        Object alvo = null;
+        for (Diretorio d : paiAntigo.getSubDirs()) {
+            if (d.getMetaDados().getNome().equals(nomeAntigo)) {
+                alvo = d;
+                break;
+            }
+        }
+        if (alvo == null) {
+            for (Arquivo a : paiAntigo.getArquivos()) {
+                if (a.getMetaDados().getNome().equals(nomeAntigo)) {
+                    alvo = a;
+                    break;
+                }
+            }
+        }
+        if (alvo == null)
+            throw new CaminhoNaoEncontradoException("Origem não encontrada: " + caminhoAntigo);
+
+        // 2) Verifica permissão de escrita no pai da origem
+        if (!paiAntigo.getMetaDados().hasPermissao(usuario, "w")) {
+            throw new PermissaoException("Sem permissão de escrita no diretório de origem: " + caminhoPaiAntigo);
+        }
+
+        // 3) Localiza o pai do destino e o nome novo
+        String caminhoPaiNovo = getParentPath(caminhoNovo);
+        String nomeNovo = getNameFromPath(caminhoNovo);
+        Diretorio paiNovo = (Diretorio) buscarPorCaminho(caminhoPaiNovo);
+
+        // 4) Verifica permissão de escrita no pai do destino
+        if (!paiNovo.getMetaDados().hasPermissao(usuario, "w")) {
+            throw new PermissaoException("Sem permissão de escrita no diretório de destino: " + caminhoPaiNovo);
+        }
+
+        // 5) Verifica se já existe item com o nome novo no destino
+        for (Diretorio d : paiNovo.getSubDirs()) {
+            if (d.getMetaDados().getNome().equals(nomeNovo)) {
+                throw new PermissaoException("Já existe um diretório no destino com esse nome.");
+            }
+        }
+        for (Arquivo a : paiNovo.getArquivos()) {
+            if (a.getMetaDados().getNome().equals(nomeNovo)) {
+                throw new PermissaoException("Já existe um arquivo no destino com esse nome.");
+            }
+        }
+
+        // 6) Remove do pai antigo, renomeia e adiciona ao novo pai
+        if (alvo instanceof Diretorio) {
+            paiAntigo.getSubDirs().remove(alvo);
+            ((Diretorio) alvo).getMetaDados().setNome(nomeNovo);
+            paiNovo.addSubDiretorio((Diretorio) alvo);
+        } else if (alvo instanceof Arquivo) {
+            paiAntigo.getArquivos().remove(alvo);
+            ((Arquivo) alvo).getMetaDados().setNome(nomeNovo);
+            paiNovo.addArquivo((Arquivo) alvo);
+        } else {
+            throw new CaminhoNaoEncontradoException("Origem não é arquivo nem diretório.");
+        }
     }
 
-    
+    // Funções auxiliares privadas
+    private String getParentPath(String caminho) {
+        int idx = caminho.lastIndexOf("/");
+        return (idx == 0) ? "/" : caminho.substring(0, idx);
+    }
+
+    private String getNameFromPath(String caminho) {
+        int idx = caminho.lastIndexOf("/");
+        return caminho.substring(idx + 1);
+    }
+
     /**
      * ls: lista o conteúdo de um diretório.
      *
-     * @param caminho    caminho absoluto para um diretório (ex: "/usr/bin")
-     * @param usuario    quem está executando o comando
-     * @param recursivo  se true, lista recursivamente subdiretórios
+     * @param caminho   caminho absoluto para um diretório (ex: "/usr/bin")
+     * @param usuario   quem está executando o comando
+     * @param recursivo se true, lista recursivamente subdiretórios
      *
-     * @throws CaminhoNaoEncontradoException se não encontrar o diretório em 'caminho'
-     * @throws PermissaoException            se 'usuario' não tiver permissão de leitura
+     * @throws CaminhoNaoEncontradoException se não encontrar o diretório em
+     *                                       'caminho'
+     * @throws PermissaoException            se 'usuario' não tiver permissão de
+     *                                       leitura
      */
     @Override
-    public void ls(String caminho, String usuario, boolean recursivo) throws CaminhoNaoEncontradoException, PermissaoException {
+    public void ls(String caminho, String usuario, boolean recursivo)
+            throws CaminhoNaoEncontradoException, PermissaoException {
         // 1) Busca o objeto (diretório ou arquivo) pelo caminho fornecido
         Object obj = buscarPorCaminho(caminho);
 
@@ -294,10 +373,11 @@ public final class FileSystemImpl implements IFileSystem {
      * Imprime todos os arquivos e subdiretórios do diretório atual.
      * Se recursivo=true, lista também o conteúdo dos subdiretórios, com indentação.
      *
-     * @param dir        diretório a ser listado
-     * @param caminho    caminho atual (não usado para exibição, mas pode ser útil para recursão)
-     * @param recursivo  se true, lista recursivamente subdiretórios
-     * @param prefixo    string usada para identação visual (ex: "  " para subníveis)
+     * @param dir       diretório a ser listado
+     * @param caminho   caminho atual (não usado para exibição, mas pode ser útil
+     *                  para recursão)
+     * @param recursivo se true, lista recursivamente subdiretórios
+     * @param prefixo   string usada para identação visual (ex: " " para subníveis)
      */
     private void listarConteudo(Diretorio dir, String caminho, boolean recursivo, String prefixo) {
         // Lista todos os arquivos do diretório atual
@@ -307,7 +387,8 @@ public final class FileSystemImpl implements IFileSystem {
         // Lista todos os subdiretórios do diretório atual
         for (Diretorio sub : dir.getSubDirs()) {
             System.out.println(prefixo + sub.getMetaDados().getNome() + "/"); // "/" indica diretório
-            // Se for recursivo, chama novamente para o subdiretório, aumentando o prefixo (indentação)
+            // Se for recursivo, chama novamente para o subdiretório, aumentando o prefixo
+            // (indentação)
             if (recursivo) {
                 listarConteudo(sub, caminho + "/" + sub.getMetaDados().getNome(), true, prefixo + "  ");
             }
@@ -319,7 +400,7 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     @Override
-     public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo)
+    public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo)
             throws CaminhoNaoEncontradoException, PermissaoException {
 
         Object origemObj = buscarPorCaminho(caminhoOrigem);
