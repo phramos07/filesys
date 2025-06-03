@@ -1,21 +1,22 @@
 import filesys.IFileSystem;
+import filesys.FileSystem;
 
 import java.util.Scanner;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.List;
 
 import exception.PermissaoException;
 import exception.CaminhoJaExistenteException;
 import exception.CaminhoNaoEncontradoException;
 
-import filesys.FileSystem;
-
-// MENU INTERATIVO PARA O SISTEMA DE ARQUIVOS
-// SINTA-SE LIVRE PARA ALTERAR A CLASSE MAIN
+/*
+ MENU INTERATIVO PARA O SISTEMA DE ARQUIVOS
+ SINTA-SE LIVRE PARA ALTERAR A CLASSE MAIN
+*/
 public class Main {
 
-    // Constantes úteis para a versão interativa. 
-    // Para esse tipo de execução, o tamanho max do buffer de 
-    // leitura pode ser menor.
+    // Constantes úteis para a versão interativa.
     private static final String ROOT_USER = "root";
     private static final String ROOT_DIR = "/";
     private static final int READ_BUFFER_SIZE = 256;
@@ -29,78 +30,96 @@ public class Main {
     // Usuário que está executando o programa
     private static String user;
 
-    // O sistema de arquivos é inteiramente virtual, ou seja, será reiniciado a cada execução do programa.
-    // Logo, não é necessário salvar os arquivos em disco. O sistema será uma simulação em memória.
+    // Lista interna para guardar, temporariamente, cada permissão lida do arquivo
+    private static class EntryPermissao {
+        String usuario;
+        String dir;
+        String permissoes;
+        EntryPermissao(String u, String d, String p) {
+            this.usuario = u;
+            this.dir = d;
+            this.permissoes = p;
+        }
+    }
+
     public static void main(String[] args) {
-        // Usuário que está executando o programa.
-        // Para quaisquer operações que serão feitas por esse usuário em um caminho /path/**,
-        // deve-se checar se o usuário tem permissão de escrita (r) neste caminho.
         if (args.length < 2) {
             System.out.println("Usuário não fornecido");
             return;
         }
         user = args[1];
-        
-        // Carrega a lista de usuários do sistema a partir de arquivo
-        // Formato do arquivo users:
-        //      username dir permission
-        // Exemplo:
-        //      maria /** rw-
-        //      luzia /** rwx
-        // Essa permissão vale para o diretório raiz e sub diretórios.
-        // A partir do momento que um usuário cria outro diretório ou arquivo, 
-        // a permissão desse usuário é de leitura, escrita e execução nesse novo diretório/arquivo,
-        // e sempre será rwx para o usuário root.
+
+        // Lista onde guardaremos as linhas do arquivo 'users/users'
+        List<EntryPermissao> entradas = new ArrayList<>();
+
+        // 1) Ler o arquivo users/users e armazenar cada tripla em 'entradas'
         try {
             Scanner userScanner = new Scanner(new java.io.File("users/users"));
             while (userScanner.hasNextLine()) {
                 String line = userScanner.nextLine().trim();
-                if (!line.isEmpty()) {
-                    String[] parts = line.split(" ");
-                    if (parts.length == 3) {
-                        String userListed = parts[0];
-                        String dir = parts[1];
-                        String dirPermission = parts[2];
-                        
-                        /* A FAZER:
-                         * Processar a permissão de todos os usuários existentes por diretório.
-                         * Por enquanto esse código somente imprime as permissões contidas no arquivo users.
-                        */
-                        System.out.println(userListed + " " + dir + " " + dirPermission); // Somente imprime o usuário, diretório e permissão
+                if (line.isEmpty()) continue;
 
+                String[] parts = line.split("\\s+");
+                if (parts.length == 3) {
+                    String userListed = parts[0];     // Ex: "maria"
+                    String dir        = parts[1];     // Ex: "/**"
+                    String perm       = parts[2];     // Ex: "rw-"
 
-                    } else {
-                        System.out.println("Formato ruim no arquivo de usuários. Linha: " + line);
-                    }
+                    // Armazena temporariamente para aplicar via chmod mais tarde
+                    entradas.add(new EntryPermissao(userListed, dir, perm));
+                }
+                else {
+                    System.out.println("Formato ruim no arquivo de usuários. Linha: " + line);
                 }
             }
             userScanner.close();
-        } catch (FileNotFoundException e) { // Retorna se o arquivo de usuários não for encontrado
+        }
+        catch (FileNotFoundException e) {
             System.out.println("Arquivo de usuários não encontrado");
-
             return;
         }
-        
-        // Finalmente cria o Sistema de Arquivos
-        // Lista de usuários é imutável durante a execução do programa
-        // Obs: Como passar a lista de usuários para o FileSystem?
-        fileSystem = new FileSystem(/*usuários?*/);
 
-        // // DESCOMENTE O BLOCO ABAIXO PARA CRIAR O DIRETÓRIO RAIZ ANTES DE RODAR O MENU
-        // // Cria o diretório raiz do sistema. Root sempre tem permissão total "rwx"
-        // try {
-        //     fileSystem.mkdir(ROOT_DIR, ROOT_USER);
-        // } catch (CaminhoJaExistenteException | PermissaoException e) {
-        //     System.out.println(e.getMessage());
-        // }
+        // 2) Cria o FileSystem (virtual, em memória)
+        //    (aqui poderíamos passar lista de usuários se quisesse, mas vamos usar
+        //     a própria chamada chmod para inicializar as permissões)
+        fileSystem = new FileSystem();
 
-        // Menu interativo.
+        // 3) “Processar” cada entrada: chamar chmod em cada tripla (usuário=root)
+        for (EntryPermissao ep : entradas) {
+            // Traduzimos "/**" como "/" no nosso FileSystem virtual
+            String caminhoParaChmod = ep.dir;
+            if (caminhoParaChmod.equals("/**")) {
+                caminhoParaChmod = ROOT_DIR;
+            }
+            try {
+                // ROOT_USER tem permissão para alterar tudo
+                fileSystem.chmod(caminhoParaChmod, ROOT_USER, ep.usuario, ep.permissoes);
+            }
+            catch (CaminhoNaoEncontradoException | PermissaoException ex) {
+                // Geralmente não deve acontecer, pois sabemos que o ROOT_DIR ("/") existe
+                // Mas, se o usuário pediu permissão para um diretório que não existe,
+                // imprimimos uma mensagem de advertência e continuamos
+                System.out.println("Aviso: não foi possível aplicar permissão em '"
+                                   + ep.dir + "' para '" + ep.usuario
+                                   + "': " + ex.getMessage());
+            }
+        }
+
+        // Se você quiser garantir que a raiz foi criada (caso FileSystem não faça sozinho),
+        // descomente o bloco abaixo:
+        /*
+        try {
+            fileSystem.mkdir(ROOT_DIR, ROOT_USER);
+        } catch (CaminhoJaExistenteException | PermissaoException e) {
+            System.out.println(e.getMessage());
+        }
+        */
+
+        // 4) Inicia o menu interativo
         menu();
     }
 
-    // Menu interativo para fins de teste.
-    // Os testes junit não são feitos com esse menu,
-    // mas diretamente na interface IFileSystem
+    // … o resto de Main fica inalterado, igual ao que você já tinha …
     public static void menu() {
         while (true) {
             System.out.println("\nComandos disponíveis:");
@@ -119,41 +138,23 @@ public class Main {
             String opcao = scanner.nextLine();
             try {
                 switch (opcao) {
-                    case "1":
-                        chmod();
-                        break;
-                    case "2":
-                        mkdir();
-                        break;
-                    case "3":
-                        rm();
-                        break;
-                    case "4":
-                        touch();
-                        break;
-                    case "5":
-                        write();
-                        break;
-                    case "6":
-                        read();
-                        break;
-                    case "7":
-                        mv();
-                        break;
-                    case "8":
-                        ls();
-                        break;
-                    case "9":
-                        cp();
-                        break;
+                    case "1": chmod(); break;
+                    case "2": mkdir(); break;
+                    case "3": rm(); break;
+                    case "4": touch(); break;
+                    case "5": write(); break;
+                    case "6": read(); break;
+                    case "7": mv(); break;
+                    case "8": ls(); break;
+                    case "9": cp(); break;
                     case "0":
                         System.out.println("Encerrando...");
-
                         return;
                     default:
                         System.out.println("Comando inválido!");
-                } 
-            } catch (CaminhoNaoEncontradoException | CaminhoJaExistenteException | PermissaoException e) {
+                }
+            }
+            catch (CaminhoNaoEncontradoException | CaminhoJaExistenteException | PermissaoException e) {
                 System.out.println("Erro: " + e.getMessage());
             }
 
@@ -169,16 +170,16 @@ public class Main {
         String caminho = scanner.nextLine();
         System.out.println("Insira o usuário para o qual deseja alterar as permissões:");
         String usuarioAlvo = scanner.nextLine();
-        System.out.println("Insira a permissão (formato: 3 caracteres\"rwx\"):");
+        System.out.println("Insira a permissão (formato: 3 caracteres\"rwx\"): ");
         String permissoes = scanner.nextLine();
-        
+
         fileSystem.chmod(caminho, user, usuarioAlvo, permissoes);
     }
 
     public static void mkdir() throws CaminhoJaExistenteException, PermissaoException {
         System.out.println("Insira o caminho do diretório a ser criado:");
         String caminho = scanner.nextLine();
-        
+
         fileSystem.mkdir(caminho, user);
     }
 
@@ -187,14 +188,14 @@ public class Main {
         String caminho = scanner.nextLine();
         System.out.println("Remover recursivamente? (true/false):");
         boolean recursivo = Boolean.parseBoolean(scanner.nextLine());
-        
+
         fileSystem.rm(caminho, user, recursivo);
     }
 
     public static void touch() throws CaminhoJaExistenteException, PermissaoException {
         System.out.println("Insira o caminho do arquivo a ser criado:");
         String caminho = scanner.nextLine();
-        
+
         fileSystem.touch(caminho, user);
     }
 
@@ -206,16 +207,16 @@ public class Main {
         System.out.println("Insira o conteúdo a ser escrito:");
         String content = scanner.nextLine();
         byte[] buffer = content.getBytes();
-        
+
         fileSystem.write(caminho, user, anexar, buffer);
     }
 
     public static void read() throws CaminhoNaoEncontradoException, PermissaoException {
         System.out.println("Insira o caminho do arquivo a ser lido:");
         String caminho = scanner.nextLine();
-        byte[] buffer = new byte[READ_BUFFER_SIZE]; // Exemplo de tamanho de buffer por load/leitura . O que acontece se o Buffer for menor que o conteúdo a ser lido?     
-        
-        fileSystem.read(caminho, user, buffer); // Lógica para ler arquivos maiores que o buffer deve ser implementada. 
+        byte[] buffer = new byte[READ_BUFFER_SIZE];
+
+        fileSystem.read(caminho, user, buffer);
     }
 
     public static void mv() throws CaminhoNaoEncontradoException, PermissaoException {
@@ -223,7 +224,7 @@ public class Main {
         String caminhoAntigo = scanner.nextLine();
         System.out.println("Insira o novo caminho do arquivo:");
         String caminhoNovo = scanner.nextLine();
-        
+
         fileSystem.mv(caminhoAntigo, caminhoNovo, user);
     }
 
@@ -232,7 +233,7 @@ public class Main {
         String caminho = scanner.nextLine();
         System.out.println("Listar recursivamente? (true/false):");
         boolean recursivo = Boolean.parseBoolean(scanner.nextLine());
-        
+
         fileSystem.ls(caminho, user, recursivo);
     }
 
@@ -243,7 +244,7 @@ public class Main {
         String caminhoDestino = scanner.nextLine();
         System.out.println("Copiar recursivamente? (true/false):");
         boolean recursivo = Boolean.parseBoolean(scanner.nextLine());
-        
+
         fileSystem.cp(caminhoOrigem, caminhoDestino, user, recursivo);
     }
 }
