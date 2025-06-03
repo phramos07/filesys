@@ -201,9 +201,39 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     @Override
-    public void ls(String caminho, String usuario, boolean recursivo)
-            throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'ls'");
+    public void ls(String caminho, String usuario, boolean recursivo) throws CaminhoNaoEncontradoException, PermissaoException {
+        // Busca o objeto (diretório ou arquivo) pelo caminho fornecido
+        Object obj = buscarPorCaminho(caminho);
+
+        // Se não for um diretório, lança exceção
+        if (!(obj instanceof Diretorio)) {
+            throw new CaminhoNaoEncontradoException("Não é um diretório: " + caminho);
+        }
+        Diretorio dir = (Diretorio) obj;
+        MetaDados meta = dir.getMetaDados();
+
+        // Verifica se o usuário tem permissão de leitura, ou se é dono, ou se é root
+        if (!meta.getPermissao(usuario).contains("r") && !meta.isDono(usuario) && !usuario.equals(ROOT_USER)) {
+            throw new PermissaoException("Sem permissão de leitura em: " + caminho);
+        }
+
+        // Chama o método auxiliar para listar o conteúdo do diretório
+        listarConteudo(dir, caminho, recursivo, "");
+    }
+
+    private void listarConteudo(Diretorio dir, String caminho, boolean recursivo, String prefixo) {
+        // Lista todos os arquivos do diretório atual
+        for (Arquivo arq : dir.getArquivos()) {
+            System.out.println(prefixo + arq.getMetaDados().getNome());
+        }
+        // Lista todos os subdiretórios do diretório atual
+        for (Diretorio sub : dir.getSubDirs()) {
+            System.out.println(prefixo + sub.getMetaDados().getNome() + "/"); // "/" indica diretório
+            // Se for recursivo, chama novamente para o subdiretório, aumentando o prefixo (indentação)
+            if (recursivo) {
+                listarConteudo(sub, caminho + "/" + sub.getMetaDados().getNome(), true, prefixo + "  ");
+            }
+        }
     }
 
     public void addUser(String user) {
