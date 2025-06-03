@@ -1,6 +1,5 @@
 package filesys;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,8 +26,6 @@ public final class FileSystemImpl implements IFileSystem {
         }
     }
 
-    // TODO: Validar se o método navegar cobre todos os casos de caminhos relativos
-    // e absolutos
     private ElementoFS navegar(String caminho) throws CaminhoNaoEncontradoException {
         if (caminho.equals("/"))
             return raiz;
@@ -50,57 +47,24 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     @Override
-    public void mkdir(String caminho, String nome)
-            throws CaminhoJaExistenteException, PermissaoException {
-        // 1) Tenta localizar o diretório “pai” (o local onde vamos criar o subdir)
-        Diretorio dirPai;
-        try {
-            Object o = buscarPorCaminho(caminho);
-            if (!(o instanceof Diretorio)) {
-                // Se o objeto encontrado não for um Diretório, não faz sentido criar dentro
-                throw new CaminhoJaExistenteException(
-                        "Caminho especificado não é um diretório: " + caminho);
-            }
-            dirPai = (Diretorio) o;
-        } catch (CaminhoNaoEncontradoException e) {
-            // Como a assinatura de mkdir não permite lançar CaminhoNaoEncontradoException,
-            // reaproveitamos CaminhoJaExistenteException para indicar que o caminho não
-            // existe.
-            throw new CaminhoJaExistenteException(
-                    "Caminho não encontrado: " + caminho);
+    public void mkdir(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException {
+        if (caminho.equals("/"))
+            return;
+        String[] partes = caminho.split("/");
+        Diretorio atual = raiz;
+        for (int i = 1; i < partes.length - 1; i++) {
+            ElementoFS filho = atual.getFilhos().get(partes[i]);
+            if (filho == null || filho.isArquivo())
+                throw new PermissaoException("Diretório intermediário não existe: " + partes[i]);
+            atual = (Diretorio) filho;
         }
-
-        // 2) Verifica permissão de escrita (“w”) no dirPai para o usuário ROOT_USER
-        MetaDados mdPai = dirPai.getMetaDados();
-        // hasPermissao(u, “w”) deve retornar true somente se o mapa de permissões
-        // contiver “w” para aquele usuário. Se não tiver, lançamos PermissaoException.
-        if (!mdPai.hasPermissao(ROOT_USER, "w")) {
-            throw new PermissaoException(
-                    "Usuário '" + ROOT_USER
-                            + "' não tem permissão de escrita em: "
-                            + caminho);
-        }
-
-        // 3) Verifica se já existe um subdiretório com o mesmo nome em dirPai
-        for (Diretorio sub : dirPai.getSubDirs()) {
-            if (sub.getMetaDados().getNome().equals(nome)) {
-                throw new CaminhoJaExistenteException(
-                        "Já existe um diretório chamado '" + nome
-                                + "' em: " + caminho);
-            }
-        }
-
-        // 4) Cria o MetaDados do novo diretório
-        MetaDados metaNovo = new MetaDados(nome, 0, ROOT_USER);
-        // Concede “rwx” apenas para o dono (“root”) e nenhuma permissão para os demais
-        HashMap<String, String> permissoes = new HashMap<>();
-        permissoes.put(ROOT_USER, "rwx");
-        metaNovo.setPermissoes(permissoes);
-
-        // 5) Cria o novo Diretorio e o adiciona na lista de filhos do dirPai
-        Diretorio novoDir = new Diretorio(nome, ROOT_USER);
-        novoDir.setMetaDados(metaNovo);
-        dirPai.addSubDiretorio(novoDir);
+        String nomeNovo = partes[partes.length - 1];
+        if (atual.getFilhos().containsKey(nomeNovo))
+            throw new CaminhoJaExistenteException("Já existe: " + caminho);
+        if (!atual.temPermissao(usuario, 'w'))
+            throw new PermissaoException("Sem permissão para criar em: " + caminho);
+        atual.adicionarFilho(new Diretorio(nomeNovo, "rwx", usuario));
+        // TODO: Permitir criar diretórios recursivamente (mkdir -p) se necessário
     }
 
     @Override
