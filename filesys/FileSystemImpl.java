@@ -174,11 +174,38 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void write(String caminho, String usuario, boolean anexar, byte[] buffer)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'write'");
+        // 1) Localiza o arquivo
+        Object obj = navegar(caminho);
+        if (!(obj instanceof Arquivo)) {
+            throw new CaminhoNaoEncontradoException("Arquivo não encontrado: " + caminho);
+        }
+        Arquivo arquivo = (Arquivo) obj;
+
+        // 2) Verifica permissão de escrita
+        if (!usuario.equals(ROOT_USER) && !arquivo.donoDiretorio.equals(usuario)
+                && !arquivo.permissoesPadrao.contains("w")) {
+            throw new PermissaoException("Sem permissão de escrita em: " + caminho);
+        }
+
+        // 3) Se não for append, sobrescreve o arquivo (limpa blocos)
+        if (!anexar) {
+            arquivo.limparBlocos();
+        }
+
+        // 4) Escreve o buffer em blocos de 4096 bytes (tamanho do bloco)
+        int TAMANHO_BLOCO = 4096;
+        int bufferOffset = 0;
+        while (bufferOffset < buffer.length) {
+            int bytesParaEscrever = Math.min(TAMANHO_BLOCO, buffer.length - bufferOffset);
+            byte[] bloco = new byte[bytesParaEscrever];
+            System.arraycopy(buffer, bufferOffset, bloco, 0, bytesParaEscrever);
+            arquivo.adicionarBloco(bloco);
+            bufferOffset += bytesParaEscrever;
+        }
     }
 
     @Override
-    public void read(String caminho, String usuario, byte[] buffer)
+    public void read(String caminho, String usuario, byte[] buffer, Offset offset)
             throws CaminhoNaoEncontradoException, PermissaoException {
         // 1) Localiza o arquivo
         Object obj = navegar(caminho);
@@ -188,24 +215,34 @@ public final class FileSystemImpl implements IFileSystem {
         Arquivo arquivo = (Arquivo) obj;
 
         // 2) Verifica permissão de leitura
-        // Aqui, supondo que permissoesPadrao seja do tipo "rw-" ou "r--"
         if (!usuario.equals(ROOT_USER) && !arquivo.donoDiretorio.equals(usuario)
                 && !arquivo.permissoesPadrao.contains("r")) {
             throw new PermissaoException("Sem permissão de leitura em: " + caminho);
         }
 
-        // 3) Lê sequencialmente os blocos do arquivo para o buffer
+        int readOffset = (offset != null) ? offset.getValue() : 0;
         int bufferPos = 0;
+        int filePos = 0;
+
         for (byte[] bloco : arquivo.getBlocos()) {
-            int bytesParaLer = Math.min(bloco.length, buffer.length - bufferPos);
+            if (filePos + bloco.length <= readOffset) {
+                // Pula blocos até chegar no offset
+                filePos += bloco.length;
+                continue;
+            }
+            int blocoOffset = Math.max(0, readOffset - filePos);
+            int bytesParaLer = Math.min(bloco.length - blocoOffset, buffer.length - bufferPos);
             if (bytesParaLer <= 0)
                 break;
-            System.arraycopy(bloco, 0, buffer, bufferPos, bytesParaLer);
+            System.arraycopy(bloco, blocoOffset, buffer, bufferPos, bytesParaLer);
             bufferPos += bytesParaLer;
+            filePos += bloco.length;
+            readOffset += bytesParaLer;
             if (bufferPos >= buffer.length)
                 break;
         }
-        // buffer agora contém o conteúdo lido (até buffer.length ou fim do arquivo)
+        if (offset != null)
+            offset.setValue(readOffset);
     }
 
     @Override

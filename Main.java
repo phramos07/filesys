@@ -1,4 +1,5 @@
 import filesys.IFileSystem;
+import filesys.Offset;
 import filesys.Usuario;
 import filesys.FileSystem;
 
@@ -217,8 +218,21 @@ public class Main {
         System.out.println("Insira o caminho do arquivo a ser lido:");
         String caminho = scanner.nextLine();
         byte[] buffer = new byte[READ_BUFFER_SIZE];
+    
+        Offset offset = new Offset(0);
+        int offsetAnterior;
+        int bytesLidos;
+    
+        do {
+            offsetAnterior = offset.getValue();
+            fileSystem.read(caminho, user, buffer, offset);
+            bytesLidos = offset.getValue() - offsetAnterior;
 
-        fileSystem.read(caminho, user, buffer);
+            if (bytesLidos > 0) System.out.write(buffer, 0, bytesLidos);
+        } while (bytesLidos > 0);
+
+        System.out.flush();
+        System.out.println();
     }
 
     public static void mv() throws CaminhoNaoEncontradoException, PermissaoException {

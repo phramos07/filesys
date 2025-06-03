@@ -31,7 +31,7 @@ public interface IFileSystem {
 
     // Lê dados de um arquivo. Se o arquivo não existir, será lançada uma exceção.
     // Leitura sequencial - todo o conteudo do arquivo sera lido e armazenado no buffer.
-    void read(String caminho, String usuario, byte[] buffer) throws CaminhoNaoEncontradoException, PermissaoException;
+    void read(String caminho, String usuario, byte[] buffer, Offset offset) throws CaminhoNaoEncontradoException, PermissaoException;
 
     // Move ou renomeia um arquivo ou diretório. Se o diretório não existir, será lançada uma exceção.
     // Se o diretório já existir, será sobrescrito.
