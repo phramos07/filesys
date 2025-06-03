@@ -56,7 +56,9 @@ public final class FileSystemImpl implements IFileSystem {
         }
         String nomeNovo = partes[partes.length - 1];
         if (atual.getFilhos().containsKey(nomeNovo)) throw new CaminhoJaExistenteException("Já existe: " + caminho);
-        if (!atual.temPermissao(usuario, 'w')) throw new PermissaoException("Sem permissão para criar em: " + caminho);
+        // Exigir permissão de escrita E execução
+        if (!atual.temPermissao(usuario, 'w') || !atual.temPermissao(usuario, 'x'))
+            throw new PermissaoException("Sem permissão para criar em: " + caminho);
         atual.adicionarFilho(new Diretorio(nomeNovo, "rwx", usuario));
         // TODO: Permitir criar diretórios recursivamente (mkdir -p) se necessário
     }
