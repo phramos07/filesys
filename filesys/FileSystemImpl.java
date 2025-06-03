@@ -248,7 +248,33 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void read(String caminho, String usuario, byte[] buffer)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'read'");
+        // 1) Localiza o arquivo
+        Object obj = buscarPorCaminho(caminho);
+        if (!(obj instanceof Arquivo)) {
+            throw new CaminhoNaoEncontradoException("Arquivo não encontrado: " + caminho);
+        }
+        Arquivo arquivo = (Arquivo) obj;
+
+        // 2) Verifica permissão de leitura
+        MetaDados meta = arquivo.getMetaDados();
+        if (!meta.hasPermissao(usuario, "r") && !meta.isDono(usuario) && !usuario.equals(ROOT_USER)) {
+            throw new PermissaoException("Sem permissão de leitura em: " + caminho);
+        }
+
+        // 3) Lê sequencialmente os blocos do arquivo para o buffer
+        Bloco[] blocos = arquivo.getArquivo();
+        int bufferPos = 0;
+        for (Bloco bloco : blocos) {
+            byte[] dados = bloco.getDados();
+            int bytesParaLer = Math.min(dados.length, buffer.length - bufferPos);
+            if (bytesParaLer <= 0)
+                break;
+            System.arraycopy(dados, 0, buffer, bufferPos, bytesParaLer);
+            bufferPos += bytesParaLer;
+            if (bufferPos >= buffer.length)
+                break;
+        }
+        // Se quiser, pode retornar quantos bytes foram lidos (bufferPos)
     }
 
     @Override
