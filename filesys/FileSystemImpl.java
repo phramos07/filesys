@@ -103,29 +103,11 @@ public final class FileSystemImpl implements IFileSystem {
         dirPai.addSubDiretorio(novoDir);
     }
 
-    /**
-     * chmod: altera a permissão de 'usuarioAlvo' no arquivo ou diretório em
-     * 'caminho'.
-     *
-     * @param caminho     caminho absoluto para um arquivo OU diretório (ex:
-     *                    "/usr/bin/arquivo.txt" ou "/usr/bin")
-     * @param usuario     quem está executando o comando (deve ser root OU dono do
-     *                    objeto)
-     * @param usuarioAlvo usuário cujas permissões serão ajustadas
-     * @param permissao   string de 3 caracteres, cada um em { 'r', 'w', 'x' } ou
-     *                    '-'
-     *                    Ex.: "rwx", "r--", "-w-", "---"
-     *
-     * @throws CaminhoNaoEncontradoException se não encontrar o arquivo/diretório em
-     *                                       'caminho'
-     * @throws PermissaoException            se 'usuario' não for root nem dono do
-     *                                       objeto
-     */
     @Override
     public void chmod(String caminho, String usuario, String usuarioAlvo, String permissao)
             throws CaminhoNaoEncontradoException, PermissaoException {
         // 1) Validar string de permissão: deve ter exatamente 3 caracteres, cada um
-        // seja 'r','w','x' ou '-'
+        // 'r','w','x' ou '-'
         if (permissao == null || permissao.length() != 3) {
             throw new IllegalArgumentException("Permissão inválida (deve ter 3 chars): " + permissao);
         }
@@ -136,40 +118,30 @@ public final class FileSystemImpl implements IFileSystem {
         }
 
         // 2) Localizar o objeto (Arquivo ou Diretório) em 'caminho'
-        Object objAlvo = buscarPorCaminho(caminho);
-        // buscarPorCaminho lança CaminhoNaoEncontradoException se não existir
-
-        MetaDados mdAlvo;
-        if (objAlvo instanceof Arquivo) {
-            mdAlvo = ((Arquivo) objAlvo).getMetaDados();
-        } else if (objAlvo instanceof Diretorio) {
-            mdAlvo = ((Diretorio) objAlvo).getMetaDados();
-        } else {
-            // Nunca deveria acontecer, mas para garantir:
-            throw new CaminhoNaoEncontradoException("Caminho encontrado não é arquivo nem diretório: " + caminho);
-        }
+        Object objAlvo = navegar(caminho);
 
         // 3) Verificar se 'usuario' tem permissão para executar chmod:
         // - Se for ROOT_USER, sempre permitido.
         // - Caso contrário, somente se for dono do objeto
-        String dono = mdAlvo.getDono();
-        if (!usuario.equals(ROOT_USER) && !usuario.equals(dono)) {
+        String dono;
+        if (objAlvo instanceof Arquivo) {
+            dono = ((Arquivo) objAlvo).getDonoDiretorio();
+        } else if (objAlvo instanceof Diretorio) {
+            dono = ((Diretorio) objAlvo).getDonoDiretorio();
+        } else {
+            throw new CaminhoNaoEncontradoException("Caminho encontrado não é arquivo nem diretório: " + caminho);
+        }
+        if (!usuario.equals("root") && !usuario.equals(dono)) {
             throw new PermissaoException(
-                    "Usuário '" + usuario + "' não tem permissão para alterar direitos em: "
-                            + caminho);
+                    "Usuário '" + usuario + "' não tem permissão para alterar direitos em: " + caminho);
         }
 
         // 4) Alterar (ou inserir) a permissão de 'usuarioAlvo' para 'permissao'
-        // Se o usuárioAlvo for "root", deixamos que ele fique “rwx” obrigatoriamente,
-        // independentemente do que se passe em 'permissao'?
-        // Depende do requisito, mas aqui vamos aceitar qualquer string para qualquer
-        // usuárioAlvo,
-        // pois, se o root quiser revogar até de si mesmo, é opção dele.
-        //
-        // Simplesmente atualizamos o HashMap<String,String>:
-        HashMap<String, String> mapaPerm = mdAlvo.getPermissoes();
-        mapaPerm.put(usuarioAlvo, permissao);
-        mdAlvo.setPermissoes(mapaPerm);
+        if (objAlvo instanceof Arquivo) {
+            ((Arquivo) objAlvo).setPermissoesPadrao(permissao);
+        } else if (objAlvo instanceof Diretorio) {
+            ((Diretorio) objAlvo).setPermissaoUsuario(usuarioAlvo, permissao);
+        }
     }
 
     @Override
