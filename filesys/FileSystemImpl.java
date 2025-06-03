@@ -162,7 +162,59 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void rm(String caminho, String usuario, boolean recursivo)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'rm'");
+        if (caminho == null || caminho.equals("/") || caminho.isEmpty()) {
+            throw new CaminhoNaoEncontradoException("Não é permitido remover a raiz ou caminho vazio.");
+        }
+
+        // Descobre diretório pai e nome do elemento a remover
+        int idx = caminho.lastIndexOf("/");
+        String paiPath = (idx == 0) ? "/" : caminho.substring(0, idx);
+        String nome = caminho.substring(idx + 1);
+
+        ElementoFS paiElem = navegar(paiPath);
+        if (!(paiElem instanceof Diretorio)) {
+            throw new CaminhoNaoEncontradoException("Diretório pai não encontrado: " + paiPath);
+        }
+        Diretorio dirPai = (Diretorio) paiElem;
+
+        // Verifica permissão de escrita no diretório pai
+        if (!dirPai.temPermissao(usuario, 'w')) {
+            throw new PermissaoException("Sem permissão de escrita em: " + paiPath);
+        }
+
+        ElementoFS alvo = dirPai.getFilhos().get(nome);
+        if (alvo == null) {
+            throw new CaminhoNaoEncontradoException("Arquivo ou diretório não encontrado: " + caminho);
+        }
+
+        if (!alvo.isArquivo()) {
+            Diretorio dirAlvo = (Diretorio) alvo;
+            if (!recursivo && !dirAlvo.getFilhos().isEmpty()) {
+                throw new PermissaoException("Diretório não está vazio. Use o modo recursivo para remover: " + caminho);
+            }
+            if (recursivo) {
+                removerDiretorioRecursivo(dirAlvo, usuario);
+            } else if (dirAlvo.getFilhos().isEmpty()) {
+                dirPai.removerFilho(nome);
+            }
+        } else {
+            dirPai.removerFilho(nome);
+        }
+    }
+
+    // Método auxiliar para remoção recursiva de diretórios
+    private void removerDiretorioRecursivo(Diretorio dir, String usuario) throws PermissaoException {
+        for (ElementoFS filho : dir.getFilhos().values().toArray(new ElementoFS[0])) {
+            if (!filho.isArquivo()) {
+                removerDiretorioRecursivo((Diretorio) filho, usuario);
+            }
+            dir.removerFilho(filho.getNomeDiretorio());
+        }
+        // Após remover todos os filhos, remove o próprio diretório do pai
+        Diretorio pai = dir.getDiretorioPai();
+        if (pai != null) {
+            pai.removerFilho(dir.getNomeDiretorio());
+        }
     }
 
     /**
