@@ -2,7 +2,6 @@ package filesys;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Objects;
 
 import exception.CaminhoJaExistenteException;
 import exception.CaminhoNaoEncontradoException;
@@ -25,8 +24,57 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     @Override
-    public void mkdir(String caminho, String nome) throws CaminhoJaExistenteException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'mkdir'");
+    public void mkdir(String caminho, String nome)
+            throws CaminhoJaExistenteException, PermissaoException {
+        // 1) Tenta localizar o diretório “pai” (o local onde vamos criar o subdir)
+        Diretorio dirPai;
+        try {
+            Object o = buscarPorCaminho(caminho);
+            if (!(o instanceof Diretorio)) {
+                // Se o objeto encontrado não for um Diretório, não faz sentido criar dentro
+                throw new CaminhoJaExistenteException(
+                        "Caminho especificado não é um diretório: " + caminho);
+            }
+            dirPai = (Diretorio) o;
+        } catch (CaminhoNaoEncontradoException e) {
+            // Como a assinatura de mkdir não permite lançar CaminhoNaoEncontradoException,
+            // reaproveitamos CaminhoJaExistenteException para indicar que o caminho não
+            // existe.
+            throw new CaminhoJaExistenteException(
+                    "Caminho não encontrado: " + caminho);
+        }
+
+        // 2) Verifica permissão de escrita (“w”) no dirPai para o usuário ROOT_USER
+        MetaDados mdPai = dirPai.getMetaDados();
+        // hasPermissao(u, “w”) deve retornar true somente se o mapa de permissões
+        // contiver “w” para aquele usuário. Se não tiver, lançamos PermissaoException.
+        if (!mdPai.hasPermissao(ROOT_USER, "w")) {
+            throw new PermissaoException(
+                    "Usuário '" + ROOT_USER
+                            + "' não tem permissão de escrita em: "
+                            + caminho);
+        }
+
+        // 3) Verifica se já existe um subdiretório com o mesmo nome em dirPai
+        for (Diretorio sub : dirPai.getSubDirs()) {
+            if (sub.getMetaDados().getNome().equals(nome)) {
+                throw new CaminhoJaExistenteException(
+                        "Já existe um diretório chamado '" + nome
+                                + "' em: " + caminho);
+            }
+        }
+
+        // 4) Cria o MetaDados do novo diretório
+        MetaDados metaNovo = new MetaDados(nome, 0, ROOT_USER);
+        // Concede “rwx” apenas para o dono (“root”) e nenhuma permissão para os demais
+        HashMap<String, String> permissoes = new HashMap<>();
+        permissoes.put(ROOT_USER, "rwx");
+        metaNovo.setPermissoes(permissoes);
+
+        // 5) Cria o novo Diretorio e o adiciona na lista de filhos do dirPai
+        Diretorio novoDir = new Diretorio(nome, ROOT_USER);
+        novoDir.setMetaDados(metaNovo);
+        dirPai.addSubDiretorio(novoDir);
     }
 
     @Override
@@ -93,8 +141,10 @@ public final class FileSystemImpl implements IFileSystem {
         Diretorio dirDestino = (Diretorio) destinoObj;
 
         // Verificação de permissões (leitura na origem e escrita no destino)
-        // Esse trecho garante que, independente de origemObj ser um arquivo ou diretório, 
-        // você sempre obtém o objeto MetaDados correspondente, que será usado para checar permissões de leitura na origem.
+        // Esse trecho garante que, independente de origemObj ser um arquivo ou
+        // diretório,
+        // você sempre obtém o objeto MetaDados correspondente, que será usado para
+        // checar permissões de leitura na origem.
         MetaDados mdOrigem = (origemObj instanceof Arquivo)
                 ? ((Arquivo) origemObj).getMetaDados()
                 : ((Diretorio) origemObj).getMetaDados();
@@ -174,7 +224,7 @@ public final class FileSystemImpl implements IFileSystem {
         }
 
         // 4) Copiar recursivamente cada subdiretório
-        for (Diretorio sub : origem.getSubDiretorios()) {
+        for (Diretorio sub : origem.getSubDirs()) {
             cpDiretorio(sub, copiaDir, sub.getMetaDados().getNome());
         }
 
@@ -214,7 +264,7 @@ public final class FileSystemImpl implements IFileSystem {
                 // Se for o último componente, pode ser arquivo OU diretório
 
                 // 1) Tenta encontrar um subdiretório com nome "nome"
-                for (Diretorio sub : atual.getSubDiretorios()) {
+                for (Diretorio sub : atual.getSubDirs()) {
                     if (sub.getMetaDados().getNome().equals(nome)) {
                         return sub; // Encontrou como diretório
                     }
@@ -232,7 +282,7 @@ public final class FileSystemImpl implements IFileSystem {
             // Se não for o último componente, então obrigatoriamente esse nome deve ser um
             // subdiretório
             boolean achouDir = false;
-            for (Diretorio sub : atual.getSubDiretorios()) {
+            for (Diretorio sub : atual.getSubDirs()) {
                 if (sub.getMetaDados().getNome().equals(nome)) {
                     atual = sub;
                     achouDir = true;
@@ -247,9 +297,5 @@ public final class FileSystemImpl implements IFileSystem {
         // Em teoria não chegamos aqui, pois ou retornamos algo ou lançamos exceção
         throw new CaminhoNaoEncontradoException("Caminho inválido: " + caminho);
     }
-
-    
-
-    
 
 }

@@ -51,16 +51,14 @@ public class Diretorio {
     /**
      * Adiciona um subdiretório filho a este diretório.
      */
-    public void adicionarSubDir(Diretorio novo) {
-        subDirs.add(novo);
+    public void addSubDiretorio(Diretorio subDir) {
+        this.subDirs.add(subDir); // Assuming subDirs is a List<Diretorio>
     }
 
     /**
      * Adiciona um arquivo a este diretório.
      */
-
-
-    public void adicionarArquivo(Arquivo novo) {
+    public void addArquivo(Arquivo novo) {
         arquivos.add(novo);
     }
 
