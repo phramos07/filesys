@@ -59,18 +59,24 @@ public final class FileSystemImpl implements IFileSystem {
         if (caminho.equals("/")) return;
         String[] partes = caminho.split("/");
         Diretorio atual = raiz;
-        for (int i = 1; i < partes.length - 1; i++) {
-            ElementoFS filho = atual.getFilhos().get(partes[i]);
-            if (filho == null || filho.isArquivo()) throw new PermissaoException("Diretório intermediário não existe: " + partes[i]);
-            atual = (Diretorio) filho;
+        StringBuilder caminhoAtual = new StringBuilder();
+
+        for (int i = 1; i < partes.length; i++) {
+            if (partes[i].isEmpty()) continue;
+            caminhoAtual.append("/").append(partes[i]);
+            Map<String, model.ElementoFS> filhos = atual.getFilhos();
+            if (!filhos.containsKey(partes[i])) {
+                // Verifica permissão de escrita e execução no diretório atual
+                if (!atual.temPermissao(usuario, 'w') || !atual.temPermissao(usuario, 'x')) {
+                    throw new PermissaoException("Sem permissão para criar em: " + caminhoAtual.substring(0, caminhoAtual.lastIndexOf("/")));
+                }
+                // Cria o diretório intermediário
+                Diretorio novo = new Diretorio(partes[i], "rwx", usuario);
+                atual.adicionarFilho(novo);
+            }
+            // Avança para o próximo diretório
+            atual = (Diretorio) filhos.get(partes[i]);
         }
-        String nomeNovo = partes[partes.length - 1];
-        if (atual.getFilhos().containsKey(nomeNovo)) throw new CaminhoJaExistenteException("Já existe: " + caminho);
-        // Exigir permissão de escrita E execução
-        if (!atual.temPermissao(usuario, 'w') || !atual.temPermissao(usuario, 'x'))
-            throw new PermissaoException("Sem permissão para criar em: " + caminho);
-        atual.adicionarFilho(new Diretorio(nomeNovo, "rwx", usuario));
-        // TODO: Permitir criar diretórios recursivamente (mkdir -p) se necessário
     }
 
     @Override
