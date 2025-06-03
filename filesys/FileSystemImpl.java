@@ -90,9 +90,96 @@ public final class FileSystemImpl implements IFileSystem {
         throw new UnsupportedOperationException("Método não implementado 'rm'");
     }
 
+    /**
+     * Método touch: cria um arquivo vazio em 'caminho'.
+     * Exemplo: touch("/usr/local/meuarquivo.txt", "alice")
+     *  -> pai = "/usr/local", nome = "meuarquivo.txt"
+     */
     @Override
-    public void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'touch'");
+    public void touch(String caminho, String usuario) 
+            throws CaminhoJaExistenteException, PermissaoException 
+    {
+        // 1) Separar o caminho em 'pai' e 'nomeDoArquivo'
+        String path = caminho.trim();
+        if (!path.startsWith("/")) {
+            // Para simplificar, consideramos que caminhos devem ser absolutos
+            throw new CaminhoJaExistenteException("Caminho inválido (deve começar com '/'): " + caminho);
+        }
+        if (path.equals("/")) {
+            // Não faz sentido chamar touch("/") → não se pode criar arquivo com nome vazio
+            throw new CaminhoJaExistenteException("Não é possível criar arquivo na raiz sem nome: " + caminho);
+        }
+
+        // Exemplo: "/usr/local/meuarquivo.txt"
+        // indexSlash = posição da última barra antes do nome do arquivo
+        int indexSlash = path.lastIndexOf("/");
+        // Se a última barra for a própria raiz, então pai = "/"
+        String paiPath = (indexSlash == 0) ? "/" : path.substring(0, indexSlash);
+        String nomeArquivo = path.substring(indexSlash + 1);
+        if (nomeArquivo.isEmpty()) {
+            throw new CaminhoJaExistenteException("Nome de arquivo vazio em: " + caminho);
+        }
+
+        // 2) Localizar o diretório pai
+        Diretorio dirPai;
+        try {
+            Object o = buscarPorCaminho(paiPath);
+            if (!(o instanceof Diretorio)) {
+                // Se não for diretório (por exemplo, for um arquivo), não podemos criar dentro
+                throw new CaminhoJaExistenteException(
+                    "Caminho pai não é um diretório: " + paiPath
+                );
+            }
+            dirPai = (Diretorio) o;
+        }
+        catch (CaminhoNaoEncontradoException e) {
+            // Se pai não existe, relançamos como CaminhoJaExistenteException
+            throw new CaminhoJaExistenteException("Caminho não encontrado: " + paiPath);
+        }
+
+        // 3) Verificar permissão de escrita no dirPai para o usuário informado
+        MetaDados mdPai = dirPai.getMetaDados();
+        if (!mdPai.hasPermissao(usuario, "w")) {
+            throw new PermissaoException(
+                "Usuário '" + usuario 
+                + "' não tem permissão de escrita em: " 
+                + paiPath
+            );
+        }
+
+        // 4) Verificar se já existe um arquivo ou diretório com esse nome em dirPai
+        // 4.1) Checa subdiretórios
+        for (Diretorio sub : dirPai.getSubDirs()) {
+            if (sub.getMetaDados().getNome().equals(nomeArquivo)) {
+                throw new CaminhoJaExistenteException(
+                    "Já existe arquivo ou diretório chamado '" + nomeArquivo 
+                    + "' em: " + paiPath
+                );
+            }
+        }
+        // 4.2) Checa arquivos
+        for (Arquivo arq : dirPai.getArquivos()) {
+            if (arq.getMetaDados().getNome().equals(nomeArquivo)) {
+                throw new CaminhoJaExistenteException(
+                    "Já existe arquivo ou diretório chamado '" + nomeArquivo 
+                    + "' em: " + paiPath
+                );
+            }
+        }
+
+        // 5) Se chegamos aqui, podemos criar o novo arquivo vazio
+        //    5.1) Criar MetaDados com tamanho = 0
+        MetaDados metaArq = new MetaDados(nomeArquivo, 0, usuario);
+        //         conceder permissão “rw” para o dono
+        HashMap<String, String> mapaPerm = new HashMap<>();
+        mapaPerm.put(usuario, "rw");
+        metaArq.setPermissoes(mapaPerm);
+
+        //    5.2) Criar o objeto Arquivo com 0 blocos (array vazio)
+        Arquivo novoArq = new Arquivo(metaArq, new Bloco[0]);
+
+        //    5.3) Adicionar ao diretório pai
+        dirPai.addArquivo(novoArq);
     }
 
     @Override
