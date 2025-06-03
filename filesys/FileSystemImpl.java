@@ -2,6 +2,7 @@ package filesys;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import exception.CaminhoJaExistenteException;
@@ -14,14 +15,38 @@ import exception.PermissaoException;
 // e atributos & métodos privados podem ser adicionados
 public final class FileSystemImpl implements IFileSystem {
     private static final String ROOT_USER = "root"; // pode ser necessário
-    private FileSys fileSys;
+    private Diretorio raiz;
+    private Map<String, Usuario> usuarios = new HashMap<>();
 
-    public FileSys getFileSys() {
-        return fileSys;
+    public FileSystemImpl(List<Usuario> u) {
+        this.raiz = new Diretorio("/", "rwx", ROOT_USER);
+        usuarios.put(ROOT_USER, new Usuario(ROOT_USER, "rwx", "/"));
+        for (Usuario usuario : u) {
+            if (!usuario.getNome().equalsIgnoreCase("root"))
+                usuarios.put(usuario.getNome(), usuario);
+        }
     }
 
-    public FileSystemImpl() {
-        this.fileSys = new FileSys();
+    // TODO: Validar se o método navegar cobre todos os casos de caminhos relativos
+    // e absolutos
+    private ElementoFS navegar(String caminho) throws CaminhoNaoEncontradoException {
+        if (caminho.equals("/"))
+            return raiz;
+        String[] partes = caminho.split("/");
+        Diretorio atual = raiz;
+        for (int i = 1; i < partes.length; i++) {
+            ElementoFS filho = atual.getFilhos().get(partes[i]);
+            if (filho == null)
+                throw new CaminhoNaoEncontradoException("Caminho não encontrado: " + caminho);
+            if (i == partes.length - 1)
+                return filho;
+            if (!filho.isArquivo()) {
+                atual = (Diretorio) filho;
+            } else {
+                throw new CaminhoNaoEncontradoException("Caminho não encontrado (esperado diretório): " + caminho);
+            }
+        }
+        return atual;
     }
 
     @Override
@@ -249,115 +274,37 @@ public final class FileSystemImpl implements IFileSystem {
     public void read(String caminho, String usuario, byte[] buffer)
             throws CaminhoNaoEncontradoException, PermissaoException {
         // 1) Localiza o arquivo
-        Object obj = buscarPorCaminho(caminho);
+        Object obj = navegar(caminho);
         if (!(obj instanceof Arquivo)) {
             throw new CaminhoNaoEncontradoException("Arquivo não encontrado: " + caminho);
         }
         Arquivo arquivo = (Arquivo) obj;
 
         // 2) Verifica permissão de leitura
-        MetaDados meta = arquivo.getMetaDados();
-        if (!meta.hasPermissao(usuario, "r") && !meta.isDono(usuario) && !usuario.equals(ROOT_USER)) {
+        // Aqui, supondo que permissoesPadrao seja do tipo "rw-" ou "r--"
+        if (!usuario.equals(ROOT_USER) && !arquivo.donoDiretorio.equals(usuario)
+                && !arquivo.permissoesPadrao.contains("r")) {
             throw new PermissaoException("Sem permissão de leitura em: " + caminho);
         }
 
         // 3) Lê sequencialmente os blocos do arquivo para o buffer
-        Bloco[] blocos = arquivo.getArquivo();
         int bufferPos = 0;
-        for (Bloco bloco : blocos) {
-            byte[] dados = bloco.getDados();
-            int bytesParaLer = Math.min(dados.length, buffer.length - bufferPos);
+        for (byte[] bloco : arquivo.getBlocos()) {
+            int bytesParaLer = Math.min(bloco.length, buffer.length - bufferPos);
             if (bytesParaLer <= 0)
                 break;
-            System.arraycopy(dados, 0, buffer, bufferPos, bytesParaLer);
+            System.arraycopy(bloco, 0, buffer, bufferPos, bytesParaLer);
             bufferPos += bytesParaLer;
             if (bufferPos >= buffer.length)
                 break;
         }
-        // Se quiser, pode retornar quantos bytes foram lidos (bufferPos)
+        // buffer agora contém o conteúdo lido (até buffer.length ou fim do arquivo)
     }
 
     @Override
     public void mv(String caminhoAntigo, String caminhoNovo, String usuario)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        // Não permite mover a raiz
-        if (caminhoAntigo.equals("/") || caminhoNovo.equals("/")) {
-            throw new PermissaoException("Não é possível mover o diretório raiz.");
-        }
 
-        // 1) Localiza o pai e o objeto de origem
-        String caminhoPaiAntigo = getParentPath(caminhoAntigo);
-        String nomeAntigo = getNameFromPath(caminhoAntigo);
-        Diretorio paiAntigo = (Diretorio) buscarPorCaminho(caminhoPaiAntigo);
-
-        Object alvo = null;
-        for (Diretorio d : paiAntigo.getSubDirs()) {
-            if (d.getMetaDados().getNome().equals(nomeAntigo)) {
-                alvo = d;
-                break;
-            }
-        }
-        if (alvo == null) {
-            for (Arquivo a : paiAntigo.getArquivos()) {
-                if (a.getMetaDados().getNome().equals(nomeAntigo)) {
-                    alvo = a;
-                    break;
-                }
-            }
-        }
-        if (alvo == null)
-            throw new CaminhoNaoEncontradoException("Origem não encontrada: " + caminhoAntigo);
-
-        // 2) Verifica permissão de escrita no pai da origem
-        if (!paiAntigo.getMetaDados().hasPermissao(usuario, "w")) {
-            throw new PermissaoException("Sem permissão de escrita no diretório de origem: " + caminhoPaiAntigo);
-        }
-
-        // 3) Localiza o pai do destino e o nome novo
-        String caminhoPaiNovo = getParentPath(caminhoNovo);
-        String nomeNovo = getNameFromPath(caminhoNovo);
-        Diretorio paiNovo = (Diretorio) buscarPorCaminho(caminhoPaiNovo);
-
-        // 4) Verifica permissão de escrita no pai do destino
-        if (!paiNovo.getMetaDados().hasPermissao(usuario, "w")) {
-            throw new PermissaoException("Sem permissão de escrita no diretório de destino: " + caminhoPaiNovo);
-        }
-
-        // 5) Verifica se já existe item com o nome novo no destino
-        for (Diretorio d : paiNovo.getSubDirs()) {
-            if (d.getMetaDados().getNome().equals(nomeNovo)) {
-                throw new PermissaoException("Já existe um diretório no destino com esse nome.");
-            }
-        }
-        for (Arquivo a : paiNovo.getArquivos()) {
-            if (a.getMetaDados().getNome().equals(nomeNovo)) {
-                throw new PermissaoException("Já existe um arquivo no destino com esse nome.");
-            }
-        }
-
-        // 6) Remove do pai antigo, renomeia e adiciona ao novo pai
-        if (alvo instanceof Diretorio) {
-            paiAntigo.getSubDirs().remove(alvo);
-            ((Diretorio) alvo).getMetaDados().setNome(nomeNovo);
-            paiNovo.addSubDiretorio((Diretorio) alvo);
-        } else if (alvo instanceof Arquivo) {
-            paiAntigo.getArquivos().remove(alvo);
-            ((Arquivo) alvo).getMetaDados().setNome(nomeNovo);
-            paiNovo.addArquivo((Arquivo) alvo);
-        } else {
-            throw new CaminhoNaoEncontradoException("Origem não é arquivo nem diretório.");
-        }
-    }
-
-    // Funções auxiliares privadas
-    private String getParentPath(String caminho) {
-        int idx = caminho.lastIndexOf("/");
-        return (idx == 0) ? "/" : caminho.substring(0, idx);
-    }
-
-    private String getNameFromPath(String caminho) {
-        int idx = caminho.lastIndexOf("/");
-        return caminho.substring(idx + 1);
     }
 
     /**
@@ -429,126 +376,6 @@ public final class FileSystemImpl implements IFileSystem {
     public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo)
             throws CaminhoNaoEncontradoException, PermissaoException {
 
-        Object origemObj = buscarPorCaminho(caminhoOrigem);
-        if (origemObj == null) {
-            throw new CaminhoNaoEncontradoException("Origem não encontrada: " + caminhoOrigem);
-        }
-
-        Object destinoObj = buscarPorCaminho(caminhoDestino);
-        if (!(destinoObj instanceof Diretorio)) {
-            throw new CaminhoNaoEncontradoException("Destino inválido (não é diretório): " + caminhoDestino);
-        }
-        Diretorio dirDestino = (Diretorio) destinoObj;
-
-        MetaDados mdOrigem = (origemObj instanceof Arquivo)
-                ? ((Arquivo) origemObj).getMetaDados()
-                : ((Diretorio) origemObj).getMetaDados();
-
-        if (!mdOrigem.hasPermissao(usuario, "r")) {
-            throw new PermissaoException("Sem permissão de leitura em: " + caminhoOrigem);
-        }
-        if (!dirDestino.getMetaDados().hasPermissao(usuario, "w")) {
-            throw new PermissaoException("Sem permissão de escrita em: " + caminhoDestino);
-        }
-
-        if (origemObj instanceof Arquivo) {
-            cpArquivo((Arquivo) origemObj, dirDestino);
-        } else {
-            Diretorio dirOrig = (Diretorio) origemObj;
-            if (!recursivo) {
-                throw new UnsupportedOperationException(
-                        "Cópia de diretório requer recursivo=true: " + caminhoOrigem);
-            }
-            cpDiretorio(dirOrig, dirDestino);
-        }
-    }
-
-    private void cpArquivo(Arquivo origem, Diretorio destino) {
-        MetaDados mdOrig = origem.getMetaDados();
-        MetaDados mdNovo = clonarMetaDados(mdOrig, mdOrig.getNome(), mdOrig.getTamanho(), mdOrig.getDono());
-
-        Bloco[] blocosOrig = origem.getArquivo();
-        Bloco[] blocosNovo = new Bloco[blocosOrig.length];
-        for (int i = 0; i < blocosOrig.length; i++) {
-            byte[] dadosOrigem = blocosOrig[i].getDados();
-            byte[] copiaDados = Arrays.copyOf(dadosOrigem, dadosOrigem.length);
-            Bloco novoBloco = new Bloco(dadosOrigem.length);
-            novoBloco.setDados(copiaDados);
-            blocosNovo[i] = novoBloco;
-        }
-
-        Arquivo copia = new Arquivo(mdNovo, blocosNovo);
-        destino.addArquivo(copia);
-    }
-
-    private void cpDiretorio(Diretorio origem, Diretorio destino) {
-        MetaDados mdOrig = origem.getMetaDados();
-        MetaDados mdNovo = clonarMetaDados(mdOrig, mdOrig.getNome(), 0, mdOrig.getDono());
-
-        Diretorio copiaDir = new Diretorio(mdNovo);
-        for (Arquivo arqFilho : origem.getArquivos()) {
-            cpArquivo(arqFilho, copiaDir);
-        }
-        for (Diretorio subOrig : origem.getSubDirs()) {
-            cpDiretorio(subOrig, copiaDir);
-        }
-        destino.addSubDiretorio(copiaDir);
-    }
-
-    private MetaDados clonarMetaDados(MetaDados original, String nome, int tamanho, String dono) {
-        MetaDados copia = new MetaDados(nome, tamanho, dono);
-        Map<String, String> permissoesOrig = original.getPermissoes();
-        if (permissoesOrig != null) {
-            copia.setPermissoes(new HashMap<>(permissoesOrig));
-        }
-        return copia;
-    }
-
-    private Object buscarPorCaminho(String caminho) throws CaminhoNaoEncontradoException {
-        if (caminho == null || !caminho.startsWith("/")) {
-            throw new CaminhoNaoEncontradoException("Caminho deve ser absoluto: " + caminho);
-        }
-        String path = caminho.trim();
-        if (path.equals("/")) {
-            return fileSys.getRaiz();
-        }
-
-        String[] partes = path.split("/");
-        Diretorio atual = fileSys.getRaiz();
-
-        for (int i = 1; i < partes.length; i++) {
-            String nomeComponente = partes[i];
-            boolean ultimo = (i == partes.length - 1);
-
-            if (ultimo) {
-                for (Diretorio sub : atual.getSubDirs()) {
-                    if (sub.getMetaDados().getNome().equals(nomeComponente)) {
-                        return sub;
-                    }
-                }
-                for (Arquivo arq : atual.getArquivos()) {
-                    if (arq.getMetaDados().getNome().equals(nomeComponente)) {
-                        return arq;
-                    }
-                }
-                throw new CaminhoNaoEncontradoException("Componente não encontrado: " + nomeComponente);
-            }
-
-            boolean achou = false;
-            for (Diretorio sub : atual.getSubDirs()) {
-                if (sub.getMetaDados().getNome().equals(nomeComponente)) {
-                    atual = sub;
-                    achou = true;
-                    break;
-                }
-            }
-            if (!achou) {
-                throw new CaminhoNaoEncontradoException(
-                        "Diretório não encontrado no caminho: " + nomeComponente);
-            }
-        }
-
-        throw new CaminhoNaoEncontradoException("Caminho inválido: " + caminho);
     }
 
 }

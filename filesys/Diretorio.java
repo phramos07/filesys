@@ -1,72 +1,77 @@
 package filesys;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
-public class Diretorio {
+public class Diretorio extends ElementoFS {
+    private Diretorio diretorioPai;
+    private Map<String, ElementoFS> filhos;
+    private Map<String, String> acessosPorUsuario; // permissões específicas
 
-    private MetaDados metaDados;
-    // Lista de arquivos neste diretório
-    private List<Arquivo> arquivos = new ArrayList<>();
-    // Lista de subdiretórios (filhos)
-    private List<Diretorio> subDirs = new ArrayList<>();
-
-    public Diretorio(MetaDados metaDados) {
-        this.metaDados = metaDados;
-    }
-
-    public Diretorio(String nome, String dono) {
-        this.metaDados = new MetaDados(nome, dono);
-    }
-
-    public MetaDados getMetaDados() {
-        return metaDados;
-    }
-
-    public void setMetaDados(MetaDados metaDados) {
-        this.metaDados = metaDados;
-    }
-
-    public List<Arquivo> getArquivos() {
-        return arquivos;
-    }
-
-    public List<Diretorio> getSubDirs() {
-        return subDirs;
-    }
-
-    /**
-     * Procura um subdiretório de nome exato dentro deste diretório.
-     * Retorna o objeto Diretorio se encontrado, ou null caso não exista.
-     */
-    public Diretorio pegarSubDirPeloNome(String nome) {
-        for (Diretorio d : subDirs) {
-            if (d.getMetaDados().getNome().equals(nome)) {
-                return d;
-            }
+    public Diretorio(String nome, String permissoes, String dono) {
+        super(nome, permissoes, dono);
+        if (permissoes == null || permissoes.length() != 3) {
+            throw new IllegalArgumentException("Permissões devem conter 3 caracteres (rwx)");
         }
-        return null;
+        this.filhos = new HashMap<>();
+        this.acessosPorUsuario = new HashMap<>();
     }
 
-    /**
-     * Adiciona um subdiretório filho a este diretório.
-     */
-    public void addSubDiretorio(Diretorio subDir) {
-        this.subDirs.add(subDir); // Assuming subDirs is a List<Diretorio>
+    public void setPermissaoUsuario(String nomeUsuario, String permissoes) {
+        if (permissoes == null || permissoes.length() != 3) {
+            throw new IllegalArgumentException("Permissões devem conter 3 caracteres (rwx)");
+        }
+        acessosPorUsuario.put(nomeUsuario, permissoes);
     }
 
-    /**
-     * Adiciona um arquivo a este diretório.
-     */
-    public void addArquivo(Arquivo novo) {
-        arquivos.add(novo);
+    public boolean temPermissao(String usuario, char tipoPermissao) {
+        if ("root".equals(usuario)) return true;
+        if (usuario.equals(donoDiretorio)) return permissoesPadrao.indexOf(tipoPermissao) >= 0;
+        String permissoesUsuario = acessosPorUsuario.get(usuario);
+        if (permissoesUsuario != null && permissoesUsuario.indexOf(tipoPermissao) >= 0) return true;
+        if (diretorioPai != null) return diretorioPai.temPermissao(usuario, tipoPermissao);
+        return false;
     }
 
-    /**
-     * Remove um arquivo deste diretório.
-     * Retorna true se o arquivo foi encontrado e removido, ou false se não existia.
-     */
-    public boolean removerArquivo(Arquivo arquivo) {
-        return arquivos.remove(arquivo);
+    public String obterPermissoesDoUsuario(String usuario) {
+        if ("root".equals(usuario)) return "rwx";
+        if (usuario.equals(donoDiretorio)) return permissoesPadrao;
+        return acessosPorUsuario.getOrDefault(usuario, "---");
+    }
+
+    public void adicionarFilho(ElementoFS filho) {
+        if (filhos.containsKey(filho.getNomeDiretorio())) {
+            throw new IllegalArgumentException("Já existe um filho com este nome: " + filho.getNomeDiretorio());
+        }
+        if (filho instanceof Diretorio) {
+            ((Diretorio) filho).setDiretorioPai(this);
+        }
+        filhos.put(filho.getNomeDiretorio(), filho);
+    }
+
+    public void removerFilho(String nomeFilho) {
+        filhos.remove(nomeFilho);
+    }
+
+    public Map<String, ElementoFS> getFilhos() {
+        return filhos;
+    }
+
+    public Diretorio getDiretorioPai() {
+        return diretorioPai;
+    }
+
+    public void setDiretorioPai(Diretorio diretorioPai) {
+        this.diretorioPai = diretorioPai;
+    }
+
+    @Override
+    public boolean isArquivo() {
+        return false;
+    }
+
+    @Override
+    public String toString() {
+        return "Dir: " + nomeDiretorio + " | Owner: " + donoDiretorio + " | Perms: " + permissoesPadrao;
     }
 }
