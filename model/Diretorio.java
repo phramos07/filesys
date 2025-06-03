@@ -3,6 +3,8 @@ package model;
 import java.util.HashMap;
 import java.util.Map;
 
+import filesys.FileSystemImpl;
+
 public class Diretorio extends ElementoFS {
     private Diretorio diretorioPai;
     private Map<String, ElementoFS> filhos;
@@ -29,6 +31,11 @@ public class Diretorio extends ElementoFS {
         if (usuario.equals(donoDiretorio)) return permissoesPadrao.indexOf(tipoPermissao) >= 0;
         String permissoesUsuario = acessosPorUsuario.get(usuario);
         if (permissoesUsuario != null && permissoesUsuario.indexOf(tipoPermissao) >= 0) return true;
+        // Verifica permissão global do usuário (/**)
+        Usuario usuarioGlobal = FileSystemImpl.getUsuarioGlobal(usuario); // Implemente esse método estático
+        if (usuarioGlobal != null && usuarioGlobal.getDiretorio().equals("/**") && usuarioGlobal.getPermissao().indexOf(tipoPermissao) >= 0) {
+            return true;
+        }
         if (diretorioPai != null) return diretorioPai.temPermissao(usuario, tipoPermissao);
         return false;
     }

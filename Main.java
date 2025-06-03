@@ -72,7 +72,7 @@ public class Main {
                          * Por enquanto esse código somente imprime as permissões contidas no arquivo users.
                         */
                         System.out.println(userListed + " " + dir + " " + dirPermission); // Somente imprime o usuário, diretório e permissão
-                        usuarios.add( new Usuario(userListed, dirPermission, dir));
+                        usuarios.add(new Usuario(userListed, dirPermission, dir));
 
                     } else {
                         System.out.println("Formato ruim no arquivo de usuários. Linha: " + line);

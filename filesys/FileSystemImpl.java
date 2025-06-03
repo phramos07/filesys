@@ -16,14 +16,20 @@ public final class FileSystemImpl implements IFileSystem {
     private static final String ROOT_USER = "root"; // pode ser necessário
     private Diretorio raiz;
     private Map<String, Usuario> usuarios = new HashMap<>();
+    private static Map<String, Usuario> usuariosGlobais = new HashMap<>();
 
     public FileSystemImpl(List<Usuario> usuarios) {
         this.raiz = new Diretorio("/", "rwx", ROOT_USER);
         this.usuarios.put(ROOT_USER, new Usuario(ROOT_USER, "rwx", "/"));
         for (Usuario usuario : usuarios) {
             this.usuarios.put(usuario.getNome(), usuario);
+            usuariosGlobais.put(usuario.getNome(), usuario); // Adicione aqui
         }
         // TODO: Carregar usuários adicionais do arquivo users/users se necessário
+    }
+
+    public static Usuario getUsuarioGlobal(String nome) {
+        return usuariosGlobais.get(nome);
     }
 
     // TODO: Validar se o método navegar cobre todos os casos de caminhos relativos e absolutos
