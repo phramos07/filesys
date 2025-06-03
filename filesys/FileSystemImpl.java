@@ -304,7 +304,45 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void mv(String caminhoAntigo, String caminhoNovo, String usuario)
             throws CaminhoNaoEncontradoException, PermissaoException {
+        // 1) Localiza o elemento a ser movido
+        ElementoFS elemento = navegar(caminhoAntigo);
 
+        // 2) Verifica permissão de escrita no diretório pai do antigo e do novo caminho
+        String antigoPaiPath = caminhoAntigo.substring(0, caminhoAntigo.lastIndexOf("/"));
+        if (antigoPaiPath.isEmpty())
+            antigoPaiPath = "/";
+        Diretorio dirPaiAntigo = (Diretorio) navegar(antigoPaiPath);
+        if (!dirPaiAntigo.temPermissao(usuario, 'w')) {
+            throw new PermissaoException("Sem permissão de escrita no diretório de origem: " + antigoPaiPath);
+        }
+
+        int idxNovo = caminhoNovo.lastIndexOf("/");
+        String novoPaiPath = (idxNovo == 0) ? "/" : caminhoNovo.substring(0, idxNovo);
+        String novoNome = caminhoNovo.substring(idxNovo + 1);
+        Diretorio dirPaiNovo = (Diretorio) navegar(novoPaiPath);
+        if (!dirPaiNovo.temPermissao(usuario, 'w')) {
+            throw new PermissaoException("Sem permissão de escrita no diretório de destino: " + novoPaiPath);
+        }
+
+        // 3) Não sobrescreve arquivos/diretórios existentes
+        if (dirPaiNovo.getFilhos().containsKey(novoNome)) {
+            throw new CaminhoNaoEncontradoException(
+                    "Já existe arquivo ou diretório com esse nome no destino: " + caminhoNovo);
+        }
+
+        // 4) Remove do diretório antigo
+        dirPaiAntigo.removerFilho(elemento.getNomeDiretorio());
+
+        // 5) Atualiza nome se for renomeação
+        elemento.setNomeDiretorio(novoNome);
+
+        // 6) Adiciona ao novo diretório
+        dirPaiNovo.adicionarFilho(elemento);
+
+        // 7) Se for diretório, atualiza referência de pai
+        if (!elemento.isArquivo() && elemento instanceof Diretorio) {
+            ((Diretorio) elemento).setDiretorioPai(dirPaiNovo);
+        }
     }
 
     /**
