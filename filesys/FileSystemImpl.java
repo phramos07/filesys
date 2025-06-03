@@ -46,25 +46,76 @@ public final class FileSystemImpl implements IFileSystem {
         return atual;
     }
 
+    /**
+     * Cria diretórios no caminho especificado, incluindo diretórios intermediários
+     * caso necessário,
+     * semelhante ao comando `mkdir -p` do Linux.
+     *
+     * @param caminho Caminho absoluto do diretório a ser criado.
+     * @param usuario Usuário que está realizando a operação.
+     * @throws CaminhoJaExistenteException Se houver um arquivo no meio do caminho
+     *                                     com o mesmo nome.
+     * @throws PermissaoException          Se o usuário não tiver permissão de
+     *                                     escrita em algum diretório do caminho.
+     */
     @Override
     public void mkdir(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException {
-        if (caminho.equals("/"))
+        if (caminho == null || caminho.isEmpty() || caminho.equals("/"))
             return;
+
         String[] partes = caminho.split("/");
         Diretorio atual = raiz;
-        for (int i = 1; i < partes.length - 1; i++) {
-            ElementoFS filho = atual.getFilhos().get(partes[i]);
-            if (filho == null || filho.isArquivo())
-                throw new PermissaoException("Diretório intermediário não existe: " + partes[i]);
-            atual = (Diretorio) filho;
+
+        for (int i = 1; i < partes.length; i++) {
+            String nomeDir = partes[i];
+            if (nomeDir.isEmpty())
+                continue; // Ignora barras duplas //
+
+            ElementoFS filho = atual.getFilhos().get(nomeDir);
+
+            if (filho == null) {
+                // Verifica permissão de escrita antes de criar
+                if (!atual.temPermissao(usuario, 'w')) {
+                    throw new PermissaoException("Sem permissão para criar em: " + getCaminhoCompleto(atual, nomeDir));
+                }
+
+                Diretorio novoDir = new Diretorio(nomeDir, "rwx", usuario);
+                atual.adicionarFilho(novoDir);
+                atual = novoDir;
+            } else if (filho.isArquivo()) {
+                throw new CaminhoJaExistenteException(
+                        "Já existe arquivo com esse nome: " + getCaminhoCompleto(atual, nomeDir));
+            } else {
+                atual = (Diretorio) filho;
+            }
         }
-        String nomeNovo = partes[partes.length - 1];
-        if (atual.getFilhos().containsKey(nomeNovo))
-            throw new CaminhoJaExistenteException("Já existe: " + caminho);
-        if (!atual.temPermissao(usuario, 'w'))
-            throw new PermissaoException("Sem permissão para criar em: " + caminho);
-        atual.adicionarFilho(new Diretorio(nomeNovo, "rwx", usuario));
-        // TODO: Permitir criar diretórios recursivamente (mkdir -p) se necessário
+    }
+
+    /**
+     * Monta o caminho completo de um diretório, adicionando opcionalmente o nome de
+     * um novo elemento.
+     *
+     * @param atual    Diretório de referência.
+     * @param nomeNovo Nome do novo diretório ou arquivo a ser incluído no final do
+     *                 caminho.
+     * @return String com o caminho completo.
+     */
+    private String getCaminhoCompleto(Diretorio atual, String nomeNovo) {
+        StringBuilder sb = new StringBuilder();
+
+        while (atual != null && atual.getNomeDiretorio() != null && !atual.getNomeDiretorio().equals("/")) {
+            sb.insert(0, "/" + atual.getNomeDiretorio());
+            atual = atual.getDiretorioPai();
+        }
+        sb.insert(0, "/");
+
+        if (nomeNovo != null && !nomeNovo.isEmpty()) {
+            if (sb.length() > 1)
+                sb.append("/");
+            sb.append(nomeNovo);
+        }
+
+        return sb.toString().replaceAll("//+", "/");
     }
 
     @Override
