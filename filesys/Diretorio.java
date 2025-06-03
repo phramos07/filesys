@@ -1,15 +1,18 @@
 package filesys;
 
-public class Diretorio {
-    
-    private MetaDados metaDados;
-    private Diretorio[] subDiretorios;
-    private Arquivo[] arquivos;
+import java.util.ArrayList;
+import java.util.List;
 
-    public Diretorio(String nome, String dono) {
-        this.metaDados = new MetaDados(nome, 0, dono);
-        this.subDiretorios = new Diretorio[0];
-        this.arquivos = new Arquivo[0];
+public class Diretorio {
+
+    private MetaDados metaDados;
+    // Lista de arquivos neste diretório
+    private List<Arquivo> arquivos = new ArrayList<>();
+    // Lista de subdiretórios (filhos)
+    private List<Diretorio> subDirs = new ArrayList<>();
+
+    public Diretorio(MetaDados metaDados) {
+        this.metaDados = metaDados;
     }
 
     public MetaDados getMetaDados() {
@@ -20,26 +23,48 @@ public class Diretorio {
         this.metaDados = metaDados;
     }
 
-    public Diretorio[] getSubDiretorios() {
-        return subDiretorios;
-    }
-
-    public Arquivo[] getArquivos() {
+    public List<Arquivo> getArquivos() {
         return arquivos;
     }
 
-    public void addSubDiretorio(Diretorio subDiretorio) {
-        Diretorio[] novoSubDiretorios = new Diretorio[this.subDiretorios.length + 1];
-        System.arraycopy(this.subDiretorios, 0, novoSubDiretorios, 0, this.subDiretorios.length);
-        novoSubDiretorios[this.subDiretorios.length] = subDiretorio;
-        this.subDiretorios = novoSubDiretorios;
+    public List<Diretorio> getSubDirs() {
+        return subDirs;
     }
 
-    public void addArquivo(Arquivo arquivo) {
-        Arquivo[] novoArquivos = new Arquivo[this.arquivos.length + 1];
-        System.arraycopy(this.arquivos, 0, novoArquivos, 0, this.arquivos.length);
-        novoArquivos[this.arquivos.length] = arquivo;
-        this.arquivos = novoArquivos;
-        this.metaDados.setTamanho(this.metaDados.getTamanho() + arquivo.getMetaDados().getTamanho());
+    /**
+     * Procura um subdiretório de nome exato dentro deste diretório.
+     * Retorna o objeto Diretorio se encontrado, ou null caso não exista.
+     */
+    public Diretorio pegarSubDirPeloNome(String nome) {
+        for (Diretorio d : subDirs) {
+            if (d.getMetaDados().getNome().equals(nome)) {
+                return d;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Adiciona um subdiretório filho a este diretório.
+     */
+    public void adicionarSubDir(Diretorio novo) {
+        subDirs.add(novo);
+    }
+
+    /**
+     * Adiciona um arquivo a este diretório.
+     */
+
+
+    public void adicionarArquivo(Arquivo novo) {
+        arquivos.add(novo);
+    }
+
+    /**
+     * Remove um arquivo deste diretório.
+     * Retorna true se o arquivo foi encontrado e removido, ou false se não existia.
+     */
+    public boolean removerArquivo(Arquivo arquivo) {
+        return arquivos.remove(arquivo);
     }
 }
