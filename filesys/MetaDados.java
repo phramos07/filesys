@@ -15,6 +15,10 @@ public class MetaDados {
         this.permissoes = new HashMap<>();
     }
 
+    public MetaDados(String nome, String dono) {
+        this(nome, 0, dono);
+    }
+
     public String getNome() {
         return nome;
     }

@@ -15,6 +15,10 @@ public class Diretorio {
         this.metaDados = metaDados;
     }
 
+    public Diretorio(String nome, String dono) {
+        this.metaDados = new MetaDados(nome, dono);
+    }
+
     public MetaDados getMetaDados() {
         return metaDados;
     }
