@@ -322,4 +322,14 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     // TODO: Adicionar métodos auxiliares para facilitar operações recursivas, busca de pai, etc.
+    public int getTamanhoArquivo(String caminho) throws CaminhoNaoEncontradoException {
+        ElementoFS elemento = navegar(caminho);
+        if (!elemento.isArquivo()) throw new CaminhoNaoEncontradoException("O caminho não é um arquivo.");
+        Arquivo arquivo = (Arquivo) elemento;
+        int tamanho = 0;
+        for (byte[] bloco : arquivo.getBlocos()) {
+            tamanho += bloco.length;
+        }
+        return tamanho;
+    }
 }

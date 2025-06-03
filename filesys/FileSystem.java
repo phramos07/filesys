@@ -10,7 +10,7 @@ import model.Usuario;
 // Essa classe deve servir apenas como proxy para o FileSystemImpl
 final public class FileSystem implements IFileSystem {
 
-    private final IFileSystem fileSystemImpl;
+    public final IFileSystem fileSystemImpl;
 
     public FileSystem(List<Usuario> usuarios) {
         fileSystemImpl = new FileSystemImpl(usuarios);

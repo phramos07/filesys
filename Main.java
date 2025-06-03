@@ -11,6 +11,7 @@ import exception.CaminhoJaExistenteException;
 import exception.CaminhoNaoEncontradoException;
 
 import filesys.FileSystem;
+import filesys.FileSystemImpl;
 
 // MENU INTERATIVO PARA O SISTEMA DE ARQUIVOS
 // SINTA-SE LIVRE PARA ALTERAR A CLASSE MAIN
@@ -217,9 +218,23 @@ public class Main {
     public static void read() throws CaminhoNaoEncontradoException, PermissaoException {
         System.out.println("Insira o caminho do arquivo a ser lido:");
         String caminho = scanner.nextLine();
-        byte[] buffer = new byte[READ_BUFFER_SIZE]; // Exemplo de tamanho de buffer por load/leitura . O que acontece se o Buffer for menor que o conteúdo a ser lido?     
-        
-        fileSystem.read(caminho, user, buffer); // Lógica para ler arquivos maiores que o buffer deve ser implementada. 
+
+        // Descobre o tamanho real do arquivo usando o método auxiliar
+        int tamanho;
+        try {
+            // Acesso ao método auxiliar via cast para FileSystemImpl
+            FileSystem fsProxy = (FileSystem) fileSystem;
+            FileSystemImpl fsImpl = (FileSystemImpl) fsProxy.fileSystemImpl;
+            tamanho = fsImpl.getTamanhoArquivo(caminho);
+        } catch (Exception e) {
+            System.out.println("Erro ao obter tamanho do arquivo: " + e.getMessage());
+            return;
+        }
+
+        byte[] buffer = new byte[tamanho];
+        fileSystem.read(caminho, user, buffer);
+        System.out.println("Conteúdo do arquivo:");
+        System.out.println(new String(buffer));
     }
 
     public static void mv() throws CaminhoNaoEncontradoException, PermissaoException {
