@@ -40,7 +40,7 @@ public class Main {
         // Para quaisquer operações que serão feitas por esse usuário em um caminho /path/**,
         // deve-se checar se o usuário tem permissão de escrita (r) neste caminho.
         if (args.length < 2) {
-            System.out.println("Usuário não fornecido");
+            System.out.println("Usuario nao fornecido");
             return;
         }
         user = args[1];
@@ -76,13 +76,13 @@ public class Main {
                         usuarios.add(new Usuario(userListed, dirPermission, dir));
 
                     } else {
-                        System.out.println("Formato ruim no arquivo de usuários. Linha: " + line);
+                        System.out.println("Formato ruim no arquivo de usuarios. Linha: " + line);
                     }
                 }
             }
             userScanner.close();
         } catch (FileNotFoundException e) { // Retorna se o arquivo de usuários não for encontrado
-            System.out.println("Arquivo de usuários não encontrado");
+            System.out.println("Arquivo de usuarios nao encontrado");
 
             return;
         }
@@ -108,18 +108,18 @@ public class Main {
     // mas diretamente na interface IFileSystem
     public static void menu() {
         while (true) {
-            System.out.println("\nComandos disponíveis:");
-            System.out.println("1. chmod - Alterar permissões");
-            System.out.println("2. mkdir - Criar diretório");
-            System.out.println("3. rm - Remover arquivo/diretório");
-            System.out.println("4. touch - Criar arquivo");
-            System.out.println("5. write - Escrever em arquivo");
-            System.out.println("6. read - Ler arquivo");
-            System.out.println("7. mv - Mover/renomear arquivo");
-            System.out.println("8. ls - Listar diretório");
-            System.out.println("9. cp - Copiar arquivo");
-            System.out.println("0. exit - Sair");
-            System.out.print("\nDigite o comando desejado: ");
+            System.out.println("\nComandos disponiveis (POSIX):");
+            System.out.println("1. chmod - Alterar permissoes de arquivo ou diretorio");
+            System.out.println("2. mkdir - Criar diretorio (cria diretorios intermediarios automaticamente, como 'mkdir -p')");
+            System.out.println("3. rm - Remover arquivo ou diretorio (pode ser recursivo)");
+            System.out.println("4. touch - Criar arquivo vazio");
+            System.out.println("5. write - Escrever dados em arquivo (pode anexar ou sobrescrever)");
+            System.out.println("6. read - Ler dados de arquivo (leitura sequencial)");
+            System.out.println("7. mv - Mover ou renomear arquivo/diretorio");
+            System.out.println("8. ls - Listar conteudo de diretorio (pode ser recursivo)");
+            System.out.println("9. cp - Copiar arquivo ou diretorio (pode ser recursivo)");
+            System.out.println("0. exit - Sair do sistema de arquivos");
+            System.out.print("\nDigite o numero do comando desejado: ");
 
             String opcao = scanner.nextLine();
             try {
@@ -170,25 +170,25 @@ public class Main {
     }
 
     public static void chmod() throws CaminhoNaoEncontradoException, PermissaoException {
-        System.out.println("Insira o caminho do arquivo ou diretório:");
+        System.out.println("Insira o caminho do arquivo ou diretorio:");
         String caminho = scanner.nextLine();
-        System.out.println("Insira o usuário para o qual deseja alterar as permissões:");
+        System.out.println("Insira o usuario para o qual deseja alterar as permissoes:");
         String usuarioAlvo = scanner.nextLine();
-        System.out.println("Insira a permissão (formato: 3 caracteres\"rwx\"):");
+        System.out.println("Insira a permissao (formato: 3 caracteres\"rwx\"):");
         String permissoes = scanner.nextLine();
         
         fileSystem.chmod(caminho, user, usuarioAlvo, permissoes);
     }
 
     public static void mkdir() throws CaminhoJaExistenteException, PermissaoException {
-        System.out.println("Insira o caminho do diretório a ser criado:");
+        System.out.println("Insira o caminho do diretorio a ser criado:");
         String caminho = scanner.nextLine();
         
         fileSystem.mkdir(caminho, user);
     }
 
     public static void rm() throws CaminhoNaoEncontradoException, PermissaoException {
-        System.out.println("Insira o caminho do diretório a ser removido:");
+        System.out.println("Insira o caminho do diretorio a ser removido:");
         String caminho = scanner.nextLine();
         System.out.println("Remover recursivamente? (true/false):");
         boolean recursivo = Boolean.parseBoolean(scanner.nextLine());
@@ -208,7 +208,7 @@ public class Main {
         String caminho = scanner.nextLine();
         System.out.println("Anexar? (true/false):");
         boolean anexar = Boolean.parseBoolean(scanner.nextLine());
-        System.out.println("Insira o conteúdo a ser escrito:");
+        System.out.println("Insira o conteudo a ser escrito:");
         String content = scanner.nextLine();
         byte[] buffer = content.getBytes();
         
@@ -233,7 +233,7 @@ public class Main {
 
         byte[] buffer = new byte[tamanho];
         fileSystem.read(caminho, user, buffer);
-        System.out.println("Conteúdo do arquivo:");
+        System.out.println("Conteudo do arquivo:");
         System.out.println(new String(buffer));
     }
 
@@ -247,7 +247,7 @@ public class Main {
     }
 
     public static void ls() throws CaminhoNaoEncontradoException, PermissaoException {
-        System.out.println("Insira o caminho do diretório a ser listado:");
+        System.out.println("Insira o caminho do diretorio a ser listado:");
         String caminho = scanner.nextLine();
         System.out.println("Listar recursivamente? (true/false):");
         boolean recursivo = Boolean.parseBoolean(scanner.nextLine());

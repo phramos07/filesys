@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 public final class FileSystemImpl implements IFileSystem {
-    private static final String ROOT_USER = "root"; // pode ser necessário
+    private static final String ROOT_USER = "root"; 
     private Diretorio raiz;
     private Map<String, Usuario> usuarios = new HashMap<>();
     private static Map<String, Usuario> usuariosGlobais = new HashMap<>();
@@ -23,7 +23,7 @@ public final class FileSystemImpl implements IFileSystem {
         this.usuarios.put(ROOT_USER, new Usuario(ROOT_USER, "rwx", "/"));
         for (Usuario usuario : usuarios) {
             this.usuarios.put(usuario.getNome(), usuario);
-            usuariosGlobais.put(usuario.getNome(), usuario); // Adicione aqui
+            usuariosGlobais.put(usuario.getNome(), usuario);
         }
         // TODO: Carregar usuários adicionais do arquivo users/users se necessário
     }
