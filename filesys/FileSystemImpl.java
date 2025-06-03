@@ -423,10 +423,6 @@ public final class FileSystemImpl implements IFileSystem {
         }
     }
 
-    public void addUser(String user) {
-        throw new UnsupportedOperationException("Método não implementado 'addUser'");
-    }
-
     @Override
     public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo)
             throws CaminhoNaoEncontradoException, PermissaoException {
