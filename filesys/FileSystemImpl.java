@@ -65,6 +65,7 @@ public final class FileSystemImpl implements IFileSystem {
             if (partes[i].isEmpty()) continue;
             caminhoAtual.append("/").append(partes[i]);
             Map<String, model.ElementoFS> filhos = atual.getFilhos();
+            boolean ehUltimo = (i == partes.length - 1);
             if (!filhos.containsKey(partes[i])) {
                 // Verifica permissão de escrita e execução no diretório atual
                 if (!atual.temPermissao(usuario, 'w') || !atual.temPermissao(usuario, 'x')) {
@@ -73,6 +74,9 @@ public final class FileSystemImpl implements IFileSystem {
                 // Cria o diretório intermediário
                 Diretorio novo = new Diretorio(partes[i], "rwx", usuario);
                 atual.adicionarFilho(novo);
+            } else if (ehUltimo) {
+                // Se o diretório final já existe, lança exceção
+                throw new CaminhoJaExistenteException("Diretório já existe: " + caminho);
             }
             // Avança para o próximo diretório
             atual = (Diretorio) filhos.get(partes[i]);
