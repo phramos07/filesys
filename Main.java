@@ -1,5 +1,8 @@
 import filesys.IFileSystem;
+import filesys.Usuario;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Scanner;
 import java.io.FileNotFoundException;
 
@@ -35,11 +38,11 @@ public class Main {
         // Usuário que está executando o programa.
         // Para quaisquer operações que serão feitas por esse usuário em um caminho /path/**,
         // deve-se checar se o usuário tem permissão de escrita (r) neste caminho.
-        if (args.length < 2) {
+        if (args.length < 1) {
             System.out.println("Usuário não fornecido");
             return;
         }
-        user = args[1];
+        user = args[0];
         
         // Carrega a lista de usuários do sistema a partir de arquivo
         // Formato do arquivo users:
@@ -51,6 +54,7 @@ public class Main {
         // A partir do momento que um usuário cria outro diretório ou arquivo, 
         // a permissão desse usuário é de leitura, escrita e execução nesse novo diretório/arquivo,
         // e sempre será rwx para o usuário root.
+        Map<String, Usuario> usuariosMap = new HashMap<>();
         try {
             Scanner userScanner = new Scanner(new java.io.File("users/users"));
             while (userScanner.hasNextLine()) {
@@ -67,7 +71,7 @@ public class Main {
                          * Por enquanto esse código somente imprime as permissões contidas no arquivo users.
                         */
                         System.out.println(userListed + " " + dir + " " + dirPermission); // Somente imprime o usuário, diretório e permissão
-
+                        usuariosMap.put(userListed, new Usuario(userListed, dirPermission));
 
                     } else {
                         System.out.println("Formato ruim no arquivo de usuários. Linha: " + line);
@@ -84,15 +88,15 @@ public class Main {
         // Finalmente cria o Sistema de Arquivos
         // Lista de usuários é imutável durante a execução do programa
         // Obs: Como passar a lista de usuários para o FileSystem?
-        fileSystem = new FileSystem(/*usuários?*/);
+        fileSystem = new FileSystem(usuariosMap);
 
         // // DESCOMENTE O BLOCO ABAIXO PARA CRIAR O DIRETÓRIO RAIZ ANTES DE RODAR O MENU
         // // Cria o diretório raiz do sistema. Root sempre tem permissão total "rwx"
-        // try {
-        //     fileSystem.mkdir(ROOT_DIR, ROOT_USER);
-        // } catch (CaminhoJaExistenteException | PermissaoException e) {
-        //     System.out.println(e.getMessage());
-        // }
+        try {
+            fileSystem.mkdir(ROOT_DIR, ROOT_USER);
+        } catch (CaminhoJaExistenteException | PermissaoException e) {
+            System.out.println(e.getMessage());
+        }
 
         // Menu interativo.
         menu();
