@@ -22,7 +22,7 @@ final public class FileSystem implements IFileSystem {
     }
 
     @Override
-    public void mkdir(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException {
+    public void mkdir(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException , CaminhoNaoEncontradoException{
         fileSystemImpl.mkdir(caminho, usuario);
     }
 

@@ -21,7 +21,7 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     @Override
-    public void mkdir(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException {
+    public void mkdir(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException ,CaminhoNaoEncontradoException {
         if (!usuarios.containsKey(usuario)) {
             throw new PermissaoException("Usuário '" + usuario + "' não encontrado.");
         }
@@ -37,11 +37,19 @@ public final class FileSystemImpl implements IFileSystem {
             throw new IllegalArgumentException("Caminho inválido: deve começar com '/'");
         }
 
+        StringBuilder caminhoAtual = new StringBuilder("/");
         for (int i = 1; i < partes.length - 1; i++) {
             String nome = partes[i];
+            if (nome.isEmpty())
+                continue;
             Diretorio encontrado = atual.buscarSubdiretorio(nome);
-           
+            if (encontrado == null) {
+                throw new CaminhoNaoEncontradoException("Diretório '" + nome + "' não encontrado.");
+            }
             atual = encontrado;
+            if (caminhoAtual.length() > 1)
+                caminhoAtual.append("/");
+            caminhoAtual.append(nome);
         }
 
         String nomeNovo = partes[partes.length - 1];
@@ -50,9 +58,10 @@ public final class FileSystemImpl implements IFileSystem {
             throw new CaminhoJaExistenteException("O diretório '" + nomeNovo + "' já existe.");
         }
 
-        if (!temPermissao(atual, usuario, 'w')) {
+
+        if (!temPermissao(caminhoAtual.toString(), usuario, 'w')) {
             throw new PermissaoException("Usuário '" + usuario + "' não tem permissão de escrita em '"
-                    + atual.getMetaDados().getNome() + "'");
+                    + caminhoAtual + "'");
         }
 
         Diretorio novo = new Diretorio(nomeNovo, usuario);
@@ -127,7 +136,7 @@ public final class FileSystemImpl implements IFileSystem {
             }
         }
 
-        if (!temPermissao(dir, usuario, 'r')) {
+        if (!temPermissao(caminho, usuario, 'r')) {
             throw new PermissaoException("Usuário '" + usuario + "' não tem permissão de leitura em '" + caminho + "'");
         }
 
@@ -162,19 +171,15 @@ public final class FileSystemImpl implements IFileSystem {
         throw new UnsupportedOperationException("Método não implementado 'addUser'");
     }
 
-    private boolean temPermissao(Diretorio dir, String usuario, char tipo) {
-        if (usuario.equals("root"))
-            return true; // root sempre tem permissao
+    private boolean temPermissao(String caminho, String usuario, char tipo) {
+        if (usuario.equals(ROOT_USER))
+            return true; // root sempre tem permissão
 
-        String perm = dir.getMetaDados().getPermissao(usuario);
+        Usuario u = usuarios.get(usuario);
+        if (u == null)
+            return false;
 
-        if (perm.equals("---")) {
-            Usuario u = usuarios.get(usuario);
-            if (u != null) {
-                perm = u.getPermissao(); // rwx, rw-, r--
-            }
-        }
-
+        String perm = u.getPermissaoParaCaminho(caminho);
         return perm.indexOf(tipo) != -1;
     }
 
