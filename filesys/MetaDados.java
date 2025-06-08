@@ -43,4 +43,9 @@ public class MetaDados {
     public boolean temPermissao(String usuario, char tipo) {
         return getPermissao(usuario).indexOf(tipo) != -1;
     }
+
+    public void setNome(String nomeDestino) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'setNome'");
+    }
 }

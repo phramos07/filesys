@@ -45,4 +45,13 @@ public class Diretorio {
             .filter(a -> a.getMetaDados().getNome().equals(nome))
             .findFirst().orElse(null);
     }
+    
+    public void removerArquivo(String nome) {
+        arquivos.removeIf(a -> a.getMetaDados().getNome().equals(nome));
+    }
+    
+    public void removerSubdiretorio(String nome) {
+        subdiretorios.removeIf(d -> d.getMetaDados().getNome().equals(nome));
+    }
+    
 }

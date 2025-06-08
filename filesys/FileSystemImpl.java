@@ -1,5 +1,6 @@
 package filesys;
 
+import java.util.ArrayList;
 import java.util.Map;
 
 import exception.CaminhoJaExistenteException;
@@ -51,13 +52,46 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void chmod(String caminho, String usuario, String usuarioAlvo, String permissao)
             throws CaminhoNaoEncontradoException, PermissaoException {
+        verificaUsuarioValido(usuario);
+        verificaUsuarioValido(usuarioAlvo);
         throw new UnsupportedOperationException("Método não implementado 'chmod'");
     }
 
     @Override
     public void rm(String caminho, String usuario, boolean recursivo)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'rm'");
+        verificaUsuarioValido(usuario);
+
+        if (caminho.equals("/")) {
+            throw new PermissaoException("Não é permitido remover o diretório raiz.");
+        }
+
+        verificarPermissao(caminho, usuario, 'r');
+        verificarPermissao(obterCaminhoPai(caminho), usuario, 'w');
+
+        Diretorio pai = navegarParaDiretorioPai(caminho);
+        String nome = extrairNomeFinal(caminho);
+
+        Arquivo arq = pai.buscarArquivo(nome);
+        if (arq != null) {
+            pai.removerArquivo(nome);
+            return;
+        }
+
+        Diretorio dir = pai.buscarSubdiretorio(nome);
+        if (dir == null) {
+            throw new CaminhoNaoEncontradoException("Caminho '" + caminho + "' não encontrado.");
+        }
+
+        if (!recursivo && (!dir.getArquivos().isEmpty() || !dir.getSubdiretorios().isEmpty())) {
+            throw new PermissaoException("Diretório não vazio. Use o modo recursivo.");
+        }
+
+        if (recursivo) {
+            removerDiretorioRecursivamente(dir);
+        }
+
+        pai.removerSubdiretorio(nome);
     }
 
     @Override
@@ -96,8 +130,49 @@ public final class FileSystemImpl implements IFileSystem {
 
     @Override
     public void mv(String caminhoAntigo, String caminhoNovo, String usuario)
-            throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'mv'");
+            throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException {
+        verificaUsuarioValido(usuario);
+
+        // Verifica se os caminhos são válidos
+        if (caminhoAntigo.equals("/") || caminhoNovo.equals("/")) {
+            throw new CaminhoNaoEncontradoException("Não é possível mover o diretório raiz.");
+        }
+
+        verificarPermissao(caminhoAntigo, usuario, 'r');
+        verificarPermissao(obterCaminhoPai(caminhoNovo), usuario, 'w');
+        verificarPermissao(obterCaminhoPai(caminhoAntigo), usuario, 'w');
+
+        // Extrai nomes e diretórios pai
+        Diretorio dirOrigemPai = navegarParaDiretorioPai(caminhoAntigo);
+        Diretorio dirDestinoPai = navegarParaDiretorioPai(caminhoNovo);
+        String nomeOrigem = extrairNomeFinal(caminhoAntigo);
+        String nomeDestino = extrairNomeFinal(caminhoNovo);
+
+        // Verifica se já existe algo no destino
+        if (dirDestinoPai.buscarArquivo(nomeDestino) != null || dirDestinoPai.buscarSubdiretorio(nomeDestino) != null) {
+            throw new CaminhoJaExistenteException("O destino '" + caminhoNovo + "' já existe.");
+        }
+
+        // Verifica se é arquivo
+        Arquivo arquivo = dirOrigemPai.buscarArquivo(nomeOrigem);
+        if (arquivo != null) {
+            dirOrigemPai.removerArquivo(nomeOrigem);
+            arquivo.getMetaDados().setNome(nomeDestino);
+            dirDestinoPai.adicionarArquivo(arquivo);
+            return;
+        }
+
+        // Verifica se é diretório
+        Diretorio subdir = dirOrigemPai.buscarSubdiretorio(nomeOrigem);
+        if (subdir != null) {
+            dirOrigemPai.removerSubdiretorio(nomeOrigem);
+            subdir.getMetaDados().setNome(nomeDestino);
+            dirDestinoPai.adicionarSubdiretorio(subdir);
+            return;
+        }
+
+        // Se não encontrou nada
+        throw new CaminhoNaoEncontradoException("Caminho de origem '" + caminhoAntigo + "' não encontrado.");
     }
 
     @Override
@@ -225,6 +300,19 @@ public final class FileSystemImpl implements IFileSystem {
 
         String perm = u.getPermissaoParaCaminho(caminho);
         return perm.indexOf(tipo) != -1;
+    }
+
+    private void removerDiretorioRecursivamente(Diretorio dir) {
+        // Remove subdiretórios recursivamente
+        for (Diretorio sub : new ArrayList<>(dir.getSubdiretorios())) {
+            removerDiretorioRecursivamente(sub);
+            dir.removerSubdiretorio(sub.getMetaDados().getNome());
+        }
+
+        // Remove todos os arquivos
+        for (Arquivo arq : new ArrayList<>(dir.getArquivos())) {
+            dir.removerArquivo(arq.getMetaDados().getNome());
+        }
     }
 
 }
