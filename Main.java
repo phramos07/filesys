@@ -1,4 +1,5 @@
 import filesys.IFileSystem;
+import filesys.Offset;
 import filesys.Usuario;
 
 import java.util.HashMap;
@@ -228,13 +229,27 @@ public class Main {
     public static void read() throws CaminhoNaoEncontradoException, PermissaoException {
         System.out.println("Insira o caminho do arquivo a ser lido:");
         String caminho = scanner.nextLine();
-        byte[] buffer = new byte[READ_BUFFER_SIZE]; // Exemplo de tamanho de buffer por load/leitura . O que acontece se
-                                                    // o Buffer for menor que o conteúdo a ser lido?
+        byte[] buffer = new byte[READ_BUFFER_SIZE];
 
-        fileSystem.read(caminho, user, buffer); // Lógica para ler arquivos maiores que o buffer deve ser implementada.
+        Offset offset = new Offset(0);
+        int offsetAnterior;
+        int bytesLidos;
+
+        System.out.println("Conteúdo lido:");
+        do {
+            offsetAnterior = offset.getValue();
+            fileSystem.read(caminho, user, buffer, offset);
+            bytesLidos = offset.getValue() - offsetAnterior;
+
+            if (bytesLidos > 0)
+                System.out.write(buffer, 0, bytesLidos);
+        } while (bytesLidos > 0);
+
+        System.out.flush();
+        System.out.println();
     }
 
-    public static void mv() throws CaminhoNaoEncontradoException, PermissaoException {
+    public static void mv() throws CaminhoNaoEncontradoException, CaminhoJaExistenteException, PermissaoException {
         System.out.println("Insira o caminho do arquivo a ser movido:");
         String caminhoAntigo = scanner.nextLine();
         System.out.println("Insira o novo caminho do arquivo:");

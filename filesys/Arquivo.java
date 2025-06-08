@@ -6,6 +6,7 @@ import java.util.List;
 public class Arquivo {
     private MetaDados metaDados;
     private List<Bloco> blocos;
+    public static int TAMANHO_BLOCO = 64;
 
     public Arquivo(String nome, String dono) {
         this.metaDados = new MetaDados(nome, dono);

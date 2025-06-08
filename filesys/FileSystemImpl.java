@@ -119,13 +119,44 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void write(String caminho, String usuario, boolean anexar, byte[] buffer)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'write'");
+        verificaUsuarioValido(usuario);
+        verificarPermissao(caminho, usuario, 'w');
+
+        Diretorio pai = navegarParaDiretorioPai(caminho);
+        String nomeArquivo = extrairNomeFinal(caminho);
+        Arquivo arquivo = pai.buscarArquivo(nomeArquivo);
+
+        if (arquivo == null) {
+            if (anexar) {
+                throw new CaminhoNaoEncontradoException("Arquivo '" + nomeArquivo + "' não encontrado para anexar.");
+            }
+            arquivo = new Arquivo(nomeArquivo, usuario);
+            pai.adicionarArquivo(arquivo);
+        }
+
+        if (!anexar) {
+            arquivo.getBlocos().clear();
+            arquivo.getMetaDados().setTamanho(0);
+        }
+
+        escreverBufferEmBlocos(arquivo, buffer);
     }
 
     @Override
-    public void read(String caminho, String usuario, byte[] buffer)
+    public void read(String caminho, String usuario, byte[] buffer, Offset offset)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'read'");
+        verificaUsuarioValido(usuario);
+        verificarPermissao(caminho, usuario, 'r');
+
+        Diretorio pai = navegarParaDiretorioPai(caminho);
+        String nomeArquivo = extrairNomeFinal(caminho);
+        Arquivo arquivo = pai.buscarArquivo(nomeArquivo);
+
+        if (arquivo == null) {
+            throw new CaminhoNaoEncontradoException("Arquivo '" + nomeArquivo + "' não encontrado.");
+        }
+
+        lerArquivoComOffset(arquivo, buffer, offset);
     }
 
     @Override
@@ -133,7 +164,6 @@ public final class FileSystemImpl implements IFileSystem {
             throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException {
         verificaUsuarioValido(usuario);
 
-        // Verifica se os caminhos são válidos
         if (caminhoAntigo.equals("/") || caminhoNovo.equals("/")) {
             throw new CaminhoNaoEncontradoException("Não é possível mover o diretório raiz.");
         }
@@ -313,6 +343,64 @@ public final class FileSystemImpl implements IFileSystem {
         for (Arquivo arq : new ArrayList<>(dir.getArquivos())) {
             dir.removerArquivo(arq.getMetaDados().getNome());
         }
+    }
+
+    /*
+     * Escreve o conteúdo do buffer em blocos do arquivo
+     * Se o buffer for maior que o tamanho do bloco,
+     * ele será dividido em blocos de tamanho fixo.
+     */
+    private void escreverBufferEmBlocos(Arquivo arquivo, byte[] buffer) {
+        int blocoTamanho = Arquivo.TAMANHO_BLOCO;
+        int offset = 0;
+        while (offset < buffer.length) {
+            int len = Math.min(blocoTamanho, buffer.length - offset);
+            byte[] dados = new byte[len];
+            System.arraycopy(buffer, offset, dados, 0, len);
+            Bloco bloco = new Bloco(len);
+            bloco.setDados(dados);
+            arquivo.adicionarBloco(bloco);
+            offset += len;
+        }
+    }
+
+    /*
+     * Lê o conteúdo do arquivo a partir de um offset mutável.
+     * O método deve atualizar o offset conforme lê bytes.
+     * Se o offset for maior que o tamanho do arquivo, retorna 0.
+     */
+    private int lerArquivoComOffset(Arquivo arquivo, byte[] buffer, Offset offset) {
+        int arquivoTamanho = arquivo.getMetaDados().getTamanho();
+        int posicao = offset.getValue();
+
+        // Zera o buffer antes de preencher
+        for (int i = 0; i < buffer.length; i++)
+            buffer[i] = 0;
+
+        if (posicao >= arquivoTamanho)
+            return 0;
+
+        int bytesParaLer = Math.min(buffer.length, arquivoTamanho - posicao);
+
+        int blocoTamanho = Arquivo.TAMANHO_BLOCO;
+        int blocoInicial = posicao / blocoTamanho;
+        int posNoBloco = posicao % blocoTamanho;
+
+        int bufferPos = 0;
+        int bytesRestantes = bytesParaLer;
+
+        for (int i = blocoInicial; i < arquivo.getBlocos().size() && bytesRestantes > 0; i++) {
+            Bloco bloco = arquivo.getBlocos().get(i);
+            byte[] dados = bloco.getDados();
+            int start = (i == blocoInicial) ? posNoBloco : 0;
+            int len = Math.min(dados.length - start, bytesRestantes);
+            System.arraycopy(dados, start, buffer, bufferPos, len);
+            bufferPos += len;
+            bytesRestantes -= len;
+        }
+
+        offset.add(bytesParaLer); // atualiza o offset para a proxima leitura
+        return bytesParaLer;
     }
 
 }
