@@ -74,7 +74,7 @@ public class Main {
                          * A FAZER:
                          * Processar a permissão de todos os usuários existentes por diretório.
                          * Por enquanto esse código somente imprime as permissões contidas no arquivo
-                         * users.
+                         * users. --- FEITO
                          */
                         System.out.println(userListed + " " + dir + " " + dirPermission); // Somente imprime o usuário,
                                                                                           // diretório e permissão
@@ -206,7 +206,7 @@ public class Main {
         fileSystem.rm(caminho, user, recursivo);
     }
 
-    public static void touch() throws CaminhoJaExistenteException, PermissaoException {
+    public static void touch() throws CaminhoJaExistenteException, CaminhoNaoEncontradoException, PermissaoException {
         System.out.println("Insira o caminho do arquivo a ser criado:");
         String caminho = scanner.nextLine();
 

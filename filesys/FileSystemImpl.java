@@ -21,55 +21,28 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     @Override
-    public void mkdir(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException ,CaminhoNaoEncontradoException {
-        if (!usuarios.containsKey(usuario)) {
-            throw new PermissaoException("Usuário '" + usuario + "' não encontrado.");
-        }
+    public void mkdir(String caminho, String usuario)
+            throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
+        verificaUsuarioValido(usuario);
 
-        if (caminho.equals("/")) {
+        if (caminho.equals("/"))
             return;
+
+        Diretorio pai = navegarParaDiretorioPai(caminho);
+        String nomeNovo = extrairNomeFinal(caminho);
+
+        if (pai.buscarSubdiretorio(nomeNovo) != null) {
+            throw new CaminhoJaExistenteException("O diretório '" + nomeNovo + "' já existe em '" + caminho + "'");
         }
 
-        String[] partes = caminho.split("/");
-        Diretorio atual = fileSys.getRaiz();
-
-        if (!partes[0].isEmpty()) {
-            throw new IllegalArgumentException("Caminho inválido: deve começar com '/'");
-        }
-
-        StringBuilder caminhoAtual = new StringBuilder("/");
-        for (int i = 1; i < partes.length - 1; i++) {
-            String nome = partes[i];
-            if (nome.isEmpty())
-                continue;
-            Diretorio encontrado = atual.buscarSubdiretorio(nome);
-            if (encontrado == null) {
-                throw new CaminhoNaoEncontradoException("Diretório '" + nome + "' não encontrado.");
-            }
-            atual = encontrado;
-            if (caminhoAtual.length() > 1)
-                caminhoAtual.append("/");
-            caminhoAtual.append(nome);
-        }
-
-        String nomeNovo = partes[partes.length - 1];
-
-        if (atual.buscarSubdiretorio(nomeNovo) != null) {
-            throw new CaminhoJaExistenteException("O diretório '" + nomeNovo + "' já existe.");
-        }
-
-
-        if (!temPermissao(caminhoAtual.toString(), usuario, 'w')) {
-            throw new PermissaoException("Usuário '" + usuario + "' não tem permissão de escrita em '"
-                    + caminhoAtual + "'");
-        }
+        verificarPermissao(obterCaminhoPai(caminho), usuario, 'w');
 
         Diretorio novo = new Diretorio(nomeNovo, usuario);
-        atual.adicionarSubdiretorio(novo);
+        pai.adicionarSubdiretorio(novo);
 
         // Debug pra testes: Imprime os subdiretorios do diretorio atual
-        System.out.print("Subdiretorios de '" + atual.getMetaDados().getNome() + "': ");
-        for (Diretorio d : atual.getSubdiretorios()) {
+        System.out.print("Subdiretorios de '" + pai.getMetaDados().getNome() + "': ");
+        for (Diretorio d : pai.getSubdiretorios()) {
             System.out.print(d.getMetaDados().getNome() + " ");
         }
         System.out.println();
@@ -88,8 +61,25 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     @Override
-    public void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'touch'");
+    public void touch(String caminho, String usuario)
+            throws CaminhoJaExistenteException, CaminhoNaoEncontradoException, PermissaoException {
+        verificaUsuarioValido(usuario);
+
+        if (caminho.equals("/") || caminho.endsWith("/")) {
+            throw new CaminhoNaoEncontradoException("Caminho inválido para arquivo: " + caminho);
+        }
+
+        Diretorio pai = navegarParaDiretorioPai(caminho);
+        String nomeArquivo = extrairNomeFinal(caminho);
+
+        if (pai.buscarArquivo(nomeArquivo) != null) {
+            throw new CaminhoJaExistenteException("O arquivo '" + nomeArquivo + "' já existe.");
+        }
+
+        verificarPermissao(obterCaminhoPai(caminho), usuario, 'w');
+
+        Arquivo novoArquivo = new Arquivo(nomeArquivo, usuario);
+        pai.adicionarArquivo(novoArquivo);
     }
 
     @Override
@@ -113,33 +103,16 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void ls(String caminho, String usuario, boolean recursivo)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        if (!usuarios.containsKey(usuario)) {
-            throw new PermissaoException("Usuário '" + usuario + "' não encontrado.");
+        verificaUsuarioValido(usuario);
+
+        // Verifica se o caminho é válido
+        if (caminho == null || caminho.isEmpty() || !caminho.startsWith("/")) {
+            throw new CaminhoNaoEncontradoException("Caminho inválido: " + caminho);
         }
 
-        Diretorio dir = fileSys.getRaiz();
-        if (!caminho.equals("/")) {
-            String[] partes = caminho.split("/");
-            if (!partes[0].isEmpty()) {
-                throw new IllegalArgumentException("Caminho inválido: deve começar com '/'");
-            }
-            for (int i = 1; i < partes.length; i++) {
-                String nome = partes[i];
-                if (nome.isEmpty())
-                    continue;
-                Diretorio encontrado = dir.buscarSubdiretorio(nome);
-                if (encontrado == null) {
-                    throw new CaminhoNaoEncontradoException(
-                            "Diretório '" + nome + "' não encontrado em '" + caminho + "'");
-                }
-                dir = encontrado;
-            }
-        }
+        Diretorio dir = caminho.equals("/") ? fileSys.getRaiz() : navegarParaDiretorioCompleto(caminho);
 
-        if (!temPermissao(caminho, usuario, 'r')) {
-            throw new PermissaoException("Usuário '" + usuario + "' não tem permissão de leitura em '" + caminho + "'");
-        }
-
+        verificarPermissao(caminho, usuario, 'r');
         lsDiretorio(dir, caminho.equals("/") ? "/" : dir.getMetaDados().getNome(), recursivo, "");
     }
 
@@ -169,6 +142,77 @@ public final class FileSystemImpl implements IFileSystem {
 
     public void addUser(String user) {
         throw new UnsupportedOperationException("Método não implementado 'addUser'");
+    }
+
+    // Navega para o diretorio pai do caminho passado como parametro
+    // Ex: "/home/user/docs" retorna "/home/user"
+    private Diretorio navegarParaDiretorioPai(String caminho) throws CaminhoNaoEncontradoException {
+        String[] partes = caminho.split("/");
+        if (!partes[0].isEmpty()) {
+            throw new IllegalArgumentException("Caminho inválido: deve começar com '/'");
+        }
+
+        Diretorio atual = fileSys.getRaiz();
+        for (int i = 1; i < partes.length - 1; i++) {
+            if (partes[i].isEmpty())
+                continue;
+            Diretorio encontrado = atual.buscarSubdiretorio(partes[i]);
+            if (encontrado == null) {
+                throw new CaminhoNaoEncontradoException("Diretório '" + partes[i] + "' não encontrado.");
+            }
+            atual = encontrado;
+        }
+        return atual;
+    }
+
+    // Navega para o diretorio completo do caminho passado como parametro
+    // Ex: "/home/user/docs" retorna o diretorio "docs"
+    private Diretorio navegarParaDiretorioCompleto(String caminho) throws CaminhoNaoEncontradoException {
+        String[] partes = caminho.split("/");
+        if (!partes[0].isEmpty()) {
+            throw new IllegalArgumentException("Caminho inválido: deve começar com '/'");
+        }
+
+        Diretorio atual = fileSys.getRaiz();
+        for (int i = 1; i < partes.length; i++) {
+            if (partes[i].isEmpty())
+                continue;
+            Diretorio encontrado = atual.buscarSubdiretorio(partes[i]);
+            if (encontrado == null) {
+                throw new CaminhoNaoEncontradoException("Diretório '" + partes[i] + "' não encontrado.");
+            }
+            atual = encontrado;
+        }
+        return atual;
+    }
+
+    // Extrai o nome final do caminho, que pode ser um arquivo ou diretório
+    // Ex: "/home/user/docs" retorna "docs"
+    private String extrairNomeFinal(String caminho) {
+        String[] partes = caminho.split("/");
+        return partes[partes.length - 1];
+    }
+
+    // Obtém o caminho pai do caminho fornecido
+    // Ex: "/home/user/docs" retorna "/home/user"
+    private String obterCaminhoPai(String caminho) {
+        int ultimoSlash = caminho.lastIndexOf('/');
+        if (ultimoSlash == 0)
+            return "/";
+        return caminho.substring(0, ultimoSlash);
+    }
+
+    private void verificaUsuarioValido(String usuario) throws PermissaoException {
+        if (!usuarios.containsKey(usuario)) {
+            throw new PermissaoException("Usuário '" + usuario + "' não encontrado.");
+        }
+    }
+
+    private void verificarPermissao(String caminho, String usuario, char tipo) throws PermissaoException {
+        if (!temPermissao(caminho, usuario, tipo)) {
+            throw new PermissaoException(
+                    "Usuário '" + usuario + "' não tem permissão '" + tipo + "' em '" + caminho + "'");
+        }
     }
 
     private boolean temPermissao(String caminho, String usuario, char tipo) {
