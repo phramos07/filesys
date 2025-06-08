@@ -4,15 +4,20 @@ import java.util.Map;
 
 import exception.PermissaoException;
 
-public class Diretorio {
-    protected String nome;
-    protected String dono;
-    protected String permissoesA; //permissões rank A
+public class Diretorio extends MetaDados{
 
+    public Diretorio(String nome, String permissoesBasicas, String dono,
+                     Diretorio pai, Map<String, Diretorio> filhos,
+                     Map<String, String> permissoesAvançadas) {
+
+        super(nome, permissoesBasicas, dono);
+        setPai(pai);
+        setFilhos(filhos);
+        setPermissoesAvancadas(permissoesAvançadas);
+    }
     protected Diretorio pai;
-
     protected Map<String, Diretorio> filhos;
-    protected Map<String, String> permissoesS; //permissões rank S
+    protected Map<String, String> permissoesAvancadas; 
 
     /*
      * verifica se o usuário é root, caso sim, retorna todas as permissões em formato de string (rwx)
@@ -23,8 +28,8 @@ public class Diretorio {
         if(usuario.equals("root"))
             return "rwx";
         else if(usuario.equals(dono))
-            return permissoesA;
-        return permissoesS.getOrDefault(usuario, "nnn");
+            return permissoesBasicas;
+        return permissoesAvancadas.getOrDefault(usuario, "nnn");
     }
     
     /*
@@ -36,7 +41,7 @@ public class Diretorio {
         if(permissoes == null || permissoes.length() != 3)
             throw new PermissaoException("Ocorreu um erro quanto as exceções");
 
-        permissoesS.put(usuario, permissoes);
+        permissoesAvancadas.put(usuario, permissoes);
     }
     /*
      * verifica se o usuário é root ou dono, caso sim retorna true porque os dois tem as permissões
@@ -49,7 +54,7 @@ public class Diretorio {
         if(usuario.equals("root") || usuario.equals(dono))
             return true;
 
-        String permissoesDoUsuario = permissoesS.get(usuario);
+        String permissoesDoUsuario = permissoesAvancadas.get(usuario);
         
         if(permissoesDoUsuario != null && permissoesDoUsuario.indexOf(permissaoRequerida) != -1)
             return true;
@@ -70,24 +75,6 @@ public class Diretorio {
         return filhos.remove(nome);
     }
 
-    public String getNome() {
-        return nome;
-    }
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
-    public String getDono() {
-        return dono;
-    }
-    public void setDono(String dono) {
-        this.dono = dono;
-    }
-    public String getPermissoesA() {
-        return permissoesA;
-    }
-    public void setPermissoesA(String permissoesA) {
-        this.permissoesA = permissoesA;
-    }
     public Diretorio getPai() {
         return pai;
     }
@@ -100,28 +87,11 @@ public class Diretorio {
     public void setFilhos(Map<String, Diretorio> filhos) {
         this.filhos = filhos;
     }
-    public Map<String, String> getPermissoesS() {
-        return permissoesS;
+    public Map<String, String> getPermissoesAvancadas() {
+        return permissoesAvancadas;
     }
-    public void setPermissoesS(Map<String, String> permissoesS) {
-        this.permissoesS = permissoesS;
+    public void setPermissoesAvancadas(Map<String, String> permissoesS) {
+        this.permissoesAvancadas = permissoesS;
     }
-
-    public boolean isFile(){
-        return false;
-    }
-
-
-    public Diretorio(String nome, String dono, String permissoesA, Diretorio pai, Map<String, Diretorio> filhos,
-            Map<String, String> permissoesS) {
-        setNome(nome);
-        setDono(dono);
-        setPermissoesA(permissoesA);
-        setPai(pai);
-        setFilhos(filhos);
-        setPermissoesS(permissoesS);
-    }
-
-    
     
 }
