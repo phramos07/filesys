@@ -51,7 +51,7 @@ final public class FileSystem implements IFileSystem {
 
     @Override
     public void mv(String caminhoAntigo, String caminhoNovo, String usuario)
-            throws CaminhoNaoEncontradoException, PermissaoException {
+            throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException{
         fileSystemImpl.mv(caminhoAntigo, caminhoNovo, usuario);
     }
 
