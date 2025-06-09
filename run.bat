@@ -1,12 +1,15 @@
 @echo off
 echo.
 
+echo Criando pasta bin...
+mkdir bin 2>nul
+
 echo Compilando programa...
-javac Main.java
+javac -d bin Main.java
 
 echo Rodando programa...
-timeout 3
+timeout /t 3
 cls
 
-java Main -u "root"
+java -cp bin Main -u "root"
 pause
