@@ -138,9 +138,51 @@ public final class FileSystemImpl implements IFileSystem {
     */
 
     @Override
-    public void mkdir(String caminho, String usuario)
-            throws CaminhoJaExistenteException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'chmod'");
+    public void mkdir(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException {
+        if (caminho.equals("/")) {
+            throw new UnsupportedOperationException("Não é possível criar diretório raiz pois ele já existe.");
+        }
+        if (caminho == null || usuario == null) {
+            throw new IllegalArgumentException("Caminho e usuário não podem ser nulos");
+        }
+
+        // Separar caminho em partes
+        String[] partes = caminho.split("/");
+        Dir diretorioAtual = raiz; // Começa no diretório raiz
+        StringBuilder caminhoAtual = new StringBuilder("/");
+
+        for (String parte : partes) {
+            if (parte.isEmpty()) {
+                continue; // Ignora partes vazias (por exemplo, quando o caminho começa com '/')
+            }
+            caminhoAtual.append(parte).append("/");
+
+            // Verifica se o diretório já existe
+            if (diretorioAtual.getFilhos().containsKey(parte)) {
+                if (diretorioAtual.getFilhos().get(parte).isArquivo()) {
+                    throw new CaminhoJaExistenteException("Caminho já existe como arquivo: " + caminhoAtual);
+                }
+
+                diretorioAtual = diretorioAtual.getFilhos().get(parte); // Ir para o diretório existente
+                throw new CaminhoJaExistenteException("Diretório já existe: " + caminhoAtual);
+            }
+
+            // Verifica se o usuário existe
+            usuarios.stream()
+                    .filter(u -> u.getNome().equals(usuario))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado: " + usuario));
+
+            // Verifica se o usuário tem permissão para criar o diretório
+            if (!diretorioAtual.getPermissoesUsuario(usuario).contains("w")) {
+                throw new PermissaoException("Usuário não tem permissão para criar diretório: " + caminhoAtual);
+            }
+
+            // Cria o novo diretório
+            Dir novoDiretorio = new Dir(parte, usuario, "rwx");
+            diretorioAtual.addFilho(novoDiretorio);
+            diretorioAtual = novoDiretorio; // Move para o novo diretório criado
+        }
     }
 
     @Override
