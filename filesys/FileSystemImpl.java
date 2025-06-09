@@ -54,7 +54,28 @@ public final class FileSystemImpl implements IFileSystem {
             throws CaminhoNaoEncontradoException, PermissaoException {
         verificaUsuarioValido(usuario);
         verificaUsuarioValido(usuarioAlvo);
-        throw new UnsupportedOperationException("Método não implementado 'chmod'");
+
+        // Só root ou quem tem permissão rw pode alterar permissoes
+        if (!usuario.equals(ROOT_USER)
+                && !(temPermissao(caminho, usuario, 'r') && temPermissao(caminho, usuario, 'w'))) {
+            throw new PermissaoException(
+                    "Usuário '" + usuario + "' não tem permissão para alterar permissões em '" + caminho + "'");
+        }
+
+        Diretorio pai = navegarParaDiretorioPai(caminho);
+        String nome = extrairNomeFinal(caminho);
+
+        Arquivo arq = pai.buscarArquivo(nome);
+        if (arq != null) {
+            arq.getMetaDados().setPermissao(usuarioAlvo, permissao);
+            return;
+        }
+        Diretorio dir = pai.buscarSubdiretorio(nome);
+        if (dir != null) {
+            dir.getMetaDados().setPermissao(usuarioAlvo, permissao);
+            return;
+        }
+        throw new CaminhoNaoEncontradoException("Caminho '" + caminho + "' não encontrado.");
     }
 
     @Override
@@ -245,8 +266,15 @@ public final class FileSystemImpl implements IFileSystem {
         throw new UnsupportedOperationException("Método não implementado 'cp'");
     }
 
-    public void addUser(String user) {
-        throw new UnsupportedOperationException("Método não implementado 'addUser'");
+    public void addUser(String nome, String permissao) {
+        if (!usuarios.containsKey(nome)) {
+            Usuario novo = new Usuario(nome, permissao);
+            usuarios.put(nome, novo);
+        }
+    }
+
+    public void removeUser(String nome) {
+        usuarios.remove(nome);
     }
 
     // Navega para o diretorio pai do caminho passado como parametro
@@ -324,12 +352,26 @@ public final class FileSystemImpl implements IFileSystem {
         if (usuario.equals(ROOT_USER))
             return true; // root sempre tem permissão
 
-        Usuario u = usuarios.get(usuario);
-        if (u == null)
-            return false;
+        try {
+            Diretorio pai = navegarParaDiretorioPai(caminho);
+            String nome = extrairNomeFinal(caminho);
 
-        String perm = u.getPermissaoParaCaminho(caminho);
-        return perm.indexOf(tipo) != -1;
+            Arquivo arq = pai.buscarArquivo(nome);
+            if (arq != null) {
+                return arq.getMetaDados().temPermissao(usuario, tipo);
+            }
+            Diretorio dir = pai.buscarSubdiretorio(nome);
+            if (dir != null) {
+                return dir.getMetaDados().temPermissao(usuario, tipo);
+            }
+            // Se for o diretório raiz
+            if (caminho.equals("/")) {
+                return fileSys.getRaiz().getMetaDados().temPermissao(usuario, tipo);
+            }
+        } catch (Exception e) {
+            return false;
+        }
+        return false;
     }
 
     private void removerDiretorioRecursivamente(Diretorio dir) {
