@@ -124,8 +124,4 @@ public final class FileSystemImpl implements IFileSystem {
         }
     }
 
-    @Override
-    public void alterarPermissao(String usuarioAlvo, String permissao) {
-        setPermissoesUsuario(usuarioAlvo, permissao);
-    }
 }
