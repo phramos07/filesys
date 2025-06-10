@@ -167,9 +167,33 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     @Override
-    public void chmod(String caminho, String usuario, String usuarioAlvo, String permissao)
-            throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'chmod'");
+    public void chmod(String caminho, String usuario, String usuarioAlvo, String permissao) throws CaminhoNaoEncontradoException, PermissaoException {
+        if (caminho == null || usuario == null || usuarioAlvo == null || permissao == null) {
+            throw new IllegalArgumentException("Caminho, usuário, usuário alvo e permissão não podem ser nulos");
+        }
+
+        // Verifica se o usuário existe
+        usuarios.stream()
+                .filter(u -> u.getNome().equals(usuarioAlvo))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado: " + usuarioAlvo));
+
+        if (!permissao.matches("^[rwx-]{3}$")) {
+            throw new IllegalArgumentException("Permissão inválida: " + permissao);
+        }
+
+        caminho = caminho.replace("\\", "/");
+        if (caminho.endsWith("/"))
+            caminho = caminho.substring(0, caminho.length() - 1);
+
+        Dir dir = irPara(caminho);
+
+        if (!dir.temPerm(usuario, "w")) {
+            throw new PermissaoException("Usuário não tem permissão para alterar permissões: " + caminho);
+        }
+
+        dir.setPermissoesUsuario(usuarioAlvo, permissao);
+        System.out.println("Permissão alterada para " + usuarioAlvo + " em " + caminho + ": " + permissao);
     }
 
     @Override
