@@ -1,7 +1,7 @@
 package filesys;
 
 /*classe base que tem o nome, permissões básicas e o dono, tanto Diretorio quanto Arquivo a implementam */
-public class MetaDados {
+public abstract class MetaDados {
     
     protected String nome;
     protected String permissoesBasicas;
@@ -31,5 +31,7 @@ public class MetaDados {
         setPermissoesBasicas(permissoesBasicas);
         setDono(dono);
     }
+    
+    public abstract void alterarPermissao(String usuarioAlvo, String permissao);
        
 }
