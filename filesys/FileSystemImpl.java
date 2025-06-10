@@ -24,8 +24,8 @@ public final class FileSystemImpl implements IFileSystem {
     private Dir raiz; // Diretório raiz
 
     public FileSystemImpl() {
-        this.raiz = new Dir("/", ROOT_USER, "rwx");
         usuarios.add(new Usuario(ROOT_USER, "/", "rwx")); // Adiciona o usuário root com permissões totais
+        this.raiz = new Dir("/", ROOT_USER, "rwx");
     }
 
     public FileSystemImpl(List<Usuario> usuarios) {
@@ -34,116 +34,30 @@ public final class FileSystemImpl implements IFileSystem {
         }
 
         this.usuarios = usuarios;
+        this.raiz = new Dir("/", ROOT_USER, "rwx");
     }
-
-    /*
-    @Override
-    public void mkdir(String caminho, String nome) throws CaminhoJaExistenteException, PermissaoException {
-        // throw new UnsupportedOperationException("Método não implementado 'mkdir'");
-        if (caminho == null || nome == null) {
-            throw new IllegalArgumentException("Caminho e nome não podem ser nulos");
-        }
-        if (caminho.isEmpty() || nome.isEmpty()) {
-            throw new IllegalArgumentException("Caminho e nome não podem ser vazios");
-        }
-
-        // Aqui você deve implementar a lógica para criar um diretório
-        // Verifique se o caminho existe e se o usuário tem permissão para criar o diretório
-        // Se o diretório já existir, lance CaminhoJaExistenteException
-        // Se o caminho não existir, lance CaminhoNaoEncontradoException
-        // Se o usuário não tiver permissão, lance PermissaoException
-
-        // OBS: o contrato para esta interface exige que caminhos intermediários sejam criados por padrão durante a chamada à mkdir. É como se a flag '-p' fosse passada por padrão na nossa interface:
-            // -p     Create intermediate directories as required.  If this option is not specified, 
-            //     the full path prefix of each operand must already exist.  On the other hand, 
-            //     with this option specified, no error will be reported if a directory given as 
-            //     an operand already exists.  Intermediate directories are created with 
-            //     permission bits of “rwxrwxrwx” (0777) as modified by the current umask, plus 
-            //     write and search permission for the owner.
-
-        // Verifique se o diretório já existe
-        if (diretorioExiste(caminho + nome)) {
-            throw new CaminhoJaExistenteException("Diretório já existe: " + caminho + nome);
-        }
-
-        // Verificar se o usuário tem permissão para criar o diretório
-        if (!usuarioPodeCriarDiretorio(caminho, nome)) {
-            throw new PermissaoException("Usuário não tem permissão para criar diretório na raiz: " + nome);
-        }
-
-        if (caminho.equals("/")) {
-            // Criar diretório na raiz
-            criarDiretorioNaRaiz(nome);
-        } else {
-            // Verifique se o caminho existe
-            if (!caminhoExiste(caminho)) {
-                throw new IllegalStateException("Caminho não encontrado: " + caminho);
-            }
-            // Criar diretório no caminho especificado
-            criarDiretorioNoCaminho(caminho, nome);
-        }
-
-    }
-
-    private boolean caminhoExiste(String caminho) {
-        Path path = Paths.get(caminho);
-        return Files.exists(path);
-    }
-
-    private boolean diretorioExiste(String caminho) {
-        Path path = Paths.get(caminho);
-        return Files.isDirectory(path);
-    }
-
-    private void criarDiretorioNaRaiz(String nome) {
-        Path path = Paths.get("/" + nome);
-        try {
-            Files.createDirectory(path);
-        } catch (Exception e) {
-            throw new RuntimeException("Erro ao criar diretório na raiz: " + e.getMessage(), e);
-        }
-    }
-
-    private void criarDiretorioNoCaminho(String caminho, String nome) {
-        Path path = Paths.get(caminho, nome);
-        try {
-            Files.createDirectories(path); // Cria o diretório e quaisquer diretórios intermediários necessários
-        } catch (Exception e) {
-            throw new RuntimeException("Erro ao criar diretório no caminho: " + e.getMessage(), e);
-        }
-    }
-
-    public boolean usuarioPodeCriarDiretorio(String caminho, String nome) {
-        // Verifica se o usuário atual tem permissão para criar no diretório
-        Usuario usuarioAtual = getUsuarioAtual(); // Método fictício para obter o usuário atual
-        // Pega as permissões do usuário atual
-        String permissoes = usuarioAtual.getPermissoes();
-
-        // Verifica se o usuário é root ou se tem permissão de escrita
-        if (ROOT_USER.equals(usuarioAtual.getNome()) || permissoes.contains("w")) {
-            return true; // Usuário root ou tem permissão de escrita
-        }
-
-        return false; // Usuário não tem permissão
-    }
-
-    private Usuario getUsuarioAtual() {
-        for (Usuario usuario : usuarios) {
-            if (usuario.getNome().equals(user)) {
-                return usuario;
-            }
-        }
-        throw new IllegalArgumentException("Usuário não encontrado: " + user);
-    }
-    */
 
     @Override
     public void mkdir(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException {
+        if (caminho == null || usuario == null) {
+            throw new IllegalArgumentException("Caminho e usuário não podem ser nulos");
+        }
+
+        // Normaliza o caminho para formato UNIX
+        caminho = caminho.replace("\\", "/"); // Converte barras invertidas para barras normais
+
+        // Remove barras finais
+        if (caminho.length() > 1 && caminho.endsWith("/")) {
+            caminho = caminho.substring(0, caminho.length() - 1);
+        }
+
         if (caminho.equals("/")) {
             throw new UnsupportedOperationException("Não é possível criar diretório raiz pois ele já existe.");
         }
-        if (caminho == null || usuario == null) {
-            throw new IllegalArgumentException("Caminho e usuário não podem ser nulos");
+
+        if (raiz == null) {
+            System.err.println("Diretório raiz: " + raiz);
+            throw new IllegalStateException("Diretório raiz não foi inicializado.");
         }
 
         // Separar caminho em partes
@@ -151,11 +65,22 @@ public final class FileSystemImpl implements IFileSystem {
         Dir diretorioAtual = raiz; // Começa no diretório raiz
         StringBuilder caminhoAtual = new StringBuilder("/");
 
-        for (String parte : partes) {
-            if (parte.isEmpty()) {
-                continue; // Ignora partes vazias (por exemplo, quando o caminho começa com '/')
+        for (int i = 0; i < partes.length; i++) {
+            String parte = partes[i];
+
+            if (parte == null || parte.isEmpty()) {
+                continue; // Ignora partes vazias
             }
+
+            // Impede nomes inválidos de diretório
+            if (parte.contains("/") || parte.contains("\\")) {
+                throw new IllegalArgumentException("Nome de diretório inválido: " + parte);
+            }
+
             caminhoAtual.append(parte).append("/");
+
+            // Verifica se é o último diretório a ser criado
+            boolean isUltimoDiretorio = (i == partes.length - 1);
 
             // Verifica se o diretório já existe
             if (diretorioAtual.getFilhos().containsKey(parte)) {
@@ -164,7 +89,12 @@ public final class FileSystemImpl implements IFileSystem {
                 }
 
                 diretorioAtual = diretorioAtual.getFilhos().get(parte); // Ir para o diretório existente
-                throw new CaminhoJaExistenteException("Diretório já existe: " + caminhoAtual);
+
+                if (isUltimoDiretorio) {
+                    throw new CaminhoJaExistenteException("Diretório já existe: " + caminhoAtual);
+                }
+
+                continue; // Se já existe, não cria novamente
             }
 
             // Verifica se o usuário existe
@@ -174,7 +104,7 @@ public final class FileSystemImpl implements IFileSystem {
                     .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado: " + usuario));
 
             // Verifica se o usuário tem permissão para criar o diretório
-            if (!diretorioAtual.getPermissoesUsuario(usuario).contains("w")) {
+            if (!diretorioAtual.temPerm(usuario, "w")) {
                 throw new PermissaoException("Usuário não tem permissão para criar diretório: " + caminhoAtual);
             }
 
@@ -182,6 +112,8 @@ public final class FileSystemImpl implements IFileSystem {
             Dir novoDiretorio = new Dir(parte, usuario, "rwx");
             diretorioAtual.addFilho(novoDiretorio);
             diretorioAtual = novoDiretorio; // Move para o novo diretório criado
+
+            System.out.println("Diretório criado: " + caminhoAtual);
         }
     }
 
