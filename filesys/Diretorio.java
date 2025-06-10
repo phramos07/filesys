@@ -6,14 +6,8 @@ import exception.PermissaoException;
 
 public class Diretorio extends MetaDados{
 
-    public Diretorio(String nome, String permissoesBasicas, String dono,
-                     Diretorio pai, Map<String, Diretorio> filhos,
-                     Map<String, String> permissoesAvançadas) {
-
+    public Diretorio(String nome, String permissoesBasicas, String dono) {
         super(nome, permissoesBasicas, dono);
-        setPai(pai);
-        setFilhos(filhos);
-        setPermissoesAvancadas(permissoesAvançadas);
     }
     protected Diretorio pai;
     protected Map<String, Diretorio> filhos;
@@ -24,7 +18,7 @@ public class Diretorio extends MetaDados{
      * verifica se o usuário é dono, caso sim, retorna as respectivas permissoes
      * se nenhuma das condições for satisfeita, retorna permissoes de valor default: "nnn" (todas null)
      */
-    public String getPermissoesDeUsuario(String usuario){
+    public String getPermissoesUsuario(String usuario){
         if(usuario.equals("root"))
             return "rwx";
         else if(usuario.equals(dono))
@@ -94,4 +88,8 @@ public class Diretorio extends MetaDados{
         this.permissoesAvancadas = permissoesS;
     }
     
+    @Override
+    public void alterarPermissao(String usuarioAlvo, String permissao) {
+        setPermissoesBasicas(permissao);
+    }
 }
