@@ -179,13 +179,12 @@ public class Dir {
     public String toString() {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("Diretório: ").append(nome)
-          .append(", Dono: ").append(dono)
-          .append(", Permissões: ").append(permissoes)
-          .append(", Pai: ").append(pai != null ? pai.getNome() : "Nenhum")
-          .append(", Filhos: ").append(getFilhos().keySet())
-          .append(", Permissões dos usuários: ").append(permissoesUsuarios);
-
+        sb.append("  Diretório: ").append(nome).append("\n")
+        .append("    - Dono: ").append(dono).append("\n")
+        .append("    - Permissões: ").append(permissoes).append("\n")
+        .append("    - Pai: ").append(pai != null ? pai.getNome() : "Nenhum").append("\n")
+        .append("    - Filhos: ").append(getFilhos().isEmpty() ? "Nenhum" : getFilhos().keySet()).append("\n")
+        .append("    - Permissões dos usuários: ").append(permissoesUsuarios).append("\n");
         return sb.toString();
     }
 }
