@@ -45,6 +45,8 @@ public class Arquivo extends MetaDados {
         this.tamanho = tamanho;
     }
 
-    
-
+    @Override
+    public void alterarPermissao(String usuarioAlvo, String permissao) {
+        setPermissoesBasicas(permissao);
+    }
 }
