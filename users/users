@@ -5,4 +5,7 @@ pedro /** rw-
 tiago /** rw-
 luzia /** rwx
 carla /** r--
-athos /home/** rwx
+athos /users x
+athos /users/athos/** rwx
+joao /users x
+joao /users/joao/** rwx

@@ -29,6 +29,8 @@ public final class FileSystemImpl implements IFileSystem {
         if (caminho.equals("/"))
             return;
 
+        verificarPermissaoExecucaoNoCaminho(obterCaminhoPai(caminho), usuario);
+
         Diretorio pai = navegarParaDiretorioPai(caminho);
         String nomeNovo = extrairNomeFinal(caminho);
 
@@ -87,6 +89,7 @@ public final class FileSystemImpl implements IFileSystem {
             throw new PermissaoException("Não é permitido remover o diretório raiz.");
         }
 
+        verificarPermissaoExecucaoNoCaminho(obterCaminhoPai(caminho), usuario);
         verificarPermissao(caminho, usuario, 'r');
         verificarPermissao(obterCaminhoPai(caminho), usuario, 'w');
 
@@ -124,6 +127,8 @@ public final class FileSystemImpl implements IFileSystem {
             throw new CaminhoNaoEncontradoException("Caminho inválido para arquivo: " + caminho);
         }
 
+        verificarPermissaoExecucaoNoCaminho(obterCaminhoPai(caminho), usuario);
+
         Diretorio pai = navegarParaDiretorioPai(caminho);
         String nomeArquivo = extrairNomeFinal(caminho);
 
@@ -142,6 +147,7 @@ public final class FileSystemImpl implements IFileSystem {
             throws CaminhoNaoEncontradoException, PermissaoException {
         verificaUsuarioValido(usuario);
         verificarPermissao(caminho, usuario, 'w');
+        verificarPermissaoExecucaoNoCaminho(obterCaminhoPai(caminho), usuario);
 
         Diretorio pai = navegarParaDiretorioPai(caminho);
         String nomeArquivo = extrairNomeFinal(caminho);
@@ -168,6 +174,7 @@ public final class FileSystemImpl implements IFileSystem {
             throws CaminhoNaoEncontradoException, PermissaoException {
         verificaUsuarioValido(usuario);
         verificarPermissao(caminho, usuario, 'r');
+        verificarPermissaoExecucaoNoCaminho(obterCaminhoPai(caminho), usuario);
 
         Diretorio pai = navegarParaDiretorioPai(caminho);
         String nomeArquivo = extrairNomeFinal(caminho);
@@ -188,6 +195,9 @@ public final class FileSystemImpl implements IFileSystem {
         if (caminhoAntigo.equals("/") || caminhoNovo.equals("/")) {
             throw new CaminhoNaoEncontradoException("Não é possível mover o diretório raiz.");
         }
+
+        verificarPermissaoExecucaoNoCaminho(caminhoAntigo, usuario);
+        verificarPermissaoExecucaoNoCaminho(caminhoNovo, usuario);
 
         verificarPermissao(caminhoAntigo, usuario, 'r');
         verificarPermissao(obterCaminhoPai(caminhoNovo), usuario, 'w');
@@ -235,6 +245,8 @@ public final class FileSystemImpl implements IFileSystem {
         if (caminho == null || caminho.isEmpty() || !caminho.startsWith("/")) {
             throw new CaminhoNaoEncontradoException("Caminho inválido: " + caminho);
         }
+
+        verificarPermissaoExecucaoNoCaminho(caminho, usuario);
 
         Diretorio dir = caminho.equals("/") ? fileSys.getRaiz() : navegarParaDiretorioCompleto(caminho);
 
@@ -341,6 +353,34 @@ public final class FileSystemImpl implements IFileSystem {
         }
     }
 
+    private void verificarPermissaoExecucaoNoCaminho(String caminho, String usuario)
+            throws PermissaoException, CaminhoNaoEncontradoException {
+        if (usuario.equals(ROOT_USER))
+            return;
+
+        String[] partes = caminho.split("/");
+        Diretorio atual = fileSys.getRaiz();
+        StringBuilder pathBuilder = new StringBuilder();
+        for (int i = 1; i < partes.length; i++) {
+            if (partes[i].isEmpty())
+                continue;
+            pathBuilder.append("/").append(partes[i]);
+            if (!temPermissao(pathBuilder.toString(), usuario, 'x')) {
+                throw new PermissaoException(
+                        "Usuário '" + usuario + "' não tem permissão 'x' em '" + pathBuilder + "'");
+            }
+            Diretorio encontrado = atual.buscarSubdiretorio(partes[i]);
+            if (encontrado == null)
+                break;
+            atual = encontrado;
+        }
+        // Sempre checa permissão 'x' em '/' se o caminho for exatamente "/"
+        if (caminho.equals("/") && !temPermissao("/", usuario, 'x')) {
+            throw new PermissaoException(
+                    "Usuário '" + usuario + "' não tem permissão 'x' em '/'");
+        }
+    }
+
     private void verificarPermissao(String caminho, String usuario, char tipo) throws PermissaoException {
         if (!temPermissao(caminho, usuario, tipo)) {
             throw new PermissaoException(
@@ -358,18 +398,31 @@ public final class FileSystemImpl implements IFileSystem {
 
             Arquivo arq = pai.buscarArquivo(nome);
             if (arq != null) {
-                return arq.getMetaDados().temPermissao(usuario, tipo);
+                if (arq.getMetaDados().temPermissao(usuario, tipo)) {
+                    return true;
+                }
             }
             Diretorio dir = pai.buscarSubdiretorio(nome);
             if (dir != null) {
-                return dir.getMetaDados().temPermissao(usuario, tipo);
+                if (dir.getMetaDados().temPermissao(usuario, tipo)) {
+                    return true;
+                }
             }
             // Se for o diretório raiz
             if (caminho.equals("/")) {
-                return fileSys.getRaiz().getMetaDados().temPermissao(usuario, tipo);
+                if (fileSys.getRaiz().getMetaDados().temPermissao(usuario, tipo)) {
+                    return true;
+                }
             }
         } catch (Exception e) {
-            return false;
+            // ignora, vai checar permissao global do usuario
+        }
+
+        // Checa permissao global do usuario (definida no arquivo users)
+        Usuario userObj = usuarios.get(usuario);
+        if (userObj != null) {
+            String perm = userObj.getPermissaoParaCaminho(caminho);
+            return perm.indexOf(tipo) != -1;
         }
         return false;
     }
