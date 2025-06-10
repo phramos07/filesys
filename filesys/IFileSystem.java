@@ -21,7 +21,8 @@ public interface IFileSystem {
     void rm(String caminho, String usuario, boolean recursivo) throws CaminhoNaoEncontradoException, PermissaoException;
 
     // Cria um novo arquivo. Atenção: Se o arquivo já existir, será lançada uma exceção.
-    void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException;
+    // ADD: exceção CaminhoNaoEncontradoException
+    void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException;
 
     // Escreve dados em um arquivo. Se o diretório não existir, será lançada uma exceção.
     // Caso o diretório exista, o arquivo será criado ou sobrescrito.

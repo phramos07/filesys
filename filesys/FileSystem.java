@@ -37,7 +37,7 @@ final public class FileSystem implements IFileSystem {
     }
 
     @Override
-    public void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException {
+    public void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
         fileSystemImpl.touch(caminho, usuario);
     }
 

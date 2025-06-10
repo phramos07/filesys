@@ -207,7 +207,7 @@ public class Main {
         fileSystem.rm(caminho, user, recursivo);
     }
 
-    public static void touch() throws CaminhoJaExistenteException, PermissaoException {
+    public static void touch() throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
         System.out.println("Insira o caminho do arquivo a ser criado:");
         String caminho = scanner.nextLine();
         
