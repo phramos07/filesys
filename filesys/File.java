@@ -109,11 +109,11 @@ public class File extends Dir {
     public String toString() {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("Arquivo: ").append(getNome())
-          .append(", Dono: ").append(getDono())
-          .append(", Permissões: ").append(getPermissoes())
-          .append(", Tamanho: ").append(tamanho).append(" bytes")
-          .append(", Blocos: ").append(blocos.size());
+        sb.append("Arquivo: ").append(getNome()).append("\n")
+        .append("  - Dono: ").append(getDono()).append("\n")
+        .append("  - Permissões: ").append(getPermissoes()).append("\n")
+        .append("  - Tamanho: ").append(tamanho).append(" bytes\n")
+        .append("  - Blocos: ").append(blocos.size()).append("\n");
         return sb.toString();
     }
 }

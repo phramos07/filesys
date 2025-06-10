@@ -245,9 +245,9 @@ public class Main {
     }
 
     public static void ls() throws CaminhoNaoEncontradoException, PermissaoException {
-        System.out.println("Insira o caminho do diretório a ser listado:");
+        System.out.print("Insira o caminho do diretório a ser listado: ");
         String caminho = scanner.nextLine();
-        System.out.println("Listar recursivamente? (true/false):");
+        System.out.print("Listar recursivamente? (true/false): ");
         boolean recursivo = Boolean.parseBoolean(scanner.nextLine());
         
         fileSystem.ls(caminho, user, recursivo);
