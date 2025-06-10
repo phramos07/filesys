@@ -179,32 +179,33 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     @Override
-    public void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException {
-    if (caminho == null || usuario == null) {
-        throw new IllegalArgumentException("Caminho e usuário não podem ser nulos");
+    public void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
+        if (caminho == null || usuario == null) {
+            throw new IllegalArgumentException("Caminho e usuário não podem ser nulos");
+        }
+
+        caminho = caminho.replace("\\", "/");
+        if (caminho.endsWith("/"))
+            caminho = caminho.substring(0, caminho.length() - 1);
+
+        int idx = caminho.lastIndexOf('/');
+        String nomeArquivo = caminho.substring(idx + 1);
+        String caminhoPai = (idx <= 0) ? "/" : caminho.substring(0, idx);
+
+        Dir dirPai = irPara(caminhoPai);
+
+        if (dirPai.getFilhos().containsKey(nomeArquivo)) {
+            throw new CaminhoJaExistenteException("Arquivo ou diretório já existe: " + caminho);
+        }
+
+        if (!dirPai.temPerm(usuario, "w")) {
+            throw new PermissaoException("Usuário não tem permissão para criar arquivo: " + caminho);
+        }
+
+        File novoArquivo = new File(nomeArquivo, usuario, "rwx");
+        dirPai.addFilho(novoArquivo);
+        System.out.println("Arquivo criado: " + caminho);
     }
-
-    caminho = caminho.replace("\\", "/");
-    if (caminho.endsWith("/")) caminho = caminho.substring(0, caminho.length() - 1);
-
-    int idx = caminho.lastIndexOf('/');
-    String nomeArquivo = caminho.substring(idx + 1);
-    String caminhoPai = (idx <= 0) ? "/" : caminho.substring(0, idx);
-
-    Dir dirPai = irPara(caminhoPai);
-
-    if (dirPai.getFilhos().containsKey(nomeArquivo)) {
-        throw new CaminhoJaExistenteException("Arquivo ou diretório já existe: " + caminho);
-    }
-
-    if (!dirPai.temPerm(usuario, "w")) {
-        throw new PermissaoException("Usuário não tem permissão para criar arquivo: " + caminho);
-    }
-
-    File novoArquivo = new File(nomeArquivo, usuario, "rwx");
-    dirPai.addFilho(novoArquivo);
-    System.out.println("Arquivo criado: " + caminho);
-}
 
     @Override
     public void write(String caminho, String usuario, boolean anexar, byte[] buffer)
