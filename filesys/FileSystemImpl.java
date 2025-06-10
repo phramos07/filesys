@@ -64,6 +64,11 @@ public final class FileSystemImpl implements IFileSystem {
                     "Usuário '" + usuario + "' não tem permissão para alterar permissões em '" + caminho + "'");
         }
 
+        if( caminho.equals("/")) {
+            fileSys.getRaiz().getMetaDados().setPermissao(usuarioAlvo, permissao);
+            return;
+        }
+
         Diretorio pai = navegarParaDiretorioPai(caminho);
         String nome = extrairNomeFinal(caminho);
 
@@ -292,6 +297,9 @@ public final class FileSystemImpl implements IFileSystem {
     // Navega para o diretorio pai do caminho passado como parametro
     // Ex: "/home/user/docs" retorna "/home/user"
     private Diretorio navegarParaDiretorioPai(String caminho) throws CaminhoNaoEncontradoException {
+        if (caminho.equals("/")) {
+            return fileSys.getRaiz();
+        }
         String[] partes = caminho.split("/");
         if (!partes[0].isEmpty()) {
             throw new IllegalArgumentException("Caminho inválido: deve começar com '/'");
@@ -334,6 +342,12 @@ public final class FileSystemImpl implements IFileSystem {
     // Extrai o nome final do caminho, que pode ser um arquivo ou diretório
     // Ex: "/home/user/docs" retorna "docs"
     private String extrairNomeFinal(String caminho) {
+        if (caminho == null || caminho.isEmpty()) {
+            throw new IllegalArgumentException("Caminho inválido: não pode ser nulo ou vazio.");
+        }
+        if (caminho.equals("/")) {
+            return "/"; 
+        }
         String[] partes = caminho.split("/");
         return partes[partes.length - 1];
     }

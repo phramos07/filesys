@@ -37,9 +37,10 @@ public class Usuario {
 
     private boolean caminhoMatches(String padrao, String caminho) {
         // Aceita qualquer subcaminho
-        if (padrao.endsWith("/**")) {
+      if (padrao.endsWith("/**")) {
             String base = padrao.substring(0, padrao.length() - 3);
-            return caminho.startsWith(base);
+            // Só casa se for um subcaminho, não o próprio diretório base
+            return !caminho.equals(base) && caminho.startsWith(base + "/");
         }
          // Aceita apenas filhos diretos
         if (padrao.endsWith("/*")) {
