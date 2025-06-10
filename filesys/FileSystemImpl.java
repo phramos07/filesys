@@ -37,6 +37,55 @@ public final class FileSystemImpl implements IFileSystem {
         this.raiz = new Dir("/", ROOT_USER, "rwx");
     }
 
+    // Método auxiliar para navegar até o diretório especificado pelo caminho
+    private Dir irPara(String caminho) throws CaminhoNaoEncontradoException {
+        if (caminho.equals("/") || caminho.isEmpty()) {
+            return raiz;
+        }
+
+        Dir diretorioAtual = raiz;
+
+        String[] partes = caminho.split("/");
+
+        for (String parte : partes) {
+            if (parte == null || parte.isEmpty()) continue;
+            if (!diretorioAtual.getFilhos().containsKey(parte)) {
+                throw new CaminhoNaoEncontradoException("Caminho não encontrado: " + caminho);
+            }
+            diretorioAtual = diretorioAtual.getFilhos().get(parte);
+        }
+
+        return diretorioAtual;
+    }
+
+    // Lista o conteúdo de um diretório e, se recursivo=true, lista também os subdiretórios
+    private String lsRecursivo(Dir diretorio, String caminho, boolean recursivo, String usuario) {
+        StringBuilder saida = new StringBuilder();
+        String nomeCaminho = (caminho == null || caminho.isEmpty() || !caminho.startsWith("/")) ? "/" + caminho : caminho;
+        saida.append(nomeCaminho).append(":\n");
+
+        // Lista todos os filhos (arquivos e diretórios) do diretório atual
+        if (diretorio.getFilhos().isEmpty()) {
+            saida.append("  - Vazio\n");
+        } else {
+            for (Dir filho : diretorio.getFilhos().values()) {
+                saida.append(filho.toString()).append("\n");
+            }
+        }
+
+        // Se for para listar recursivamente, faz o mesmo para cada subdiretório
+        if (recursivo) {
+            for (Dir filho : diretorio.getFilhos().values()) {
+                if (!filho.isArquivo()) { // Só entra em diretórios
+                    String novoCaminho = caminho.equals("/") ? "/" + filho.getNome() : caminho + "/" + filho.getNome();
+                    saida.append(lsRecursivo(filho, novoCaminho, true, usuario));
+                }
+            }
+        }
+
+        return saida.toString();
+    }
+
     @Override
     public void mkdir(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException {
         if (caminho == null || usuario == null) {
@@ -153,8 +202,16 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     @Override
-    public void ls(String caminho, String usuario, boolean recursivo) throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'ls'");
+    public void ls(String caminho, String usuario, boolean recursivo)
+            throws CaminhoNaoEncontradoException, PermissaoException {
+        Dir diretorio = irPara(caminho);
+
+        if (!diretorio.temPerm(usuario, "r")) {
+            throw new PermissaoException("Você não tem permissão para listar este diretório!");
+        }
+
+        String output = lsRecursivo(diretorio, caminho, recursivo, usuario);
+        System.out.print(output);
     }
 
     @Override
