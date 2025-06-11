@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeAll;
 
 import filesys.FileSystem;
 import filesys.IFileSystem;
+import filesys.Offset;
 import filesys.Usuario;
 
 public abstract class FileSystemTestBase {
@@ -16,6 +17,8 @@ public abstract class FileSystemTestBase {
     protected static final String ROOT_USER = "root";
     protected static final String ROOT_DIR = "/";
     protected static final int READ_BUFFER_SIZE = 256;
+    protected static final Offset offset = new Offset(0);
+    protected static final byte[] buffer = new byte[READ_BUFFER_SIZE];
 
     @BeforeAll
     public static void setUp() throws Exception {

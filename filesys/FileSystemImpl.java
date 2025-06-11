@@ -159,11 +159,7 @@ public final class FileSystemImpl implements IFileSystem {
         Arquivo arquivo = pai.buscarArquivo(nomeArquivo);
 
         if (arquivo == null) {
-            if (anexar) {
-                throw new CaminhoNaoEncontradoException("Arquivo '" + nomeArquivo + "' não encontrado para anexar.");
-            }
-            arquivo = new Arquivo(nomeArquivo, usuario);
-            pai.adicionarArquivo(arquivo);
+            throw new CaminhoNaoEncontradoException("Arquivo '" + nomeArquivo + "' não encontrado.");
         }
 
         if (!anexar) {
@@ -281,7 +277,7 @@ public final class FileSystemImpl implements IFileSystem {
     public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo)
             throws CaminhoNaoEncontradoException, PermissaoException {
 
-        verificaUsuarioValido(usuario);        
+        verificaUsuarioValido(usuario);
         // Localiza origem e destino
         Diretorio dirOrigemPai = navegarParaDiretorioPai(caminhoOrigem);
         Diretorio dirDestino = navegarParaDiretorioPai(caminhoDestino);

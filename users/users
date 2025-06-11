@@ -6,6 +6,8 @@ tiago /** rw-
 luzia /** rwx
 carla /** r--
 athos /users x
+athos /users/athos rwx
 athos /users/athos/** rwx
 joao /users x
+joao /users/joao rwx
 joao /users/joao/** rwx
