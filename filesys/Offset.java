@@ -11,6 +11,10 @@ public class Offset {
         return value;
     }
 
+    public void setValue(int value) {
+        this.value = value;
+    }
+
     public void add(int delta) {
         value += delta;
     }

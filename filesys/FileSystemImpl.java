@@ -64,7 +64,7 @@ public final class FileSystemImpl implements IFileSystem {
                     "Usuário '" + usuario + "' não tem permissão para alterar permissões em '" + caminho + "'");
         }
 
-        if( caminho.equals("/")) {
+        if (caminho.equals("/")) {
             fileSys.getRaiz().getMetaDados().setPermissao(usuarioAlvo, permissao);
             return;
         }
@@ -280,7 +280,50 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'cp'");
+
+        verificaUsuarioValido(usuario);        
+        // Localiza origem e destino
+        Diretorio dirOrigemPai = navegarParaDiretorioPai(caminhoOrigem);
+        Diretorio dirDestino = navegarParaDiretorioPai(caminhoDestino);
+
+        String nomeOrigem = extrairNomeFinal(caminhoOrigem);
+        String nomeDestino = extrairNomeFinal(caminhoDestino);
+
+        // Verifica se é arquivo
+        Arquivo arquivoOrigem = dirOrigemPai.buscarArquivo(nomeOrigem);
+        if (arquivoOrigem != null) {
+            if (!arquivoOrigem.getMetaDados().temPermissao(usuario, 'r')) {
+                throw new PermissaoException("Sem permissão de leitura para o arquivo.");
+            }
+
+            Arquivo copia = new Arquivo(nomeDestino, usuario);
+            for (Bloco bloco : arquivoOrigem.getBlocos()) {
+                Bloco novoBloco = new Bloco(bloco.getDados().length);
+                novoBloco.setDados(bloco.getDados().clone());
+                copia.adicionarBloco(novoBloco);
+            }
+
+            dirDestino.adicionarArquivo(copia);
+            return;
+        }
+
+        // Verifica se é diretório
+        Diretorio diretorioOrigem = dirOrigemPai.buscarSubdiretorio(nomeOrigem);
+        if (diretorioOrigem != null) {
+            if (!diretorioOrigem.getMetaDados().temPermissao(usuario, 'r')) {
+                throw new PermissaoException("Sem permissão de leitura para o diretório.");
+            }
+            if (!recursivo) {
+                throw new PermissaoException("Cópia de diretório requer flag recursiva.");
+            }
+
+            Diretorio copia = copiarDiretorioRecursivo(diretorioOrigem, usuario);
+            copia.getMetaDados().setNome(nomeDestino);
+            dirDestino.adicionarSubdiretorio(copia);
+            return;
+        }
+
+        throw new CaminhoNaoEncontradoException("Origem não encontrada.");
     }
 
     public void addUser(String nome, String permissao) {
@@ -346,7 +389,7 @@ public final class FileSystemImpl implements IFileSystem {
             throw new IllegalArgumentException("Caminho inválido: não pode ser nulo ou vazio.");
         }
         if (caminho.equals("/")) {
-            return "/"; 
+            return "/";
         }
         String[] partes = caminho.split("/");
         return partes[partes.length - 1];
@@ -442,15 +485,15 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     private void removerDiretorioRecursivamente(Diretorio dir) {
-        // Remove subdiretórios recursivamente
-        for (Diretorio sub : new ArrayList<>(dir.getSubdiretorios())) {
-            removerDiretorioRecursivamente(sub);
-            dir.removerSubdiretorio(sub.getMetaDados().getNome());
+        // Remove arquivos do diretório
+        for (Arquivo arquivo : new ArrayList<>(dir.getArquivos())) {
+            dir.removerArquivo(arquivo.getMetaDados().getNome());
         }
 
-        // Remove todos os arquivos
-        for (Arquivo arq : new ArrayList<>(dir.getArquivos())) {
-            dir.removerArquivo(arq.getMetaDados().getNome());
+        // Remove subdiretórios recursivamente
+        for (Diretorio subdir : new ArrayList<>(dir.getSubdiretorios())) {
+            removerDiretorioRecursivamente(subdir);
+            dir.removerSubdiretorio(subdir.getMetaDados().getNome());
         }
     }
 
@@ -512,4 +555,32 @@ public final class FileSystemImpl implements IFileSystem {
         return bytesParaLer;
     }
 
+    private Diretorio copiarDiretorioRecursivo(Diretorio original, String usuario) throws PermissaoException {
+        if (!original.getMetaDados().temPermissao(usuario, 'r')) {
+            throw new PermissaoException("Sem permissão para copiar diretório " + original.getMetaDados().getNome());
+        }
+
+        Diretorio copia = new Diretorio(original.getMetaDados().getNome(), usuario);
+
+        for (Arquivo a : original.getArquivos()) {
+            if (!a.getMetaDados().temPermissao(usuario, 'r')) {
+                throw new PermissaoException("Sem permissão para copiar arquivo " + a.getMetaDados().getNome());
+            }
+
+            Arquivo novo = new Arquivo(a.getMetaDados().getNome(), usuario);
+            for (Bloco bloco : a.getBlocos()) {
+                Bloco b = new Bloco(bloco.getDados().length);
+                b.setDados(bloco.getDados().clone());
+                novo.adicionarBloco(b);
+            }
+            copia.adicionarArquivo(novo);
+        }
+
+        for (Diretorio sub : original.getSubdiretorios()) {
+            Diretorio subCopia = copiarDiretorioRecursivo(sub, usuario);
+            copia.adicionarSubdiretorio(subCopia);
+        }
+
+        return copia;
+    }
 }
