@@ -173,6 +173,30 @@ public class Dir {
         return false; // Esta classe representa um diretório, não um arquivo
     }
 
+    public String getCaminhoCompleto(){
+        if(this.getPai() == null){
+            return "/" + this.getNome();
+        }
+        else{
+            String caminhoPai = this.getPai().getCaminhoCompleto();
+            if(caminhoPai.endsWith("/")){
+                return caminhoPai + this.getNome();
+            } else {
+                return caminhoPai + "/" + this.getNome();
+            }
+        }
+    }
+
+
+    public boolean temSubdiretorios() {
+    for (Dir filho : getFilhos().values()) {
+        if (!filho.isArquivo()) {
+            return true;
+        }
+    }
+    return false;
+}
+
 
     // Transformando em string
     @Override

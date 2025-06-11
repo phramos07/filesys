@@ -197,9 +197,37 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     @Override
-    public void rm(String caminho, String usuario, boolean recursivo)
-            throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'rm'");
+    public void rm(String caminho, String usuario, boolean recursivo) throws CaminhoNaoEncontradoException, PermissaoException {
+        if (caminho == null || usuario == null) {
+            throw new IllegalArgumentException("Caminho e usuário não podem ser nulos");
+        }
+
+        caminho = caminho.replace("\\", "/");
+        if (caminho.endsWith("/"))
+            caminho = caminho.substring(0, caminho.length() - 1);
+
+        Dir dir = irPara(caminho);
+
+        if (!dir.temPerm(usuario, "w")) {
+            throw new PermissaoException("Usuário não tem permissão para remover: " + caminho);
+        }
+        if(dir.temSubdiretorios() && !recursivo) {
+            throw new PermissaoException("Esse diretório contém subdiretórios. Use o parâmetro recursivo para removê-lo.");
+        }
+        
+
+        if (dir.isArquivo()) {
+            dir.getPai().removeFilho(dir.getNome());
+            System.out.println("Arquivo removido: " + caminho);
+        } else {
+            if (recursivo) {
+                for (Dir filho : dir.getFilhos().values()) {
+                    rm(filho.getCaminhoCompleto(), usuario, true);
+                }
+            }
+            dir.getPai().removeFilho(dir.getNome());
+            System.out.println("Diretório removido: " + caminho);
+        }
     }
 
     @Override
