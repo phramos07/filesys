@@ -210,32 +210,6 @@ public class Main {
         fileSystem.rm(caminho, user, recursivo);
     }
 
-    /*
-    TENTATIVA DE DEFINIR RECURSIVIDADE COMO TRUE CASO DIRETÓRIO TENHA SUBDIRETÓRIOS
-
-    public static void rm() throws CaminhoNaoEncontradoException, PermissaoException {
-    System.out.println("Insira o caminho do arquivo ou diretório a ser removido:");
-    String caminho = scanner.nextLine();
-
-    // Checa se o caminho é um diretório com subdiretórios
-    Dir dir = null;
-        dir = fileSystem.getDir(caminho, user);
-        
-
-
-
-    boolean recursivo = false;
-    if (dir != null && !dir.isArquivo() && dir.temSubdiretorios()) {
-        System.out.println("O diretório contém subdiretórios.");
-        recursivo = true;
-    } else {
-        System.out.println("Remover recursivamente? (true/false):");
-        recursivo = Boolean.parseBoolean(scanner.nextLine());
-    }
-
-    fileSystem.rm(caminho, user, recursivo);
-    }
-    */
 
     public static void touch() throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
         System.out.println("Insira o caminho do arquivo a ser criado:");
