@@ -272,11 +272,24 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     @Override
-    public void mv(String caminhoAntigo, String caminhoNovo, String usuario)
-            throws CaminhoNaoEncontradoException, PermissaoException {
+    public void mv(String caminhoAntigo, String caminhoNovo, String usuario) throws CaminhoNaoEncontradoException, PermissaoException {
         if (caminhoAntigo == null || caminhoNovo == null || usuario == null) {
             throw new IllegalArgumentException("Caminho antigo, caminho novo e usuário não podem ser nulos");
         }
+        caminhoAntigo = caminhoAntigo.replace("\\", "/");
+        caminhoNovo = caminhoNovo.replace("\\", "/");
+        if (caminhoAntigo.endsWith("/")) {
+            caminhoAntigo = caminhoAntigo.substring(0, caminhoAntigo.length() - 1);
+        }
+        if (caminhoNovo.endsWith("/")) {
+            caminhoNovo = caminhoNovo.substring(0, caminhoNovo.length() - 1);
+        }
+
+        if (caminhoAntigo.equals(caminhoNovo)) {
+            throw new IllegalArgumentException("Caminho antigo e caminho novo não podem ser iguais");
+        }
+
+
         Dir dirAntigo = irPara(caminhoAntigo);
         Dir dirNovo = irPara(caminhoNovo);
         if (!dirAntigo.temPerm(usuario, "w")) {
@@ -285,15 +298,13 @@ public final class FileSystemImpl implements IFileSystem {
         if (!dirNovo.temPerm(usuario, "w")) {
             throw new PermissaoException("Usuário não tem permissão para mover para: " + caminhoNovo);
         }
+
+        if( dirNovo.getFilhos().containsKey(dirAntigo.getNome())) {
+             throw new IllegalArgumentException("Já existe um arquivo ou diretório com o mesmo nome em: " + caminhoNovo);
+        }
         
-        /*
-         if( dirNovo.getFilhos().containsKey(dirAntigo.getNome())) {
-             throw new CaminhoJaExistenteException("Já existe um arquivo ou diretório com o mesmo nome em: " + caminhoNovo);
-         }
-         */
-        
-        dirNovo.addFilho(dirAntigo);
         dirAntigo.getPai().removeFilho(dirAntigo.getNome());
+        dirNovo.addFilho(dirAntigo);
     }
 
     @Override
