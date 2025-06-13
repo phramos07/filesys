@@ -274,7 +274,26 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void mv(String caminhoAntigo, String caminhoNovo, String usuario)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'mv'");
+        if (caminhoAntigo == null || caminhoNovo == null || usuario == null) {
+            throw new IllegalArgumentException("Caminho antigo, caminho novo e usuário não podem ser nulos");
+        }
+        Dir dirAntigo = irPara(caminhoAntigo);
+        Dir dirNovo = irPara(caminhoNovo);
+        if (!dirAntigo.temPerm(usuario, "w")) {
+            throw new PermissaoException("Usuário não tem permissão para mover: " + caminhoAntigo);
+        }
+        if (!dirNovo.temPerm(usuario, "w")) {
+            throw new PermissaoException("Usuário não tem permissão para mover para: " + caminhoNovo);
+        }
+        
+        /*
+         if( dirNovo.getFilhos().containsKey(dirAntigo.getNome())) {
+             throw new CaminhoJaExistenteException("Já existe um arquivo ou diretório com o mesmo nome em: " + caminhoNovo);
+         }
+         */
+        
+        dirNovo.addFilho(dirAntigo);
+        dirAntigo.getPai().removeFilho(dirAntigo.getNome());
     }
 
     @Override
