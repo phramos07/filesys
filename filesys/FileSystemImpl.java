@@ -293,7 +293,46 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'cp'");
+        if (caminhoOrigem == null || caminhoDestino == null || usuario == null) {
+            throw new IllegalArgumentException("Caminho de origem, destino e usuário não podem ser nulos");
+        }
+        caminhoOrigem = caminhoOrigem.replace("\\", "/");
+        caminhoDestino = caminhoDestino.replace("\\", "/");
+        if (caminhoOrigem.endsWith("/")){
+            caminhoOrigem = caminhoOrigem.substring(0, caminhoOrigem.length() - 1);
+        }
+        if (caminhoDestino.endsWith("/")){
+            caminhoDestino = caminhoDestino.substring(0, caminhoDestino.length() - 1);
+        }
+        Dir dirOrigem = irPara(caminhoOrigem);
+        Dir dirDestino = irPara(caminhoDestino);
+        if (!dirOrigem.temPerm(usuario, "r")) {
+            throw new PermissaoException("Usuário não tem permissão para ler o diretório de origem: " + caminhoOrigem);
+        }
+        if (!dirDestino.temPerm(usuario, "w")) {
+            throw new PermissaoException("Usuário não tem permissão para escrever no diretório de destino: " + caminhoDestino);
+        }
+
+        String nomeArquivo = dirOrigem.getNome();
+        String caminhoCompletoDestino = dirDestino.getCaminhoCompleto() + "/" + nomeArquivo;
+        if (dirDestino.getFilhos().containsKey(nomeArquivo)) {
+            throw new IllegalArgumentException("Arquivo ou diretório já existe no destino: " + caminhoCompletoDestino);
+        }
+        if (dirOrigem.isArquivo()) {
+            File novoArquivo = new File(nomeArquivo, usuario, "rwx");
+            dirDestino.addFilho(novoArquivo);
+            System.out.println("Arquivo copiado de " + caminhoOrigem + " para " + caminhoCompletoDestino);
+        } else {
+            Dir novoDiretorio = new Dir(nomeArquivo, usuario, "rwx");
+            dirDestino.addFilho(novoDiretorio);
+            for (Dir filho : dirOrigem.getFilhos().values()) {
+                String caminhoFilhoOrigem = filho.getCaminhoCompleto();
+                String caminhoFilhoDestino = novoDiretorio.getCaminhoCompleto() + "/" + filho.getNome();
+                cp(caminhoFilhoOrigem, caminhoFilhoDestino, usuario, recursivo);
+            }
+            System.out.println("Diretório copiado de " + caminhoOrigem + " para " + caminhoCompletoDestino);
+        }
+
     }
 
     public void addUser(String user) {
