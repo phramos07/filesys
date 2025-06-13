@@ -272,40 +272,63 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     @Override
-    public void mv(String caminhoAntigo, String caminhoNovo, String usuario) throws CaminhoNaoEncontradoException, PermissaoException {
-        if (caminhoAntigo == null || caminhoNovo == null || usuario == null) {
-            throw new IllegalArgumentException("Caminho antigo, caminho novo e usuário não podem ser nulos");
-        }
-        caminhoAntigo = caminhoAntigo.replace("\\", "/");
-        caminhoNovo = caminhoNovo.replace("\\", "/");
-        if (caminhoAntigo.endsWith("/")) {
-            caminhoAntigo = caminhoAntigo.substring(0, caminhoAntigo.length() - 1);
-        }
-        if (caminhoNovo.endsWith("/")) {
-            caminhoNovo = caminhoNovo.substring(0, caminhoNovo.length() - 1);
-        }
-
-        if (caminhoAntigo.equals(caminhoNovo)) {
-            throw new IllegalArgumentException("Caminho antigo e caminho novo não podem ser iguais");
-        }
-
-
-        Dir dirAntigo = irPara(caminhoAntigo);
-        Dir dirNovo = irPara(caminhoNovo);
-        if (!dirAntigo.temPerm(usuario, "w")) {
-            throw new PermissaoException("Usuário não tem permissão para mover: " + caminhoAntigo);
-        }
-        if (!dirNovo.temPerm(usuario, "w")) {
-            throw new PermissaoException("Usuário não tem permissão para mover para: " + caminhoNovo);
-        }
-
-        if( dirNovo.getFilhos().containsKey(dirAntigo.getNome())) {
-             throw new IllegalArgumentException("Já existe um arquivo ou diretório com o mesmo nome em: " + caminhoNovo);
-        }
-        
-        dirAntigo.getPai().removeFilho(dirAntigo.getNome());
-        dirNovo.addFilho(dirAntigo);
+public void mv(String caminhoAntigo, String caminhoNovo, String usuario) throws CaminhoNaoEncontradoException, PermissaoException {
+    if (caminhoAntigo == null || caminhoNovo == null || usuario == null) {
+        throw new IllegalArgumentException("Caminho antigo, caminho novo e usuário não podem ser nulos");
     }
+
+    caminhoAntigo = caminhoAntigo.replace("\\", "/");
+    caminhoNovo = caminhoNovo.replace("\\", "/");
+
+    if (caminhoAntigo.endsWith("/")) {
+        caminhoAntigo = caminhoAntigo.substring(0, caminhoAntigo.length() - 1);
+    }
+    if (caminhoNovo.endsWith("/")) {
+        caminhoNovo = caminhoNovo.substring(0, caminhoNovo.length() - 1);
+    }
+
+    if (caminhoAntigo.equals(caminhoNovo)) {
+        throw new IllegalArgumentException("Caminho antigo e caminho novo não podem ser iguais");
+    }
+
+    Dir dirantigo = irPara(caminhoAntigo);
+
+    if (!dirantigo.temPerm(usuario, "w")) {
+        throw new PermissaoException("Usuário não tem permissão para mover: " + caminhoAntigo);
+    }
+
+    try {
+        Dir destino = irPara(caminhoNovo);
+        if (!destino.temPerm(usuario, "w")) {
+            throw new PermissaoException("Sem permissão de escrita no destino");
+        }
+        if (destino.getFilhos().containsKey(dirantigo.getNome())) {
+            throw new IllegalArgumentException("Já existe um diretório ou arquivo com esse nome no destino");
+        }
+
+        dirantigo.getPai().removeFilho(dirantigo.getNome());
+        destino.addFilho(dirantigo);
+
+    } catch (CaminhoNaoEncontradoException e) {
+        
+        int idx = caminhoNovo.lastIndexOf('/');
+        String novoNome = caminhoNovo.substring(idx + 1);
+        String caminhoPaiNovo = (idx <= 0) ? "/" : caminhoNovo.substring(0, idx);
+        Dir novoPai = irPara(caminhoPaiNovo);
+
+        if (!novoPai.temPerm(usuario, "w")) {
+            throw new PermissaoException("Sem permissão de escrita no novo caminho");
+        }
+        if (novoPai.getFilhos().containsKey(novoNome)) {
+            throw new IllegalArgumentException("Já existe um objeto com esse nome no destino");
+        }
+
+        dirantigo.getPai().removeFilho(dirantigo.getNome());
+        dirantigo.setNome(novoNome);
+        novoPai.addFilho(dirantigo);
+    }
+}
+
 
     @Override
     public void ls(String caminho, String usuario, boolean recursivo)
