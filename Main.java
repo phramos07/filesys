@@ -235,8 +235,27 @@ public class Main {
         System.out.println("Insira o caminho do arquivo a ser lido:");
         String caminho = scanner.nextLine();
         byte[] buffer = new byte[READ_BUFFER_SIZE]; // Exemplo de tamanho de buffer por load/leitura . O que acontece se o Buffer for menor que o conteúdo a ser lido?     
-        
-        fileSystem.read(caminho, user, buffer); // Lógica para ler arquivos maiores que o buffer deve ser implementada. 
+
+        int offset = 0; // Offset para leitura
+        int offsetAntes;
+        int leitura;
+
+        System.out.println("Lendo arquivo: " + caminho + "\n");
+
+        do {
+            offsetAntes = offset; // Salva o offset antes da leitura
+            offset += fileSystem.read(caminho, user, buffer, offset); // Lê o arquivo no caminho especificado
+            leitura = offset - offsetAntes; // Calcula a quantidade de bytes lidos nesta iteração
+
+            if (leitura > 0) {
+                System.out.write(buffer, 0, leitura); // Escreve os bytes lidos no console
+            } else {
+                break; // Se não houver mais bytes para ler, sai do loop
+            }
+        } while (leitura > 0); // Garante que o offset seja não negativo
+
+        System.out.flush(); // Garante que todos os bytes sejam escritos no console
+        System.out.println("\n\nLeitura concluída.");
     }
 
     public static void mv() throws CaminhoNaoEncontradoException, PermissaoException {
