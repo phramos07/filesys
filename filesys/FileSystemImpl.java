@@ -268,13 +268,100 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void write(String caminho, String usuario, boolean anexar, byte[] buffer)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'write'");
+        if (caminho == null || usuario == null || buffer == null) {
+            throw new IllegalArgumentException("Caminho, usuário e buffer não podem ser nulos");
+        }
+
+        caminho = caminho.replace("\\", "/");
+        if (caminho.endsWith("/")) {
+            caminho = caminho.substring(0, caminho.length() - 1);
+        }
+
+        Dir diretorio = irPara(caminho);
+
+        if (!diretorio.isArquivo()) {
+            throw new IllegalArgumentException("O caminho especificado não é um arquivo: " + caminho);
+        }
+
+        if (!diretorio.temPerm(usuario, "w")) {
+            throw new PermissaoException("Usuário não tem permissão para escrever: " + caminho);
+        }
+
+        File arquivo = (File) diretorio;
+        if (!anexar) arquivo.limparBlocos();
+
+        int offset = 0;
+
+        while (offset < buffer.length) {
+            // Tamanho do bloco a ser escrito
+            int tamanhoBloco = Math.min(buffer.length - offset, File.TAMANHO_BYTES_BLOCO);
+            // Bloco de dados a ser escrito
+            byte[] blocoDados = new byte[tamanhoBloco];
+            // Copiar dados para o bloco
+            System.arraycopy(buffer, offset, blocoDados, 0, tamanhoBloco);
+
+            // Criar novo bloco de dados
+            BlocoDeDados novoBloco = new BlocoDeDados(blocoDados);
+            // Adicionar bloco ao arquivo
+            arquivo.addBloco(novoBloco);
+            // Atualizar offset para o próximo bloco
+            offset += tamanhoBloco;
+        }
     }
 
     @Override
-    public void read(String caminho, String usuario, byte[] buffer)
+    public int read(String caminho, String usuario, byte[] buffer, int offset)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'read'");
+        if (caminho == null || usuario == null || buffer == null) {
+            throw new IllegalArgumentException("Caminho, usuário e buffer não podem ser nulos");
+        }
+
+        caminho = caminho.replace("\\", "/");
+        if (caminho.endsWith("/")) {
+            caminho = caminho.substring(0, caminho.length() - 1);
+        }
+
+        Dir diretorio = irPara(caminho);
+
+        if (!diretorio.isArquivo()) {
+            throw new IllegalArgumentException("O caminho especificado não é um arquivo: " + caminho);
+        }
+
+        if (!diretorio.temPerm(usuario, "r")) {
+            throw new PermissaoException("Usuário não tem permissão para ler: " + caminho);
+        }
+
+        File arquivo = (File) diretorio;
+        int bufferOffset = 0;
+        int arquivoOffset = 0;
+
+        // Lê os blocos do arquivo e copia para o buffer
+        for (BlocoDeDados bloco : arquivo.getBlocos()) {
+            byte[] dadosBloco = bloco.getDados();
+            int tamanhoBloco = dadosBloco.length;
+
+            // Se o offset ainda não foi alcançado, pula bytes
+            if (arquivoOffset + tamanhoBloco <= offset) {
+                arquivoOffset += tamanhoBloco;
+                continue;
+            }
+
+            // Calcula o início da leitura dentro do bloco
+            int inicioLeitura = Math.max(0, offset - arquivoOffset);
+            int bytesDisponiveis = tamanhoBloco - inicioLeitura;
+            int bytesRestantes = Math.min(buffer.length - bufferOffset, bytesDisponiveis);
+
+            // Copia os dados do bloco para o buffer
+            System.arraycopy(dadosBloco, inicioLeitura, buffer, bufferOffset, bytesRestantes);
+            bufferOffset += bytesRestantes;
+
+            // Se o buffer estiver cheio, sai do loop
+            if (bufferOffset >= buffer.length) {
+                break;
+            }
+        }
+
+        return bufferOffset;
     }
 
     @Override

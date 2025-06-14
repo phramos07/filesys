@@ -48,9 +48,9 @@ final public class FileSystem implements IFileSystem {
     }
 
     @Override
-    public void read(String caminho, String usuario, byte[] buffer)
+    public int read(String caminho, String usuario, byte[] buffer, int offset)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        fileSystemImpl.read(caminho, usuario, buffer);
+        return fileSystemImpl.read(caminho, usuario, buffer, offset);
     }
 
     @Override
