@@ -268,7 +268,45 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void write(String caminho, String usuario, boolean anexar, byte[] buffer)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'write'");
+        if (caminho == null || usuario == null || buffer == null) {
+            throw new IllegalArgumentException("Caminho, usuário e buffer não podem ser nulos");
+        }
+
+        caminho = caminho.replace("\\", "/");
+        if (caminho.endsWith("/")) {
+            caminho = caminho.substring(0, caminho.length() - 1);
+        }
+
+        Dir diretorio = irPara(caminho);
+
+        if (!diretorio.isArquivo()) {
+            throw new IllegalArgumentException("O caminho especificado não é um arquivo: " + caminho);
+        }
+
+        if (!diretorio.temPerm(usuario, "w")) {
+            throw new PermissaoException("Usuário não tem permissão para escrever: " + caminho);
+        }
+
+        File arquivo = (File) diretorio;
+        if (!anexar) arquivo.limparBlocos();
+
+        int offset = 0;
+
+        while (offset < buffer.length) {
+            // Tamanho do bloco a ser escrito
+            int tamanhoBloco = Math.min(buffer.length - offset, File.TAMANHO_BYTES_BLOCO);
+            // Bloco de dados a ser escrito
+            byte[] blocoDados = new byte[tamanhoBloco];
+            // Copiar dados para o bloco
+            System.arraycopy(buffer, offset, blocoDados, 0, tamanhoBloco);
+
+            // Criar novo bloco de dados
+            BlocoDeDados novoBloco = new BlocoDeDados(blocoDados);
+            // Adicionar bloco ao arquivo
+            arquivo.addBloco(novoBloco);
+            // Atualizar offset para o próximo bloco
+            offset += tamanhoBloco;
+        }
     }
 
     @Override

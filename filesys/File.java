@@ -43,7 +43,7 @@ public class File extends Dir {
         }
     }
 
-    public void clearBlocos() {
+    public void limparBlocos() {
         this.blocos.clear();
         this.tamanho = 0; // Reseta o tamanho do arquivo
     }
