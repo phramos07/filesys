@@ -44,7 +44,7 @@ public final class FileSystemImpl implements IFileSystem {
             throw new CaminhoJaExistenteException("Caminho já existe: " + caminho);
         }
 
-        if (!atual.meta.podeEscrever(usuario) && !usuario.equals(ROOT_USER)) {
+        if (!atual.metaDados.podeEscrever(usuario) && !usuario.equals(ROOT_USER)) {
             throw new PermissaoException("Usuário " + usuario + " não tem permissão de escrita.");
         }
 
@@ -92,7 +92,7 @@ public final class FileSystemImpl implements IFileSystem {
         }
 
         // Verifica permissão de escrita
-        if (!atual.meta.podeEscrever(usuario) && !usuario.equals(ROOT_USER)) {
+        if (!atual.metaDados.podeEscrever(usuario) && !usuario.equals(ROOT_USER)) {
             throw new PermissaoException(
                     "Usuário '" + usuario + "' não tem permissão para criar arquivos nesse diretório.");
         }
@@ -136,7 +136,7 @@ public final class FileSystemImpl implements IFileSystem {
         }
 
         // Verifica permissão de leitura
-        if (!atual.meta.podeLer(usuario) && !usuario.equals(ROOT_USER)) {
+        if (!atual.metaDados.podeLer(usuario) && !usuario.equals(ROOT_USER)) {
             throw new PermissaoException("Usuário '" + usuario + "' não tem permissão de leitura.");
         }
 

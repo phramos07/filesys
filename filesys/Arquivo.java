@@ -1,13 +1,10 @@
 package filesys;
 
-import java.util.ArrayList;
-import java.util.List;
-
 class Arquivo {
-    MetaDados meta;
-    List<Byte> conteudo = new ArrayList<>();
+    private MetaDados metaDados;
+    private Bloco[] bloco;
 
     public Arquivo(String nome, String dono) {
-        this.meta = new MetaDados(nome, dono, "rwx");
+        this.metaDados = new MetaDados(nome, dono, "rwx");
     }
 }

@@ -4,8 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 class MetaDados {
-    String nome;
-    String dono;
+    private String nome;
+    private int tamanho;
+    private String dono;
     Map<String, String> permissoes; // user → "rwx"
 
     public MetaDados(String nome, String dono, String permissoesIniciais) {
@@ -13,6 +14,7 @@ class MetaDados {
         this.dono = dono;
         this.permissoes = new HashMap<>();
         this.permissoes.put(dono, permissoesIniciais);
+        this.tamanho = 0; // Inicializa o tamanho como 0
     }
 
     public boolean podeEscrever(String usuario) {
