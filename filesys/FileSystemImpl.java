@@ -122,7 +122,38 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void ls(String caminho, String usuario, boolean recursivo)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'ls'");
+        String[] partes = Arrays.stream(caminho.split("/"))
+                .filter(p -> !p.isEmpty())
+                .toArray(String[]::new);
+
+        Diretorio atual = raiz;
+
+        for (String parte : partes) {
+            if (!atual.subdirs.containsKey(parte)) {
+                throw new CaminhoNaoEncontradoException("Diretório '" + parte + "' não encontrado.");
+            }
+            atual = atual.subdirs.get(parte);
+        }
+
+        // Verifica permissão de leitura
+        if (!atual.meta.podeLer(usuario) && !usuario.equals(ROOT_USER)) {
+            throw new PermissaoException("Usuário '" + usuario + "' não tem permissão de leitura.");
+        }
+
+        System.out.println("Listando conteúdo de: " + caminho);
+        listar(atual, caminho, recursivo, "");
+    }
+
+    private void listar(Diretorio dir, String caminho, boolean recursivo, String indent) {
+        for (String nomeArq : dir.arquivos.keySet()) {
+            System.out.println(indent + "- " + nomeArq + " (arquivo)");
+        }
+        for (String nomeDir : dir.subdirs.keySet()) {
+            System.out.println(indent + "+ " + nomeDir + " (diretório)");
+            if (recursivo) {
+                listar(dir.subdirs.get(nomeDir), caminho + "/" + nomeDir, true, indent + "  ");
+            }
+        }
     }
 
     @Override

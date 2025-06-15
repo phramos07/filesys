@@ -21,4 +21,11 @@ class MetaDados {
         } 
         return permissoes.get(usuario).contains("w");
     }
+
+    public boolean podeLer(String usuario) {
+        if (!permissoes.containsKey(usuario)){
+            return false;
+        } 
+        return permissoes.get(usuario).contains("r");
+    }
 }
