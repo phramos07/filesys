@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.Test;
 
 import exception.CaminhoJaExistenteException;
-import exception.CaminhoNaoEncontradoException;
 
 public class MkdirTest extends FileSystemTestBase {
 
@@ -19,11 +18,6 @@ public class MkdirTest extends FileSystemTestBase {
   public void testCriarDiretorioJaExistente() throws Exception {
     fileSystem.mkdir("/home", "root");
     assertThrows(CaminhoJaExistenteException.class, () -> fileSystem.mkdir("/home", "root"));
-  }
-
-  @Test
-  public void testCriarDiretorioSemPai() {
-    assertThrows(CaminhoNaoEncontradoException.class, () -> fileSystem.mkdir("/naoexiste/filho", "root"));
   }
 
   @Test

@@ -29,26 +29,39 @@ public final class FileSystemImpl implements IFileSystem {
         if (caminho.equals("/"))
             return;
 
-        verificarPermissaoExecucaoNoCaminho(obterCaminhoPai(caminho), usuario);
-
-        Diretorio pai = navegarParaDiretorioPai(caminho);
-        String nomeNovo = extrairNomeFinal(caminho);
-
-        if (pai.buscarSubdiretorio(nomeNovo) != null) {
-            throw new CaminhoJaExistenteException("O diretório '" + nomeNovo + "' já existe em '" + caminho + "'");
+        String[] partes = caminho.split("/");
+        if (!partes[0].isEmpty()) {
+            throw new IllegalArgumentException("Caminho inválido: deve começar com '/'");
         }
 
-        verificarPermissao(obterCaminhoPai(caminho), usuario, 'w');
+        Diretorio atual = fileSys.getRaiz();
+        StringBuilder pathBuilder = new StringBuilder();
+        for (int i = 1; i < partes.length; i++) {
+            if (partes[i].isEmpty())
+                continue;
+            pathBuilder.append("/").append(partes[i]);
+            String nomeDir = partes[i];
 
-        Diretorio novo = new Diretorio(nomeNovo, usuario);
-        pai.adicionarSubdiretorio(novo);
+            Diretorio proximo = atual.buscarSubdiretorio(nomeDir);
+            boolean ultimo = (i == partes.length - 1);
 
-        // Debug pra testes: Imprime os subdiretorios do diretorio atual
-        System.out.print("Subdiretorios de '" + pai.getMetaDados().getNome() + "': ");
-        for (Diretorio d : pai.getSubdiretorios()) {
-            System.out.print(d.getMetaDados().getNome() + " ");
+            if (proximo == null) {
+                String paiPath = pathBuilder.substring(0, pathBuilder.lastIndexOf("/"));
+                if (paiPath.isEmpty())
+                    paiPath = "/";
+                verificarPermissaoExecucaoNoCaminho(paiPath, usuario);
+                verificarPermissao(paiPath, usuario, 'w');
+                Diretorio novo = new Diretorio(nomeDir, usuario);
+                atual.adicionarSubdiretorio(novo);
+                atual = novo;
+            } else {
+                if (ultimo) {
+                    throw new CaminhoJaExistenteException(
+                            "O diretório '" + nomeDir + "' já existe em '" + caminho + "'");
+                }
+                atual = proximo;
+            }
         }
-        System.out.println();
     }
 
     @Override
@@ -278,6 +291,10 @@ public final class FileSystemImpl implements IFileSystem {
             throws CaminhoNaoEncontradoException, PermissaoException {
 
         verificaUsuarioValido(usuario);
+
+        verificarPermissaoExecucaoNoCaminho(obterCaminhoPai(caminhoOrigem), usuario);
+        verificarPermissaoExecucaoNoCaminho(obterCaminhoPai(caminhoDestino), usuario);
+
         // Localiza origem e destino
         Diretorio dirOrigemPai = navegarParaDiretorioPai(caminhoOrigem);
         Diretorio dirDestino = navegarParaDiretorioPai(caminhoDestino);
@@ -411,8 +428,16 @@ public final class FileSystemImpl implements IFileSystem {
         if (usuario.equals(ROOT_USER))
             return;
 
+        // Trata casos especiais de caminho vazio ou "/"
+        if (caminho == null || caminho.isEmpty() || caminho.equals("/")) {
+            if (!temPermissao("/", usuario, 'x')) {
+                throw new PermissaoException(
+                        "Usuário '" + usuario + "' não tem permissão 'x' em '/'");
+            }
+            return;
+        }
+
         String[] partes = caminho.split("/");
-        Diretorio atual = fileSys.getRaiz();
         StringBuilder pathBuilder = new StringBuilder();
         for (int i = 1; i < partes.length; i++) {
             if (partes[i].isEmpty())
@@ -422,15 +447,6 @@ public final class FileSystemImpl implements IFileSystem {
                 throw new PermissaoException(
                         "Usuário '" + usuario + "' não tem permissão 'x' em '" + pathBuilder + "'");
             }
-            Diretorio encontrado = atual.buscarSubdiretorio(partes[i]);
-            if (encontrado == null)
-                break;
-            atual = encontrado;
-        }
-        // Sempre checa permissão 'x' em '/' se o caminho for exatamente "/"
-        if (caminho.equals("/") && !temPermissao("/", usuario, 'x')) {
-            throw new PermissaoException(
-                    "Usuário '" + usuario + "' não tem permissão 'x' em '/'");
         }
     }
 

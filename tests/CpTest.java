@@ -108,6 +108,7 @@ public class CpTest extends FileSystemTestBase {
     @Test
     public void copiarArquivoGrande() throws Exception {
         byte[] dadosGrandes = new byte[1024]; // 1KB de dados
+        fileSystem.touch("/testes/origem/arquivogrande.txt", ROOT_USER);
         fileSystem.write("/testes/origem/arquivogrande.txt", ROOT_USER, false, dadosGrandes);
 
         assertDoesNotThrow(() -> fileSystem.cp("/testes/origem/arquivogrande.txt", "/testes/destino/copia_grande.txt",
