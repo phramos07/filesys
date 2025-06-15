@@ -1,5 +1,7 @@
 package filesys;
 
+import java.util.Arrays;
+
 import exception.CaminhoJaExistenteException;
 import exception.CaminhoNaoEncontradoException;
 import exception.PermissaoException;
@@ -10,12 +12,44 @@ import exception.PermissaoException;
 // e atributos & métodos privados podem ser adicionados
 public final class FileSystemImpl implements IFileSystem {
     private static final String ROOT_USER = "root"; // pode ser necessário
+    private Diretorio raiz;
 
-    public FileSystemImpl() {}
+    public FileSystemImpl() {
+        this.raiz = new Diretorio("/", ROOT_USER);
+    }
 
     @Override
-    public void mkdir(String caminho, String nome) throws CaminhoJaExistenteException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'mkdir'");
+    public void mkdir(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException {
+        String[] partes = Arrays.stream(caminho.split("/"))
+                .filter(p -> !p.isEmpty())
+                .toArray(String[]::new);
+
+        if (partes.length == 0) {
+            throw new CaminhoJaExistenteException("Não é possível criar o diretório raiz '/'");
+        }
+
+        Diretorio atual = raiz;
+
+        for (int i = 0; i < partes.length - 1; i++) {
+            String parte = partes[i];
+            if (!atual.subdirs.containsKey(parte)) {
+                throw new RuntimeException("Diretório pai '" + parte + "' não encontrado.");
+            }
+            atual = atual.subdirs.get(parte);
+        }
+
+        String nomeNovo = partes[partes.length - 1];
+
+        if (atual.subdirs.containsKey(nomeNovo) || atual.arquivos.containsKey(nomeNovo)) {
+            throw new CaminhoJaExistenteException("Caminho já existe: " + caminho);
+        }
+
+        if (!atual.meta.podeEscrever(usuario) && !usuario.equals(ROOT_USER)) {
+            throw new PermissaoException("Usuário " + usuario + " não tem permissão de escrita.");
+        }
+
+        Diretorio novo = new Diretorio(nomeNovo, usuario);
+        atual.subdirs.put(nomeNovo, novo);
     }
 
     @Override
@@ -32,7 +66,39 @@ public final class FileSystemImpl implements IFileSystem {
 
     @Override
     public void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'touch'");
+        String[] partes = Arrays.stream(caminho.split("/"))
+                .filter(p -> !p.isEmpty())
+                .toArray(String[]::new);
+
+        if (partes.length == 0) {
+            throw new CaminhoJaExistenteException("Não é possível criar o arquivo na raiz sem nome");
+        }
+
+        Diretorio atual = raiz;
+
+        for (int i = 0; i < partes.length - 1; i++) {
+            String parte = partes[i];
+            if (!atual.subdirs.containsKey(parte)) {
+                throw new RuntimeException("Diretório pai '" + parte + "' não encontrado.");
+            }
+            atual = atual.subdirs.get(parte);
+        }
+
+        String nomeArquivo = partes[partes.length - 1];
+
+        // Verifica se já existe
+        if (atual.arquivos.containsKey(nomeArquivo) || atual.subdirs.containsKey(nomeArquivo)) {
+            throw new CaminhoJaExistenteException("Já existe um item com esse nome: " + caminho);
+        }
+
+        // Verifica permissão de escrita
+        if (!atual.meta.podeEscrever(usuario) && !usuario.equals(ROOT_USER)) {
+            throw new PermissaoException(
+                    "Usuário '" + usuario + "' não tem permissão para criar arquivos nesse diretório.");
+        }
+
+        Arquivo novoArquivo = new Arquivo(nomeArquivo, usuario);
+        atual.arquivos.put(nomeArquivo, novoArquivo);
     }
 
     @Override
@@ -54,7 +120,8 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     @Override
-    public void ls(String caminho, String usuario, boolean recursivo) throws CaminhoNaoEncontradoException, PermissaoException {
+    public void ls(String caminho, String usuario, boolean recursivo)
+            throws CaminhoNaoEncontradoException, PermissaoException {
         throw new UnsupportedOperationException("Método não implementado 'ls'");
     }
 
