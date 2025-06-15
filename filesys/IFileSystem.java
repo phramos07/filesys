@@ -47,4 +47,7 @@ public interface IFileSystem {
 
     // Copia um arquivo ou diretório. Se o diretório não existir, será lançada uma exceção.
     void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo) throws CaminhoNaoEncontradoException, PermissaoException;
+
+    // ADD: adiciona um usuário ao sistema de arquivos
+    void addUser(Usuario usuario);
 } 

@@ -482,7 +482,21 @@ public final class FileSystemImpl implements IFileSystem {
 
     }
 
-    public void addUser(String user) {
-        throw new UnsupportedOperationException("Método não implementado 'addUser'");
+    @Override
+    public void addUser(Usuario usuario) {
+        if (usuario == null || usuario.getNome() == null || usuario.getPermissoes() == null) {
+            throw new IllegalArgumentException("Usuário, nome e permissões não podem ser nulos");
+        }
+
+        // Verifica se o usuário já existe
+        for (Usuario u : usuarios) {
+            if (u.getNome().equals(usuario.getNome())) {
+                throw new IllegalArgumentException("Usuário já existe: " + usuario.getNome());
+            }
+        }
+
+        // Adiciona o novo usuário
+        usuarios.add(usuario);
+        System.out.println("Usuário adicionado: " + usuario.getNome());
     }
 }
