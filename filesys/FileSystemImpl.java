@@ -368,7 +368,7 @@ public final class FileSystemImpl implements IFileSystem {
     public void mv(String caminhoAntigo, String caminhoNovo, String usuario)
             throws CaminhoNaoEncontradoException, PermissaoException {
         if (caminhoAntigo == null || caminhoNovo == null || usuario == null) {
-            throw new IllegalArgumentException("Caminho antigo, caminho novo e usuário não podem ser nulos");
+            throw new PermissaoException("Caminho antigo, caminho novo e usuário não podem ser nulos");
         }
 
         caminhoAntigo = caminhoAntigo.replace("\\", "/");
@@ -382,7 +382,7 @@ public final class FileSystemImpl implements IFileSystem {
         }
 
         if (caminhoAntigo.equals(caminhoNovo)) {
-            throw new IllegalArgumentException("Caminho antigo e caminho novo não podem ser iguais");
+            throw new PermissaoException("Caminho antigo e caminho novo não podem ser iguais");
         }
 
         Dir dirantigo = irPara(caminhoAntigo);
@@ -397,7 +397,7 @@ public final class FileSystemImpl implements IFileSystem {
                 throw new PermissaoException("Sem permissão de escrita no destino");
             }
             if (destino.getFilhos().containsKey(dirantigo.getNome())) {
-                throw new IllegalArgumentException("Já existe um diretório ou arquivo com esse nome no destino");
+                throw new PermissaoException("Já existe um diretório ou arquivo com esse nome no destino");
             }
 
             dirantigo.getPai().removeFilho(dirantigo.getNome());
@@ -463,7 +463,7 @@ public final class FileSystemImpl implements IFileSystem {
         String nomeArquivo = dirOrigem.getNome();
         String caminhoCompletoDestino = dirDestino.getCaminhoCompleto() + "/" + nomeArquivo;
         if (dirDestino.getFilhos().containsKey(nomeArquivo)) {
-            throw new IllegalArgumentException("Arquivo ou diretório já existe no destino: " + caminhoCompletoDestino);
+            throw new PermissaoException("Arquivo ou diretório já existe no destino: " + caminhoCompletoDestino);
         }
         if (dirOrigem.isArquivo()) {
             File novoArquivo = new File(nomeArquivo, usuario, "rwx");
