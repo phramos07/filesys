@@ -18,16 +18,21 @@ class MetaDados {
     }
 
     public boolean podeEscrever(String usuario) {
-        if (!permissoes.containsKey(usuario)){
+        if (!permissoes.containsKey(usuario)) {
             return false;
-        } 
+        }
         return permissoes.get(usuario).contains("w");
     }
 
     public boolean podeLer(String usuario) {
-        if (!permissoes.containsKey(usuario)){
+        if (!permissoes.containsKey(usuario)) {
             return false;
-        } 
+        }
         return permissoes.get(usuario).contains("r");
     }
+
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
+
 }

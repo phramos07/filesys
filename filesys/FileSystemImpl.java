@@ -113,49 +113,6 @@ public final class FileSystemImpl implements IFileSystem {
         throw new UnsupportedOperationException("Método não implementado 'read'");
     }
 
-    @Override
-    public void mv(String caminhoAntigo, String caminhoNovo, String usuario)
-            throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'mv'");
-    }
-
-    @Override
-    public void ls(String caminho, String usuario, boolean recursivo)
-            throws CaminhoNaoEncontradoException, PermissaoException {
-        String[] partes = Arrays.stream(caminho.split("/"))
-                .filter(p -> !p.isEmpty())
-                .toArray(String[]::new);
-
-        Diretorio atual = raiz;
-
-        for (String parte : partes) {
-            if (!atual.subdirs.containsKey(parte)) {
-                throw new CaminhoNaoEncontradoException("Diretório '" + parte + "' não encontrado.");
-            }
-            atual = atual.subdirs.get(parte);
-        }
-
-        // Verifica permissão de leitura
-        if (!atual.metaDados.podeLer(usuario) && !usuario.equals(ROOT_USER)) {
-            throw new PermissaoException("Usuário '" + usuario + "' não tem permissão de leitura.");
-        }
-
-        System.out.println("Listando conteúdo de: " + caminho);
-        listar(atual, caminho, recursivo, "");
-    }
-
-    private void listar(Diretorio dir, String caminho, boolean recursivo, String indent) {
-        for (String nomeArq : dir.arquivos.keySet()) {
-            System.out.println(indent + "- " + nomeArq + " (arquivo)");
-        }
-        for (String nomeDir : dir.subdirs.keySet()) {
-            System.out.println(indent + "+ " + nomeDir + " (diretório)");
-            if (recursivo) {
-                listar(dir.subdirs.get(nomeDir), caminho + "/" + nomeDir, true, indent + "  ");
-            }
-        }
-    }
-
     private String[] extrairDiretorioENome(String caminho) {
         String[] partes = Arrays.stream(caminho.split("/")).filter(p -> !p.isEmpty()).toArray(String[]::new);
         if (partes.length == 0)
@@ -195,6 +152,78 @@ public final class FileSystemImpl implements IFileSystem {
         }
 
         return copia;
+    }
+
+    @Override
+    public void mv(String caminhoAntigo, String caminhoNovo, String usuario)
+            throws CaminhoNaoEncontradoException, PermissaoException {
+
+        String[] origem = extrairDiretorioENome(caminhoAntigo);
+        String[] destino = extrairDiretorioENome(caminhoNovo);
+
+        Diretorio dirOrigem = navegarPara(origem[0]);
+        Diretorio dirDestino = navegarPara(destino[0]);
+
+        String nomeOrigem = origem[1];
+        String nomeDestino = destino[1];
+
+        if (!dirOrigem.metaDados.podeEscrever(usuario) || !dirDestino.metaDados.podeEscrever(usuario)) {
+            throw new PermissaoException("Sem permissão para mover.");
+        }
+
+        if (dirOrigem.arquivos.containsKey(nomeOrigem)) {
+            Arquivo arq = dirOrigem.arquivos.remove(nomeOrigem);
+            arq.getMetaDados().setNome(nomeDestino);
+
+            dirDestino.arquivos.put(nomeDestino, arq);
+            return;
+        }
+
+        if (dirOrigem.subdirs.containsKey(nomeOrigem)) {
+            Diretorio dir = dirOrigem.subdirs.remove(nomeOrigem);
+            dir.metaDados.setNome(nomeDestino);
+            dirDestino.subdirs.put(nomeDestino, dir);
+            return;
+        }
+
+        throw new CaminhoNaoEncontradoException("Origem não encontrada.");
+    }
+
+    @Override
+    public void ls(String caminho, String usuario, boolean recursivo)
+            throws CaminhoNaoEncontradoException, PermissaoException {
+        String[] partes = Arrays.stream(caminho.split("/"))
+                .filter(p -> !p.isEmpty())
+                .toArray(String[]::new);
+
+        Diretorio atual = raiz;
+
+        for (String parte : partes) {
+            if (!atual.subdirs.containsKey(parte)) {
+                throw new CaminhoNaoEncontradoException("Diretório '" + parte + "' não encontrado.");
+            }
+            atual = atual.subdirs.get(parte);
+        }
+
+        // Verifica permissão de leitura
+        if (!atual.metaDados.podeLer(usuario) && !usuario.equals(ROOT_USER)) {
+            throw new PermissaoException("Usuário '" + usuario + "' não tem permissão de leitura.");
+        }
+
+        System.out.println("Listando conteúdo de: " + caminho);
+        listar(atual, caminho, recursivo, "");
+    }
+
+    private void listar(Diretorio dir, String caminho, boolean recursivo, String indent) {
+        for (String nomeArq : dir.arquivos.keySet()) {
+            System.out.println(indent + "- " + nomeArq + " (arquivo)");
+        }
+        for (String nomeDir : dir.subdirs.keySet()) {
+            System.out.println(indent + "+ " + nomeDir + " (diretório)");
+            if (recursivo) {
+                listar(dir.subdirs.get(nomeDir), caminho + "/" + nomeDir, true, indent + "  ");
+            }
+        }
     }
 
     @Override

@@ -12,4 +12,9 @@ class Arquivo {
         this.metaDados = new MetaDados(nome, dono, "rwx");
         this.conteudo = new ArrayList<>();
     }
+
+    public MetaDados getMetaDados() {
+        return metaDados;
+    }
+
 }
