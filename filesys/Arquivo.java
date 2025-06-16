@@ -27,6 +27,11 @@ public class Arquivo extends Diretorio {
             this.dados = new byte[dados2.length];
             System.arraycopy(dados2, 0, this.dados, 0, Math.min(dados2.length, TAMANHO_BLOCO));
         }
+
+        public byte[] getDados() {
+            return dados;
+        }
+        
     }
 
     public void addBloco(Bloco bloco) {
@@ -45,6 +50,8 @@ public class Arquivo extends Diretorio {
     public List<Bloco> getBlocos() {
         return blocos;
     }
+
+    
 
     public void setBlocos(List<Bloco> blocos) {
         this.blocos = blocos;
