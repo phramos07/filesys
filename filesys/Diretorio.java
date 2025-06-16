@@ -29,10 +29,12 @@ public class Diretorio {
 
   public boolean temPermissao(String usuario, char permissaoNecessaria) {
     // Root tem todas as permissões
-    if ("root".equals(usuario)) return true;
+    if ("root".equals(usuario))
+      return true;
 
     // Dono tem todas as permissões
-    if (usuario.equals(dono)) return true;
+    if (usuario.equals(dono))
+      return true;
 
     // Verifica permissões específicas do usuário no diretório atual
     String permissoesUsuario = permissoesEspecificas.get(usuario);
@@ -50,8 +52,10 @@ public class Diretorio {
   }
 
   public String getPermissoesUsuario(String usuario) {
-    if ("root".equals(usuario)) return "rwx";
-    if (usuario.equals(dono)) return permissoes;
+    if ("root".equals(usuario))
+      return "rwx";
+    if (usuario.equals(dono))
+      return permissoes;
     return permissoesEspecificas.getOrDefault(usuario, "---");
   }
 

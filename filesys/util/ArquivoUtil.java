@@ -7,14 +7,14 @@ import filesys.Offset;
 import filesys.Usuario;
 
 public class ArquivoUtil {
-  
+
   private ArquivoUtil() {
   }
 
   public static Arquivo criarNovoArquivo(String nomeArquivo, Usuario user) {
     return new Arquivo(nomeArquivo, user.getPermissao(), user.getNome());
   }
-    
+
   public static void escreverBufferNoArquivo(Arquivo arquivo, byte[] buffer, boolean anexar) {
     if (!anexar) {
       arquivo.clearBlocos();
@@ -69,26 +69,25 @@ public class ArquivoUtil {
     paiNovo.adicionarFilho(alvo);
   }
 
-
-      public static void copiarArquivo(Arquivo origem, Diretorio destino) {
-        Arquivo copia = new Arquivo(origem.getNome(), origem.getPermissoes(), origem.getDono());
-        for (Arquivo.Bloco bloco : origem.getBlocos()) {
-            copia.addBloco(bloco);
-            copia.incrementTamnho(bloco.getDados().length);
-        }
-        destino.adicionarFilho(copia);
+  public static void copiarArquivo(Arquivo origem, Diretorio destino) {
+    Arquivo copia = new Arquivo(origem.getNome(), origem.getPermissoes(), origem.getDono());
+    for (Arquivo.Bloco bloco : origem.getBlocos()) {
+      copia.addBloco(bloco);
+      copia.incrementTamnho(bloco.getDados().length);
     }
+    destino.adicionarFilho(copia);
+  }
 
-    public static void copiarDiretorio(Diretorio origem, Diretorio destino, String usuario) throws PermissaoException {
-        Diretorio copia = new Diretorio(origem.getNome(), origem.getPermissoes(), origem.getDono());
-        destino.adicionarFilho(copia);
-        for (Diretorio filho : origem.getFilhos().values()) {
-            if (filho.isArquivo()) {
-                copiarArquivo((Arquivo) filho, copia);
-            } else {
-                copiarDiretorio(filho, copia, usuario);
-            }
-        }
+  public static void copiarDiretorio(Diretorio origem, Diretorio destino, String usuario) throws PermissaoException {
+    Diretorio copia = new Diretorio(origem.getNome(), origem.getPermissoes(), origem.getDono());
+    destino.adicionarFilho(copia);
+    for (Diretorio filho : origem.getFilhos().values()) {
+      if (filho.isArquivo()) {
+        copiarArquivo((Arquivo) filho, copia);
+      } else {
+        copiarDiretorio(filho, copia, usuario);
+      }
     }
+  }
 
 }

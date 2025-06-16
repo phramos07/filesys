@@ -6,12 +6,17 @@ import exception.OperacaoInvalidaException;
 import exception.PermissaoException;
 
 /**
- * Classe {@code FileSystem} atua como um proxy para a implementação real do sistema de arquivos {@link FileSystemImpl}.
+ * Classe {@code FileSystem} atua como um proxy para a implementação real do
+ * sistema de arquivos {@link FileSystemImpl}.
  * 
- * <p>Essa classe encapsula a lógica interna e fornece uma interface padronizada para operações em sistemas de arquivos,
+ * <p>
+ * Essa classe encapsula a lógica interna e fornece uma interface padronizada
+ * para operações em sistemas de arquivos,
  * delegando todas as chamadas de método à instância de {@code FileSystemImpl}.
  *
- * <p>Inicializa com um diretório raiz padrão ("/") e um usuário padrão ("root") com permissões completas.
+ * <p>
+ * Inicializa com um diretório raiz padrão ("/") e um usuário padrão ("root")
+ * com permissões completas.
  */
 final public class FileSystem implements IFileSystem {
 
@@ -28,7 +33,8 @@ final public class FileSystem implements IFileSystem {
     }
 
     @Override
-    public void mkdir(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException, OperacaoInvalidaException {
+    public void mkdir(String caminho, String usuario)
+            throws CaminhoJaExistenteException, PermissaoException, OperacaoInvalidaException {
         fileSystemImpl.mkdir(caminho, usuario);
     }
 
@@ -39,7 +45,8 @@ final public class FileSystem implements IFileSystem {
     }
 
     @Override
-    public void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException, OperacaoInvalidaException {
+    public void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException,
+            CaminhoNaoEncontradoException, OperacaoInvalidaException {
         fileSystemImpl.touch(caminho, usuario);
     }
 
