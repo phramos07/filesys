@@ -46,39 +46,31 @@ public final class FileSystemImpl implements IFileSystem {
         return temp;
     }
 
-
     @Override
     public void mkdir(String caminho, String nome) throws CaminhoJaExistenteException, PermissaoException {
         if (caminho == null || nome == null || caminho.trim().isEmpty() || nome.trim().isEmpty()) {
         throw new IllegalArgumentException("Caminho e nome não podem ser nulos ou vazios");
     }
 
-    
     String caminhoCompleto = caminho.equals("/") ? "/" + nome : caminho + "/" + nome;
-    
-    
+
     String[] partes = caminhoCompleto.split("/");
     String caminhoAtual = "";
     Diretorio diretorioAtual = raiz;
-    String usuarioAtual = Thread.currentThread().getName(); 
+    String usuarioAtual = Thread.currentThread().getName();
 
-    
     for (String parte : java.util.Arrays.stream(partes).filter(p -> p != null && !p.isEmpty()).toArray(String[]::new)) {
-        
         caminhoAtual = caminhoAtual.equals("/") ? "/" + parte : caminhoAtual + "/" + parte;
 
-       
         if (diretorioAtual.getFilhos().containsKey(parte)) {
             diretorioAtual = diretorioAtual.getFilhos().get(parte);
             continue;
         }
 
-        
         if (!diretorioAtual.temPermissao(usuarioAtual, 'w')) {
             throw new PermissaoException("Usuário '" + usuarioAtual + "' não tem permissão de escrita em: " + caminhoAtual);
         }
 
-        
         Diretorio novoDir = new Diretorio(parte, "rwx", usuarioAtual);
         diretorioAtual.addFilho(novoDir);
         diretorioAtual = novoDir;
@@ -125,14 +117,12 @@ public final class FileSystemImpl implements IFileSystem {
             throw new IllegalArgumentException("Buffer não pode ser nulo");
         }
 
-        // Obter o diretório pai e nome do arquivo
         String diretorioPai = obterDiretorioPai(caminho);
         String nomeArquivo = obterNomeArquivo(caminho);
-        
-        // Verificar se o arquivo já existe no nosso mapa de arquivos
+
         if (arquivos.containsKey(caminho)) {
             Arquivo arquivo = arquivos.get(caminho);
-            
+
            if (!usuario.equals(ROOT_USER) && !arquivo.getDono().equals(usuario)) {
     char permissaoRequerida = 'w';
     String permissoes = arquivo.getPermissoesBasicas();
@@ -140,67 +130,58 @@ public final class FileSystemImpl implements IFileSystem {
         throw new PermissaoException("Usuário: " + usuario + " não tem permissão de escrita em: " + caminho);
     }
 }
-            
-            // Se não estiver anexando, limpa o arquivo
+
             if (!anexar) {
                 try {
                     arquivo.limparArquivo();
                 } catch (BlocoVazioException e) {
-                    // O arquivo já está vazio, pode prosseguir
                 }
             }
-            
-            // Divide o buffer em blocos e escreve
+
             final int TAMANHO_BLOCO = 4096;
-            
+
             for (int i = 0; i < buffer.length; i += TAMANHO_BLOCO) {
                 int tamanhoAtual = Math.min(TAMANHO_BLOCO, buffer.length - i);
                 byte[] dadosBloco = new byte[tamanhoAtual];
                 System.arraycopy(buffer, i, dadosBloco, 0, tamanhoAtual);
-                
+
                 Bloco bloco = new Bloco();
                 bloco.setBytes(dadosBloco);
                 arquivo.adicionarBloco(bloco);
             }
         } else {
-            // O arquivo não existe, precisa criar
             try {
-                // Verifica se o diretório pai existe
                 MetaDados diretorio = navegar(diretorioPai);
-                
+
                 if (!(diretorio instanceof Diretorio)) {
                     throw new IllegalArgumentException("O caminho pai não é um diretório: " + diretorioPai);
                 }
-                
+
                 Diretorio dir = (Diretorio) diretorio;
-                
-                // Verifica permissão para criar no diretório
+
                 if (!dir.getDono().equals(usuario) && !usuario.equals(ROOT_USER)) {
                     if (!dir.temPermissao(usuario, 'w')) {
                         throw new PermissaoException("Usuário: " + usuario + " não tem permissão de escrita em: " + caminho);
                     }
                 }
-                
-                // Cria o arquivo e adiciona ao nosso mapa
+
                 List<Bloco> blocos = new ArrayList<>();
                 Arquivo novoArquivo = new Arquivo(nomeArquivo, "rw-", usuario, blocos, 0);
-                
-                // Adiciona ao mapa de arquivos por caminho completo
+
                 arquivos.put(caminho, novoArquivo);
-                
-                // Divide o buffer em blocos e escreve
+
                 final int TAMANHO_BLOCO = 4096;
-                
+
                 for (int i = 0; i < buffer.length; i += TAMANHO_BLOCO) {
                     int tamanhoAtual = Math.min(TAMANHO_BLOCO, buffer.length - i);
                     byte[] dadosBloco = new byte[tamanhoAtual];
                     System.arraycopy(buffer, i, dadosBloco, 0, tamanhoAtual);
-                    
+
                     Bloco bloco = new Bloco();
                     bloco.setBytes(dadosBloco);
                     novoArquivo.adicionarBloco(bloco);
                 }
-                
+
             } catch (CaminhoNaoEncontradoException ex) {
                 throw new CaminhoNaoEncontradoException("Diretório pai não encontrado: " + diretorioPai);
             }
@@ -213,13 +194,13 @@ public final class FileSystemImpl implements IFileSystem {
         if (buffer == null) {
             throw new IllegalArgumentException("Buffer não pode ser nulo");
         }
-        
+
         if (!arquivos.containsKey(caminho)) {
             throw new CaminhoNaoEncontradoException("Arquivo não encontrado: " + caminho);
         }
-        
+
         Arquivo arquivo = arquivos.get(caminho);
-        
+
         if (!usuario.equals(ROOT_USER) && !arquivo.getDono().equals(usuario)) {
     char permissaoRequerida = 'w';
     String permissoes = arquivo.getPermissoesBasicas();
@@ -227,18 +208,16 @@ public final class FileSystemImpl implements IFileSystem {
         throw new PermissaoException("Usuário: " + usuario + " não tem permissão de escrita em: " + caminho);
     }
 }
-        
-        // Lê todos os blocos do arquivo
+
         List<Bloco> blocos = arquivo.getAllBlocos();
         int offset = 0;
-        
+
         for (Bloco bloco : blocos) {
             byte[] dados = bloco.getDados();
             int tamanhoACopiar = Math.min(dados.length, buffer.length - offset);
-            
-            if (tamanhoACopiar <= 0) break; // Buffer cheio
-            
-            // Copia os dados do bloco para o buffer
+
+            if (tamanhoACopiar <= 0) break;
+
             System.arraycopy(dados, 0, buffer, offset, tamanhoACopiar);
             offset += tamanhoACopiar;
         }
@@ -255,11 +234,89 @@ public final class FileSystemImpl implements IFileSystem {
         throw new UnsupportedOperationException("Método não implementado 'ls'");
     }
 
-    @Override
-    public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo)
-            throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'cp'");
+   @Override
+public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo)
+        throws CaminhoNaoEncontradoException, PermissaoException {
+    if (arquivos.containsKey(caminhoOrigem)) {
+        Arquivo arquivoOrigem = arquivos.get(caminhoOrigem);
+
+        if (!usuario.equals(ROOT_USER) && !arquivoOrigem.getDono().equals(usuario)) {
+            String permissoesOrigem = arquivoOrigem.getPermissoesBasicas();
+            if (permissoesOrigem.indexOf('r') == -1) {
+                throw new PermissaoException("Usuário '" + usuario + 
+                    "' não tem permissão de leitura no arquivo de origem: " + caminhoOrigem);
+            }
+        }
+
+        int tamanhoTotal = 0;
+        for (Bloco bloco : arquivoOrigem.getAllBlocos()) {
+            tamanhoTotal += bloco.getDados().length;
+        }
+
+        byte[] buffer = new byte[tamanhoTotal];
+        read(caminhoOrigem, usuario, buffer);
+
+        write(caminhoDestino, usuario, false, buffer);
+
+        return;
     }
+
+    try {
+        MetaDados metadados = navegar(caminhoOrigem);
+
+        if (metadados instanceof Diretorio) {
+            if (!recursivo) {
+                throw new IllegalArgumentException(
+                    "Para copiar um diretório, é necessário usar o modo recursivo");
+            }
+
+            Diretorio dirOrigem = (Diretorio) metadados;
+
+            if (!usuario.equals(ROOT_USER) && !dirOrigem.getDono().equals(usuario)) {
+                if (!dirOrigem.temPermissao(usuario, 'r')) {
+                    throw new PermissaoException("Usuário '" + usuario + 
+                        "' não tem permissão de leitura no diretório: " + caminhoOrigem);
+                }
+            }
+
+            try {
+                mkdir(obterDiretorioPai(caminhoDestino), obterNomeArquivo(caminhoDestino));
+            } catch (CaminhoJaExistenteException e) {
+            }
+
+            for (String nomeArquivo : arquivos.keySet()) {
+                if (nomeArquivo.startsWith(caminhoOrigem + "/")) {
+                    String relativePath = nomeArquivo.substring(caminhoOrigem.length());
+                    String novoDestino = caminhoDestino + relativePath;
+
+                    Arquivo arquivoOrigem = arquivos.get(nomeArquivo);
+                    int tamanhoTotal = 0;
+                    for (Bloco bloco : arquivoOrigem.getAllBlocos()) {
+                        tamanhoTotal += bloco.getDados().length;
+                    }
+
+                    byte[] buffer = new byte[tamanhoTotal];
+                    read(nomeArquivo, usuario, buffer);
+
+                    write(novoDestino, usuario, false, buffer);
+                }
+            }
+
+            for (String filhoNome : dirOrigem.getFilhos().keySet()) {
+                String filhoCaminhoOrigem = caminhoOrigem.equals("/") ? 
+                    "/" + filhoNome : caminhoOrigem + "/" + filhoNome;
+                String filhoCaminhoDestino = caminhoDestino.equals("/") ? 
+                    "/" + filhoNome : caminhoDestino + "/" + filhoNome;
+
+                cp(filhoCaminhoOrigem, filhoCaminhoDestino, usuario, true);
+            }
+        } else {
+            throw new IllegalArgumentException("O caminho de origem não é um arquivo nem um diretório: " + caminhoOrigem);
+        }
+    } catch (CaminhoNaoEncontradoException e) {
+        throw e;
+    }
+}
 
     public void addUser(String user) {
         throw new UnsupportedOperationException("Método não implementado 'addUser'");
@@ -276,7 +333,7 @@ public final class FileSystemImpl implements IFileSystem {
 
       private String obterDiretorioPai(String caminho) {
         if (caminho.equals("/")) return "/";
-        
+
         int ultimaBarra = caminho.lastIndexOf('/');
         if (ultimaBarra == 0) return "/";
         return caminho.substring(0, ultimaBarra);
@@ -284,7 +341,7 @@ public final class FileSystemImpl implements IFileSystem {
 
     private String obterNomeArquivo(String caminho) {
         if (caminho.equals("/")) return "";
-        
+
         int ultimaBarra = caminho.lastIndexOf('/');
         return caminho.substring(ultimaBarra + 1);
     }
