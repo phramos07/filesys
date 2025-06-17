@@ -27,6 +27,7 @@ public class DiretorioUtil {
       throws CaminhoNaoEncontradoException, PermissaoException {
 
     if (caminho.equals("/") || caminho.isEmpty()) {
+      VerificacaoUtil.verificarPermissaoExecucao(root, usuario, caminho);
       return root;
     }
 
@@ -43,6 +44,7 @@ public class DiretorioUtil {
 
       atual = atual.getFilhos().get(parte);
       caminhoAtual.append(parte).append("/");
+      VerificacaoUtil.verificarPermissaoExecucao(atual, usuario, caminhoAtual.toString());
     }
 
     return atual;
@@ -67,11 +69,19 @@ public class DiretorioUtil {
     return novo;
   }
 
-  public static Diretorio avancarParaDiretorioFilho(Diretorio atual, String nome) throws OperacaoInvalidaException {
+  public static Diretorio avancarParaDiretorioFilho(Diretorio atual, String nome)
+      throws OperacaoInvalidaException, PermissaoException {
     Diretorio filho = atual.getFilhos().get(nome);
+
+    if (filho == null) {
+      throw new OperacaoInvalidaException("Diretório não encontrado: " + nome);
+    }
+
     if (filho.isArquivo()) {
       throw new OperacaoInvalidaException("Não é possível criar um diretório dentro de um arquivo.");
     }
+    VerificacaoUtil.verificarPermissaoExecucao(filho, filho.getDono(), nome); 
+
     return filho;
   }
 

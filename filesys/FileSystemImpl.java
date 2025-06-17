@@ -107,6 +107,8 @@ public final class FileSystemImpl implements IFileSystem {
         StringBuilder caminhoAtual = new StringBuilder();
         while (tokenizer.hasMoreTokens()) {
             String parte = tokenizer.nextToken();
+            VerificacaoUtil.verificarPermissaoExecucao(atual, usuario,
+                    caminhoAtual.length() == 0 ? "/" : caminhoAtual.toString());
             caminhoAtual.append("/").append(parte);
             if (!existeFilho(atual, parte)) {
                 atual = DiretorioUtil.criarDiretorioFilho(atual, parte, caminhoAtual.toString(), usuario, users);
@@ -114,6 +116,7 @@ public final class FileSystemImpl implements IFileSystem {
                 atual = DiretorioUtil.avancarParaDiretorioFilho(atual, parte);
             }
         }
+        
     }
 
     private boolean existeFilho(Diretorio atual, String nome) {
