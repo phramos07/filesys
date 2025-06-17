@@ -1,7 +1,6 @@
 package filesys;
 
 import java.util.Arrays;
-import java.util.List;
 
 import exception.CaminhoJaExistenteException;
 import exception.CaminhoNaoEncontradoException;
@@ -109,51 +108,10 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     @Override
-public void read(String caminho, String usuario, byte[] buffer)
-        throws CaminhoNaoEncontradoException, PermissaoException {
-
-    String[] partes = Arrays.stream(caminho.split("/"))
-                            .filter(p -> !p.isEmpty())
-                            .toArray(String[]::new);
-
-    if (partes.length == 0) {
-        throw new CaminhoNaoEncontradoException("Caminho inválido.");
+    public void read(String caminho, String usuario, byte[] buffer)
+            throws CaminhoNaoEncontradoException, PermissaoException {
+        throw new UnsupportedOperationException("Método não implementado 'read'");
     }
-
-    Diretorio atual = raiz;
-
-    for (int i = 0; i < partes.length - 1; i++) {
-        String parte = partes[i];
-        if (!atual.subdirs.containsKey(parte)) {
-            throw new CaminhoNaoEncontradoException("Diretório '" + parte + "' não encontrado.");
-        }
-        atual = atual.subdirs.get(parte);
-    }
-
-    String nomeArquivo = partes[partes.length - 1];
-
-    if (!atual.arquivos.containsKey(nomeArquivo)) {
-        throw new CaminhoNaoEncontradoException("Arquivo '" + nomeArquivo + "' não encontrado.");
-    }
-
-    Arquivo arquivo = atual.arquivos.get(nomeArquivo);
-
-    if (!arquivo.getMetaDados().podeLer(usuario) && !usuario.equals(ROOT_USER)) {
-        throw new PermissaoException("Usuário '" + usuario + "' não tem permissão para ler o arquivo.");
-    }
-
-    List<Byte> conteudo = arquivo.getConteudo();
-    int i = 0;
-
-    while (i < buffer.length && i < conteudo.size()) {
-        buffer[i] = conteudo.get(i);
-        i++;
-    }
-
-    System.out.println("Leitura (" + i + " bytes):");
-    System.out.println(new String(buffer, 0, i)); // Imprime somente o que foi lido
-}
-
 
     @Override
     public void mv(String caminhoAntigo, String caminhoNovo, String usuario)
