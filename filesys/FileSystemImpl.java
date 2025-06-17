@@ -124,7 +124,7 @@ public final class FileSystemImpl implements IFileSystem {
     public void chmod(String caminho, String usuario, String usuarioAlvo, String permissao)
             throws CaminhoNaoEncontradoException, PermissaoException {
         Diretorio dir = DiretorioUtil.navegar(caminho, root, usuario);
-        VerificacaoUtil.verificarPermissaoEscrita(dir, usuarioAlvo, caminho);
+        VerificacaoUtil.verificarPermissaoEscrita(dir, usuario, caminho);
         dir.setPermissaoUsuario(usuarioAlvo, permissao);
     }
 
