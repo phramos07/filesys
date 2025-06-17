@@ -8,7 +8,6 @@
 
 # IDE files
 .idea/
-.vscode/
 *.iml
 *.iws
 *.ipr
