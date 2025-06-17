@@ -7,4 +7,8 @@ class Arquivo {
     public Arquivo(String nome, String dono) {
         this.metaDados = new MetaDados(nome, dono, "rwx");
     }
+
+    public MetaDados getMetaDados() {
+        return metaDados;
+    }
 }

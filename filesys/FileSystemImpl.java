@@ -55,13 +55,103 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void chmod(String caminho, String usuario, String usuarioAlvo, String permissao)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'chmod'");
+        String[] partes = Arrays.stream(caminho.split("/"))
+                .filter(p -> !p.isEmpty())
+                .toArray(String[]::new);
+
+        if (partes.length == 0) {
+            throw new CaminhoNaoEncontradoException("Caminho inválido.");
+        }
+
+        Diretorio atual = raiz;
+        for (int i = 0; i < partes.length - 1; i++) {
+            String parte = partes[i];
+            if (!atual.subdirs.containsKey(parte)) {
+                throw new CaminhoNaoEncontradoException("Diretório '" + parte + "' não encontrado.");
+            }
+            atual = atual.subdirs.get(parte);
+        }
+
+        String nomeAlvo = partes[partes.length - 1];
+
+        // Pode ser arquivo ou diretório
+        MetaDados meta = null;
+        if (atual.arquivos.containsKey(nomeAlvo)) {
+            meta = atual.arquivos.get(nomeAlvo).getMetaDados();
+        } else if (atual.subdirs.containsKey(nomeAlvo)) {
+            meta = atual.subdirs.get(nomeAlvo).metaDados;
+        } else {
+            throw new CaminhoNaoEncontradoException("Arquivo ou diretório '" + nomeAlvo + "' não encontrado.");
+        }
+
+        // Só root ou dono pode alterar permissões
+        if (!usuario.equals(ROOT_USER) && !usuario.equals(meta.getDono())) {
+            throw new PermissaoException("Apenas root ou o dono pode alterar permissões.");
+        }
+
+        // Atualiza permissões do usuário alvo
+        meta.setPermissao(usuarioAlvo, permissao);
     }
 
     @Override
     public void rm(String caminho, String usuario, boolean recursivo)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        throw new UnsupportedOperationException("Método não implementado 'rm'");
+        String[] partes = Arrays.stream(caminho.split("/"))
+                .filter(p -> !p.isEmpty())
+                .toArray(String[]::new);
+
+        if (partes.length == 0) {
+            throw new PermissaoException("Não é possível remover a raiz.");
+        }
+
+        Diretorio atual = raiz;
+        for (int i = 0; i < partes.length - 1; i++) {
+            String parte = partes[i];
+            if (!atual.subdirs.containsKey(parte)) {
+                throw new CaminhoNaoEncontradoException("Diretório '" + parte + "' não encontrado.");
+            }
+            atual = atual.subdirs.get(parte);
+        }
+
+        String nomeAlvo = partes[partes.length - 1];
+
+        // Verifica permissão de escrita no diretório pai
+        if (!atual.metaDados.podeEscrever(usuario) && !usuario.equals(ROOT_USER)) {
+            throw new PermissaoException("Usuário '" + usuario + "' não tem permissão de escrita.");
+        }
+
+        // Remover arquivo
+        if (atual.arquivos.containsKey(nomeAlvo)) {
+            atual.arquivos.remove(nomeAlvo);
+            return;
+        }
+
+        // Remover diretório
+        if (atual.subdirs.containsKey(nomeAlvo)) {
+            Diretorio dirAlvo = atual.subdirs.get(nomeAlvo);
+            if (!recursivo && (!dirAlvo.arquivos.isEmpty() || !dirAlvo.subdirs.isEmpty())) {
+                throw new PermissaoException("Diretório não está vazio. Use o modo recursivo.");
+            }
+
+            if (recursivo) {
+                removerRecursivo(dirAlvo);
+            }
+            atual.subdirs.remove(nomeAlvo);
+            return;
+        }
+
+        throw new CaminhoNaoEncontradoException("Arquivo ou diretório '" + nomeAlvo + "' não encontrado.");
+    }
+
+    // Função auxiliar para remoção recursiva
+    private void removerRecursivo(Diretorio dir) {
+        for (String nome : dir.arquivos.keySet().toArray(new String[0])) {
+            dir.arquivos.remove(nome);
+        }
+        for (String nome : dir.subdirs.keySet().toArray(new String[0])) {
+            removerRecursivo(dir.subdirs.get(nome));
+            dir.subdirs.remove(nome);
+        }
     }
 
     @Override
