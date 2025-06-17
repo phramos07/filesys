@@ -283,9 +283,25 @@ public final class FileSystemImpl implements IFileSystem {
             throw new CaminhoJaExistenteException("Arquivo ou diretório já existe: " + caminho);
         }
 
-        if (!dirPai.temPerm(usuario, "w")) {
-            throw new PermissaoException("Usuário não tem permissão para criar arquivo: " + caminho);
-        }
+        Usuario usuarioObj = null;
+
+            for (Usuario user : usuarios) {
+                if (user.getNome().equals(usuario)) {
+                    usuarioObj = user;
+                }
+            }
+
+            if (usuarioObj == null) {
+                new IllegalArgumentException("Usuário não encontrado: " + usuario);
+            }
+
+            if (!usuarioObj.getPermissoes().contains("w")) {
+                try {
+                    dirPai.temPerm(usuario, "w");
+                } catch(IllegalArgumentException e) {
+                    throw new PermissaoException("Usuário não tem permissão para criar diretório: " + dirPai);
+                }
+            }
 
         File novoArquivo = new File(nomeArquivo, usuario, "rwx");
         dirPai.addFilho(novoArquivo);

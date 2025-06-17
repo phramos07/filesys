@@ -57,7 +57,7 @@ public class PermissionTest {
     @Test
     public void testTouchSuccess() throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
         // Tenta criar um arquivo com permissão de rwx
-        assertDoesNotThrow(() -> fileSystem.touch("/area1/area2/arquivo.txt", "joao"));
+        assertDoesNotThrow(() -> fileSystem.touch("/area1/arquivo.txt", "joao"));
     }
 
     @Test
@@ -135,6 +135,12 @@ public class PermissionTest {
     public void testCpPathFail() {
         // Tenta copiar um arquivo de um caminho inexistente
         assertThrows(CaminhoNaoEncontradoException.class, () -> fileSystem.cp("/area1/area2/inexistente/arquivo.txt", "/area1/area2", "root", true));
+    }
+
+    @Test
+    public void testSobrescreverArquivoSucesso() throws CaminhoNaoEncontradoException, PermissaoException {
+        // Tenta copiar um arquivo sobrescrevendo outro existente
+        assertDoesNotThrow(() -> fileSystem.cp("/area1/area2/arquivo.txt", "/area1/area2/arquivo.txt", "joao", true));
     }
 
     // =============== RM ===============
