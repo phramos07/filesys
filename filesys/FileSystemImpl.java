@@ -71,20 +71,23 @@ public final class FileSystemImpl implements IFileSystem {
         }
         users.add(user);
         try {
-            DiretorioUtil.navegar(user.getDir(), root, user.getNome())
+            // Navegar usando root para setar permissão do novo usuário
+            DiretorioUtil.navegar(user.getDir(), root, ROOT_USER)
                     .setPermissaoUsuario(user.getNome(), user.getPermissao());
-        } catch (CaminhoNaoEncontradoException | PermissaoException e) {
+        } catch (CaminhoNaoEncontradoException e) {
             try {
+                // Criar o diretório usando root
                 mkdir(user.getDir(), ROOT_USER);
-                DiretorioUtil.navegar(user.getDir(), root, user.getNome())
+                // Navegar usando root para setar permissão do novo usuário
+                DiretorioUtil.navegar(user.getDir(), root, ROOT_USER)
                         .setPermissaoUsuario(user.getNome(), user.getPermissao());
-            } catch (CaminhoJaExistenteException | PermissaoException | CaminhoNaoEncontradoException
-                    | OperacaoInvalidaException ex) {
+            } catch (Exception ex) {
                 throw new RuntimeException("Erro ao criar diretório para o usuário: " + user.getNome(), ex);
             }
+        } catch (PermissaoException e) {
+            throw new RuntimeException("Erro de permissão inesperado ao adicionar usuário: " + user.getNome(), e);
         }
-
-    }
+    }    
 
     @Override
     public void removeUser(String username) {
@@ -107,16 +110,16 @@ public final class FileSystemImpl implements IFileSystem {
         StringBuilder caminhoAtual = new StringBuilder();
         while (tokenizer.hasMoreTokens()) {
             String parte = tokenizer.nextToken();
-            VerificacaoUtil.verificarPermissaoExecucao(atual, usuario,
-                    caminhoAtual.length() == 0 ? "/" : caminhoAtual.toString());
             caminhoAtual.append("/").append(parte);
+            VerificacaoUtil.verificarPermissaoExecucao(atual, usuario, caminhoAtual.toString());
+
             if (!existeFilho(atual, parte)) {
                 atual = DiretorioUtil.criarDiretorioFilho(atual, parte, caminhoAtual.toString(), usuario, users);
             } else {
                 atual = DiretorioUtil.avancarParaDiretorioFilho(atual, parte);
             }
         }
-        
+                
     }
 
     private boolean existeFilho(Diretorio atual, String nome) {
