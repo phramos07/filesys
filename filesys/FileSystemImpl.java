@@ -20,7 +20,7 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     @Override
-    public void mkdir(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException {
+    public void mkdir(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
         String[] partes = Arrays.stream(caminho.split("/"))
                 .filter(p -> !p.isEmpty())
                 .toArray(String[]::new);
@@ -34,7 +34,7 @@ public final class FileSystemImpl implements IFileSystem {
         for (int i = 0; i < partes.length - 1; i++) {
             String parte = partes[i];
             if (!atual.subdirs.containsKey(parte)) {
-                throw new RuntimeException("Diretório pai '" + parte + "' não encontrado.");
+                throw new CaminhoNaoEncontradoException("Diretório pai '" + parte + "' não encontrado.");
             }
             atual = atual.subdirs.get(parte);
         }
@@ -156,7 +156,7 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     @Override
-    public void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException {
+    public void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
         String[] partes = Arrays.stream(caminho.split("/"))
                 .filter(p -> !p.isEmpty())
                 .toArray(String[]::new);
@@ -170,7 +170,7 @@ public final class FileSystemImpl implements IFileSystem {
         for (int i = 0; i < partes.length - 1; i++) {
             String parte = partes[i];
             if (!atual.subdirs.containsKey(parte)) {
-                throw new RuntimeException("Diretório pai '" + parte + "' não encontrado.");
+                throw new CaminhoNaoEncontradoException("Diretório pai '" + parte + "' não encontrado.");
             }
             atual = atual.subdirs.get(parte);
         }
