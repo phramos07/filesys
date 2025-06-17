@@ -71,16 +71,19 @@ public final class FileSystemImpl implements IFileSystem {
         }
         users.add(user);
         try {
-            DiretorioUtil.navegar(user.getDir(), root).setPermissaoUsuario(user.getNome(), user.getPermissao());
-        } catch (CaminhoNaoEncontradoException e) {
+            DiretorioUtil.navegar(user.getDir(), root, user.getNome())
+                    .setPermissaoUsuario(user.getNome(), user.getPermissao());
+        } catch (CaminhoNaoEncontradoException | PermissaoException e) {
             try {
                 mkdir(user.getDir(), ROOT_USER);
-                DiretorioUtil.navegar(user.getDir(), root).setPermissaoUsuario(user.getNome(), user.getPermissao());
+                DiretorioUtil.navegar(user.getDir(), root, user.getNome())
+                        .setPermissaoUsuario(user.getNome(), user.getPermissao());
             } catch (CaminhoJaExistenteException | PermissaoException | CaminhoNaoEncontradoException
                     | OperacaoInvalidaException ex) {
                 throw new RuntimeException("Erro ao criar diretório para o usuário: " + user.getNome(), ex);
             }
         }
+
     }
 
     @Override
@@ -99,15 +102,13 @@ public final class FileSystemImpl implements IFileSystem {
             throws CaminhoJaExistenteException, PermissaoException, OperacaoInvalidaException {
         if (caminho.equals("/"))
             return;
-
         StringTokenizer tokenizer = new StringTokenizer(caminho, "/");
         Diretorio atual = root;
         StringBuilder caminhoAtual = new StringBuilder();
-
         while (tokenizer.hasMoreTokens()) {
             String parte = tokenizer.nextToken();
             caminhoAtual.append("/").append(parte);
-
+            VerificacaoUtil.verificarPermissaoExecucao(atual, usuario, caminhoAtual.toString());
             if (!existeFilho(atual, parte)) {
                 atual = DiretorioUtil.criarDiretorioFilho(atual, parte, caminhoAtual.toString(), usuario, users);
             } else {
@@ -116,19 +117,15 @@ public final class FileSystemImpl implements IFileSystem {
         }
     }
 
-    public boolean existeFilho(Diretorio atual, String nome) {
+    private boolean existeFilho(Diretorio atual, String nome) {
         return atual.getFilhos().containsKey(nome);
     }
 
     @Override
     public void chmod(String caminho, String usuario, String usuarioAlvo, String permissao)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        Diretorio dir = DiretorioUtil.navegar(caminho, root);
-
-        if (!dir.temPermissao(usuario, 'w')) {
-            throw new PermissaoException("Usuário sem permissão para alterar permissões em: " + caminho);
-        }
-
+        Diretorio dir = DiretorioUtil.navegar(caminho, root, usuario);
+        VerificacaoUtil.verificarPermissaoEscrita(dir, usuarioAlvo, caminho);
         dir.setPermissaoUsuario(usuarioAlvo, permissao);
     }
 
@@ -139,25 +136,19 @@ public final class FileSystemImpl implements IFileSystem {
             throw new PermissaoException("Não é possível remover o diretório raiz.");
         }
 
-        Diretorio pai = DiretorioUtil.obterDiretorioPai(caminho, root);
-        String nomeAlvo = obterNomeAlvo(caminho);
+        Diretorio pai = DiretorioUtil.obterDiretorioPai(caminho, root, usuario);
+        String nomeAlvo = DiretorioUtil.obterNomeAlvo(caminho);
         Diretorio alvo = DiretorioUtil.obterAlvo(pai, nomeAlvo, caminho);
-
         VerificacaoUtil.verificarPermissaoEscrita(alvo, usuario, caminho);
-
         if (!alvo.isArquivo()) {
             VerificacaoUtil.verificarRemocaoDiretorio(alvo, recursivo);
             if (recursivo) {
                 DiretorioUtil.removerRecursivo(alvo, usuario);
             }
         }
-
         pai.removerFilho(nomeAlvo);
     }
 
-    private String obterNomeAlvo(String caminho) {
-        return caminho.substring(caminho.lastIndexOf('/') + 1);
-    }
 
     @Override
     public void touch(String caminho, String usuario)
@@ -169,7 +160,7 @@ public final class FileSystemImpl implements IFileSystem {
         String nomeArquivo = DiretorioUtil.extrairNomeArquivo(caminho);
 
         mkdir(caminhoPai, usuario);
-        Diretorio parent = DiretorioUtil.navegar(caminhoPai, root);
+        Diretorio parent = DiretorioUtil.navegar(caminhoPai, root, usuario);
         VerificacaoUtil.verificarPermissaoEscrita(parent, usuario, caminhoPai);
         VerificacaoUtil.verificarSeEhArquivo(parent);
 
@@ -183,7 +174,7 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void write(String caminho, String usuario, boolean anexar, byte[] buffer)
             throws CaminhoNaoEncontradoException, PermissaoException, OperacaoInvalidaException {
-        Diretorio dir = DiretorioUtil.navegar(caminho, root);
+        Diretorio dir = DiretorioUtil.navegar(caminho, root,usuario);
         VerificacaoUtil.verificarEscritaArquivo(dir, usuario);
         ArquivoUtil.escreverBufferNoArquivo((Arquivo) dir, buffer, anexar);
     }
@@ -191,7 +182,7 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void read(String caminho, String usuario, byte[] buffer, Offset offset)
             throws CaminhoNaoEncontradoException, PermissaoException, OperacaoInvalidaException {
-        Diretorio dir = DiretorioUtil.navegar(caminho, root);
+        Diretorio dir = DiretorioUtil.navegar(caminho, root,usuario);
         VerificacaoUtil.verificarLeituraArquivo(dir, usuario);
         Arquivo arquivo = (Arquivo) dir;
         ArquivoUtil.atualizarOffsetLimite(offset, arquivo.getTamanho());
@@ -205,13 +196,13 @@ public final class FileSystemImpl implements IFileSystem {
             throws CaminhoNaoEncontradoException, PermissaoException {
         VerificacaoUtil.verificarMovimentacaoPermitida(caminhoAntigo, caminhoNovo);
 
-        Diretorio paiAntigo = DiretorioUtil.obterDiretorioPai(caminhoAntigo, root);
+        Diretorio paiAntigo = DiretorioUtil.obterDiretorioPai(caminhoAntigo, root, usuario);
         String nomeAntigo = DiretorioUtil.extrairNomeArquivo(caminhoAntigo);
         Diretorio alvo = DiretorioUtil.obterAlvo(paiAntigo, nomeAntigo, caminhoAntigo);
 
         VerificacaoUtil.verificarPermissaoEscrita(alvo, usuario, caminhoAntigo);
 
-        Diretorio paiNovo = DiretorioUtil.obterDiretorioPai(caminhoNovo, root);
+        Diretorio paiNovo = DiretorioUtil.obterDiretorioPai(caminhoNovo, root, usuario);
         String nomeNovo = DiretorioUtil.extrairNomeArquivo(caminhoNovo);
 
         VerificacaoUtil.verificarDestinoDisponivel(paiNovo, nomeNovo);
@@ -222,7 +213,7 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void ls(String caminho, String usuario, boolean recursivo)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        Diretorio dir = DiretorioUtil.navegar(caminho, root);
+        Diretorio dir = DiretorioUtil.navegar(caminho, root, usuario);
         VerificacaoUtil.verificarLeituraDiretorio(dir, usuario, caminho);
         String output = DiretorioUtil.listar(dir, caminho, recursivo, usuario);
         System.out.print(output);
@@ -231,8 +222,8 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        Diretorio origem = DiretorioUtil.navegar(caminhoOrigem, root);
-        Diretorio destino = DiretorioUtil.navegar(caminhoDestino, root);
+        Diretorio origem = DiretorioUtil.navegar(caminhoOrigem, root, usuario);
+        Diretorio destino = DiretorioUtil.navegar(caminhoDestino, root, usuario);
 
         VerificacaoUtil.verificarPermissoesParaCopia(origem, destino, usuario);
 

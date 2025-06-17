@@ -15,24 +15,38 @@ public class DiretorioUtil {
   private DiretorioUtil() {
   }
 
-  public static Diretorio obterDiretorioPai(String caminho, Diretorio root) throws CaminhoNaoEncontradoException {
+  public static Diretorio obterDiretorioPai(String caminho, Diretorio root, String usuario)
+      throws CaminhoNaoEncontradoException, PermissaoException {
     String caminhoPai = caminho.substring(0, caminho.lastIndexOf('/'));
-    return navegar(caminhoPai.isEmpty() ? "/" : caminhoPai, root);
+    return navegar(caminhoPai.isEmpty() ? "/" : caminhoPai, root, usuario);
   }
 
-  public static Diretorio navegar(String caminho, Diretorio root) throws CaminhoNaoEncontradoException {
+  
+
+  public static Diretorio navegar(String caminho, Diretorio root, String usuario)
+      throws CaminhoNaoEncontradoException, PermissaoException {
+
     if (caminho.equals("/") || caminho.isEmpty()) {
+      VerificacaoUtil.verificarPermissaoExecucao(root, usuario, "/");
       return root;
     }
+
     Diretorio atual = root;
     StringTokenizer tokenizer = new StringTokenizer(caminho, "/");
+    StringBuilder caminhoAtual = new StringBuilder("/");
+
     while (tokenizer.hasMoreTokens()) {
       String parte = tokenizer.nextToken();
+
       if (!atual.getFilhos().containsKey(parte)) {
         throw new CaminhoNaoEncontradoException("Caminho não encontrado: " + caminho);
       }
+
       atual = atual.getFilhos().get(parte);
+      caminhoAtual.append(parte).append("/");
+      VerificacaoUtil.verificarPermissaoExecucao(atual, usuario, caminhoAtual.toString());
     }
+
     return atual;
   }
 
@@ -65,10 +79,7 @@ public class DiretorioUtil {
 
   public static void removerRecursivo(Diretorio dir, String usuario) throws PermissaoException {
     for (Diretorio filho : dir.getFilhos().values()) {
-      if (!filho.temPermissao(usuario, 'w')) {
-        throw new PermissaoException("Sem permissão para remover: " + filho.getNome());
-      }
-
+      VerificacaoUtil.verificarPermissaoEscrita(filho, usuario, dir.getNome());
       if (!filho.isArquivo()) {
         removerRecursivo(filho, usuario);
       }
@@ -113,5 +124,9 @@ public class DiretorioUtil {
     }
 
     return output.toString();
+  }
+
+  public static String obterNomeAlvo(String caminho) {
+    return caminho.substring(caminho.lastIndexOf('/') + 1);
   }
 }
