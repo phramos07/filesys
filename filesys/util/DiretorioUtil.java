@@ -27,7 +27,6 @@ public class DiretorioUtil {
       throws CaminhoNaoEncontradoException, PermissaoException {
 
     if (caminho.equals("/") || caminho.isEmpty()) {
-      VerificacaoUtil.verificarPermissaoExecucao(root, usuario, "/");
       return root;
     }
 
@@ -44,7 +43,6 @@ public class DiretorioUtil {
 
       atual = atual.getFilhos().get(parte);
       caminhoAtual.append(parte).append("/");
-      VerificacaoUtil.verificarPermissaoExecucao(atual, usuario, caminhoAtual.toString());
     }
 
     return atual;

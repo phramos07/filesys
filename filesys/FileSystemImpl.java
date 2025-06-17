@@ -108,7 +108,6 @@ public final class FileSystemImpl implements IFileSystem {
         while (tokenizer.hasMoreTokens()) {
             String parte = tokenizer.nextToken();
             caminhoAtual.append("/").append(parte);
-            VerificacaoUtil.verificarPermissaoExecucao(atual, usuario, caminhoAtual.toString());
             if (!existeFilho(atual, parte)) {
                 atual = DiretorioUtil.criarDiretorioFilho(atual, parte, caminhoAtual.toString(), usuario, users);
             } else {
@@ -202,12 +201,33 @@ public final class FileSystemImpl implements IFileSystem {
 
         VerificacaoUtil.verificarPermissaoEscrita(alvo, usuario, caminhoAntigo);
 
-        Diretorio paiNovo = DiretorioUtil.obterDiretorioPai(caminhoNovo, root, usuario);
-        String nomeNovo = DiretorioUtil.extrairNomeArquivo(caminhoNovo);
+        boolean destinoExiste = false;
+        Diretorio destino;
+        try {
+            destino = DiretorioUtil.navegar(caminhoNovo, root, usuario);
+            destinoExiste = true;
+        } catch (CaminhoNaoEncontradoException e) {
+            destinoExiste = false;
+            destino = null;
+        }
 
-        VerificacaoUtil.verificarDestinoDisponivel(paiNovo, nomeNovo);
+        if (destinoExiste && !destino.isArquivo()) {
+            // Se destino é um diretório existente, mova para dentro dele
+            VerificacaoUtil.verificarPermissaoEscrita(destino, usuario, caminhoNovo);
+            if (destino.getFilhos().containsKey(nomeAntigo)) {
+                throw new PermissaoException("Já existe um item com o mesmo nome no diretório de destino.");
+            }
+            ArquivoUtil.executarMovimentacao(paiAntigo, destino, nomeAntigo, nomeAntigo, alvo);
+        } else {
+            // Caso seja renomeação ou mudança para novo caminho
+            Diretorio paiNovo = DiretorioUtil.obterDiretorioPai(caminhoNovo, root, usuario);
+            String nomeNovo = DiretorioUtil.extrairNomeArquivo(caminhoNovo);
 
-        ArquivoUtil.executarMovimentacao(paiAntigo, paiNovo, nomeAntigo, nomeNovo, alvo);
+            VerificacaoUtil.verificarPermissaoEscrita(paiNovo, usuario, caminhoNovo);
+            VerificacaoUtil.verificarDestinoDisponivel(paiNovo, nomeNovo);
+
+            ArquivoUtil.executarMovimentacao(paiAntigo, paiNovo, nomeAntigo, nomeNovo, alvo);
+        }
     }
 
     @Override

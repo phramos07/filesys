@@ -17,12 +17,6 @@ public class VerificacaoUtil {
     }
   }
 
-  public static void verificarPermissaoExecucao(Diretorio diretorio, String usuario, String caminhoAtual)
-      throws PermissaoException {
-    if (!diretorio.temPermissao(usuario, 'x')) {
-      throw new PermissaoException("Sem permissão de navegação em: " + caminhoAtual);
-    }
-  }
 
   public static void verificarLeituraDiretorio(Diretorio dir, String usuario, String caminho)
       throws PermissaoException {
