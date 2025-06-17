@@ -169,7 +169,7 @@ public final class FileSystemImpl implements IFileSystem {
         VerificacaoUtil.verificarPermissaoEscrita(parent, usuario, caminhoPai);
         VerificacaoUtil.verificarSeEhArquivo(parent);
 
-        VerificacaoUtil.verificarSeArquivoExiste(parent, nomeArquivo);
+        VerificacaoUtil.verificarSeArquivoOuDiretorioExiste(parent, nomeArquivo);
         Usuario user = UsuarioUtil.buscarUsuario(usuario, users);
         Arquivo novoArquivo = ArquivoUtil.criarNovoArquivo(nomeArquivo, user);
 

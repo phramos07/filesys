@@ -50,10 +50,17 @@ public class VerificacaoUtil {
     }
   }
 
-  public static void verificarSeArquivoExiste(Diretorio parent, String nomeArquivo)
-      throws CaminhoJaExistenteException {
-    if (parent.getFilhos().containsKey(nomeArquivo)) {
-      throw new CaminhoJaExistenteException("Arquivo já existe: " + nomeArquivo);
+  public static void verificarSeArquivoOuDiretorioExiste(Diretorio parent, String nomeArquivo)
+      throws CaminhoJaExistenteException, OperacaoInvalidaException {
+
+    Diretorio existente = parent.getFilhos().get(nomeArquivo);
+    if (existente != null) {
+      if (existente.isArquivo()) {
+        throw new CaminhoJaExistenteException("Arquivo já existe: " + nomeArquivo);
+      } else {
+        throw new OperacaoInvalidaException(
+            "Não é possível criar um arquivo: já existe um diretório com o nome '" + nomeArquivo + "'");
+      }
     }
   }
 
