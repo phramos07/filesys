@@ -28,9 +28,12 @@ public class PermissionTest {
         fileSystem.addUser(new Usuario("maria", "/", "r-x"));
         fileSystem.addUser(new Usuario("joao", "/", "rwx"));
         fileSystem.addUser(new Usuario("tiago", "/", "rw-"));
+        fileSystem.addUser(new Usuario("cega", "/", "-wx"));
 
         fileSystem.mkdir("/area1", "joao");
         fileSystem.mkdir("/area1/area2", "tiago");
+
+        fileSystem.touch("/area1/area2/arquivo.txt", "root");
     }
 
 
@@ -106,7 +109,7 @@ public class PermissionTest {
     @Test
     public void testLsPermissionFail() {
         // Tenta listar o conteúdo de um diretório sem permissão
-        assertThrows(PermissaoException.class, () -> fileSystem.ls("/area1/area2", "maria", true));
+        assertThrows(PermissaoException.class, () -> fileSystem.ls("/area1/area2", "cega", true));
     }
 
     @Test
@@ -119,19 +122,19 @@ public class PermissionTest {
     @Test
     public void testCpSuccess() throws CaminhoNaoEncontradoException, PermissaoException {
         // Tenta copiar um arquivo com permissão
-        assertDoesNotThrow(() -> fileSystem.cp("/area1/area2/arquivo.txt", "/area1/area2/arquivo_copiado.txt", "joao", true));
+        assertDoesNotThrow(() -> fileSystem.cp("/area1/area2/arquivo.txt", "/area1", "root", true));
     }
 
     @Test
     public void testCpPermissionFail() {
         // Tenta copiar um arquivo sem permissão
-        assertThrows(PermissaoException.class, () -> fileSystem.cp("/area1/area2/arquivo.txt", "/area1/area2/arquivo_copiado.txt", "maria", true));
+        assertThrows(PermissaoException.class, () -> fileSystem.cp("/area1/area2/arquivo.txt", "/area1/area2", "maria", true));
     }
 
     @Test
     public void testCpPathFail() {
         // Tenta copiar um arquivo de um caminho inexistente
-        assertThrows(CaminhoNaoEncontradoException.class, () -> fileSystem.cp("/area1/area2/inexistente/arquivo.txt", "/area1/area2/arquivo_copiado.txt", "joao", true));
+        assertThrows(CaminhoNaoEncontradoException.class, () -> fileSystem.cp("/area1/area2/inexistente/arquivo.txt", "/area1/area2", "root", true));
     }
 
     // =============== RM ===============
@@ -164,7 +167,7 @@ public class PermissionTest {
     @Test
     public void testMvInSamePlaceFail() {
         // Tenta mover um arquivo para o mesmo lugar sem permissão
-        assertThrows(PermissaoException.class, () -> fileSystem.mv("/area1/area2/arquivo.txt", "/area1/area2/arquivo.txt", "maria"));
+        assertThrows(PermissaoException.class, () -> fileSystem.mv("/area1/area2/arquivo.txt", "/area1/area2/arquivo.txt", "root"));
     }
 
     @Test
@@ -176,7 +179,7 @@ public class PermissionTest {
     @Test
     public void testMvPathFail() {
         // Tenta mover um arquivo de um caminho inexistente
-        assertThrows(CaminhoNaoEncontradoException.class, () -> fileSystem.mv("/area1/area2/inexistente/arquivo.txt", "/area1/area2/arquivo_moved.txt", "joao"));
+        assertThrows(CaminhoNaoEncontradoException.class, () -> fileSystem.mv("/area1/area2/inexistente/arquivo.txt", "/area1/area2/arquivo_moved.txt", "root"));
     }
 
     // =============== READ ===============

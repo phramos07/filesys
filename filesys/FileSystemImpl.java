@@ -149,15 +149,25 @@ public final class FileSystemImpl implements IFileSystem {
                 continue; // Se já existe, não cria novamente
             }
 
-            // Verifica se o usuário existe
-            usuarios.stream()
-                    .filter(u -> u.getNome().equals(usuario))
-                    .findFirst()
-                    .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado: " + usuario));
-
             // Verifica se o usuário tem permissão para criar o diretório
-            if (!diretorioAtual.temPerm(usuario, "w")) {
-                throw new PermissaoException("Usuário não tem permissão para criar diretório: " + caminhoAtual);
+            Usuario usuarioObj = null;
+
+            for (Usuario user : usuarios) {
+                if (user.getNome().equals(usuario)) {
+                    usuarioObj = user;
+                }
+            }
+
+            if (usuarioObj == null) {
+                new IllegalArgumentException("Usuário não encontrado: " + usuario);
+            }
+
+            if (!usuarioObj.getPermissoes().contains("w")) {
+                try {
+                    diretorioAtual.temPerm(usuario, "w");
+                } catch(IllegalArgumentException e) {
+                    throw new PermissaoException("Usuário não tem permissão para criar diretório: " + diretorioAtual);
+                }
             }
 
             // Cria o novo diretório
@@ -192,8 +202,25 @@ public final class FileSystemImpl implements IFileSystem {
 
         Dir dir = irPara(caminho);
 
-        if (!dir.temPerm(usuario, "w")) {
-            throw new PermissaoException("Usuário não tem permissão para alterar permissões: " + caminho);
+        // Verifica se o usuário tem permissão para criar o diretório
+        Usuario usuarioObj = null;
+
+        for (Usuario user : usuarios) {
+            if (user.getNome().equals(usuario)) {
+                usuarioObj = user;
+            }
+        }
+
+        if (usuarioObj == null) {
+            new IllegalArgumentException("Usuário não encontrado: " + usuario);
+        }
+
+        if (!usuarioObj.getPermissoes().contains("w")) {
+            try {
+                dir.temPerm(usuario, "w");
+            } catch(IllegalArgumentException e) {
+                throw new PermissaoException("Usuário não tem permissão para criar diretório: " + dir);
+            }
         }
 
         dir.setPermissoesUsuario(usuarioAlvo, permissao);
@@ -428,8 +455,25 @@ public final class FileSystemImpl implements IFileSystem {
             throws CaminhoNaoEncontradoException, PermissaoException {
         Dir diretorio = irPara(caminho);
 
-        if (!diretorio.temPerm(usuario, "r")) {
-            throw new PermissaoException("Você não tem permissão para listar este diretório!");
+        // Verifica se o usuário tem permissão para criar o diretório
+        Usuario usuarioObj = null;
+
+        for (Usuario user : usuarios) {
+            if (user.getNome().equals(usuario)) {
+                usuarioObj = user;
+            }
+        }
+
+        if (usuarioObj == null) {
+            new IllegalArgumentException("Usuário não encontrado: " + usuario);
+        }
+
+        if (!usuarioObj.getPermissoes().contains("r")) {
+            try {
+                diretorio.temPerm(usuario, "r");
+            } catch(IllegalArgumentException e) {
+                throw new PermissaoException("Você não tem permissão para listar este diretório!");
+            }
         }
 
         String output = lsRecursivo(diretorio, caminho, recursivo, usuario);
@@ -437,50 +481,89 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     @Override
-    public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo)
-            throws CaminhoNaoEncontradoException, PermissaoException {
-        if (caminhoOrigem == null || caminhoDestino == null || usuario == null) {
-            throw new IllegalArgumentException("Caminho de origem, destino e usuário não podem ser nulos");
-        }
-        caminhoOrigem = caminhoOrigem.replace("\\", "/");
-        caminhoDestino = caminhoDestino.replace("\\", "/");
-        if (caminhoOrigem.endsWith("/")) {
-            caminhoOrigem = caminhoOrigem.substring(0, caminhoOrigem.length() - 1);
-        }
-        if (caminhoDestino.endsWith("/")) {
-            caminhoDestino = caminhoDestino.substring(0, caminhoDestino.length() - 1);
-        }
-        Dir dirOrigem = irPara(caminhoOrigem);
-        Dir dirDestino = irPara(caminhoDestino);
-        if (!dirOrigem.temPerm(usuario, "r")) {
-            throw new PermissaoException("Usuário não tem permissão para ler o diretório de origem: " + caminhoOrigem);
-        }
-        if (!dirDestino.temPerm(usuario, "w")) {
-            throw new PermissaoException(
-                    "Usuário não tem permissão para escrever no diretório de destino: " + caminhoDestino);
-        }
-
-        String nomeArquivo = dirOrigem.getNome();
-        String caminhoCompletoDestino = dirDestino.getCaminhoCompleto() + "/" + nomeArquivo;
-        if (dirDestino.getFilhos().containsKey(nomeArquivo)) {
-            throw new PermissaoException("Arquivo ou diretório já existe no destino: " + caminhoCompletoDestino);
-        }
-        if (dirOrigem.isArquivo()) {
-            File novoArquivo = new File(nomeArquivo, usuario, "rwx");
-            dirDestino.addFilho(novoArquivo);
-            System.out.println("Arquivo copiado de " + caminhoOrigem + " para " + caminhoCompletoDestino);
-        } else {
-            Dir novoDiretorio = new Dir(nomeArquivo, usuario, "rwx");
-            dirDestino.addFilho(novoDiretorio);
-            for (Dir filho : dirOrigem.getFilhos().values()) {
-                String caminhoFilhoOrigem = filho.getCaminhoCompleto();
-                String caminhoFilhoDestino = novoDiretorio.getCaminhoCompleto() + "/" + filho.getNome();
-                cp(caminhoFilhoOrigem, caminhoFilhoDestino, usuario, recursivo);
-            }
-            System.out.println("Diretório copiado de " + caminhoOrigem + " para " + caminhoCompletoDestino);
-        }
-
+public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo)
+        throws CaminhoNaoEncontradoException, PermissaoException {
+    if (caminhoOrigem == null || caminhoDestino == null || usuario == null) {
+        throw new IllegalArgumentException("Caminho de origem, destino e usuário não podem ser nulos");
     }
+
+    caminhoOrigem = caminhoOrigem.replace("\\", "/").replaceAll("/$", "");
+    caminhoDestino = caminhoDestino.replace("\\", "/").replaceAll("/$", "");
+
+    Dir origem = irPara(caminhoOrigem);
+    Dir destino = irPara(caminhoDestino);
+
+    Usuario usuarioObj = usuarios.stream()
+        .filter(u -> u.getNome().equals(usuario))
+        .findFirst()
+        .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado: " + usuario));
+
+    if (!usuarioObj.getPermissoes().contains("rw")) {
+        if (!origem.temPerm(usuario, "r"))
+            throw new PermissaoException("Sem permissão de leitura em: " + caminhoOrigem);
+        if (!destino.temPerm(usuario, "w"))
+            throw new PermissaoException("Sem permissão de escrita em: " + caminhoDestino);
+    }
+
+    String nomeOrigem = origem.getNome();
+
+    // Se destino for um arquivo, substituí-lo se possível
+    if (destino instanceof File) {
+        if (!origem.isArquivo()) {
+            throw new IllegalArgumentException("Não é possível copiar um diretório para um arquivo");
+        }
+        copiarConteudoArquivo((File) origem, (File) destino, usuario);
+        System.out.println("Arquivo sobrescrito: " + destino.getCaminhoCompleto());
+        return;
+    }
+
+    // Se for diretório, verificar se já existe um filho com o mesmo nome
+    Dir existente = destino.getFilhos().get(nomeOrigem);
+
+    if (existente != null) {
+        // Se for arquivo, sobrescreve
+        if (existente.isArquivo() && origem.isArquivo()) {
+            copiarConteudoArquivo((File) origem, (File) existente, usuario);
+            System.out.println("Arquivo sobrescrito: " + existente.getCaminhoCompleto());
+            return;
+        } else {
+            throw new PermissaoException("Já existe um diretório/arquivo com esse nome: " + existente.getCaminhoCompleto());
+        }
+    }
+
+    if (origem.isArquivo()) {
+        File arquivoOrigem = (File) origem;
+        File arquivoNovo = new File(arquivoOrigem.getNome(), usuario, "rwx");
+        for (BlocoDeDados bloco : arquivoOrigem.getBlocos()) {
+            // Copia física dos blocos
+            byte[] dadosCopiados = bloco.getDados().clone(); // copia conteúdo
+            arquivoNovo.addBloco(new BlocoDeDados(dadosCopiados));
+        }
+        destino.addFilho(arquivoNovo);
+        System.out.println("Arquivo copiado: " + arquivoNovo.getCaminhoCompleto());
+    } else {
+        if (!recursivo) {
+            throw new IllegalArgumentException("Cópia de diretório requer o modo recursivo");
+        }
+
+        Dir novoDir = new Dir(origem.getNome(), usuario, "rwx");
+        destino.addFilho(novoDir);
+        for (Dir filho : origem.getFilhos().values()) {
+            cp(filho.getCaminhoCompleto(), novoDir.getCaminhoCompleto(), usuario, true);
+        }
+        System.out.println("Diretório copiado: " + novoDir.getCaminhoCompleto());
+    }
+}
+
+// Método auxiliar
+private void copiarConteudoArquivo(File origem, File destino, String usuario) {
+    destino.limparBlocos();
+    for (BlocoDeDados bloco : origem.getBlocos()) {
+        byte[] dadosCopiados = bloco.getDados().clone();
+        destino.addBloco(new BlocoDeDados(dadosCopiados));
+    }
+}
+
 
     @Override
     public void addUser(Usuario usuario) {
