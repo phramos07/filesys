@@ -88,7 +88,6 @@ public class MetaData {
 
     /**
      * Verifica se um usuário tem permissão de leitura.
-     * Usuário raiz ("root") e o dono sempre têm permissão total.
      * @param user O usuário que está tentando acessar.
      * @return Verdadeiro se o usuário tem permissão de leitura, falso caso contrário.
      */
@@ -109,10 +108,8 @@ public class MetaData {
         }
         return false;
     }
-
     /**
      * Verifica se um usuário tem permissão de escrita.
-     * Usuário raiz ("root") e o dono sempre têm permissão total.
      * @param user O usuário que está tentando acessar.
      * @return Verdadeiro se o usuário tem permissão de escrita, falso caso contrário.
      */
