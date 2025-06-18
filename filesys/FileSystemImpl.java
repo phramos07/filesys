@@ -175,6 +175,50 @@ public final class FileSystemImpl implements IFileSystem {
         atual.arquivos.put(nomeArquivo, novoArquivo);
     }
 
+
+    @Override
+    public void write(String caminho, String usuario, boolean anexar, byte[] buffer)
+            throws CaminhoNaoEncontradoException, PermissaoException {
+
+        String[] partes = Arrays.stream(caminho.split("/"))
+                .filter(p -> !p.isEmpty())
+                .toArray(String[]::new);
+
+        if (partes.length == 0) {
+            throw new CaminhoNaoEncontradoException("Caminho inválido.");
+        }
+
+        Diretorio atual = raiz;
+
+        for (int i = 0; i < partes.length - 1; i++) {
+            String parte = partes[i];
+            if (!atual.subdirs.containsKey(parte)) {
+                throw new CaminhoNaoEncontradoException("Diretório pai '" + parte + "' não encontrado.");
+            }
+            atual = atual.subdirs.get(parte);
+        }
+
+        String nomeArquivo = partes[partes.length - 1];
+
+        if (!atual.arquivos.containsKey(nomeArquivo)) {
+            throw new CaminhoNaoEncontradoException("Arquivo '" + nomeArquivo + "' não encontrado.");
+        }
+
+        Arquivo arquivo = atual.arquivos.get(nomeArquivo);
+
+        if (!arquivo.metaDados.podeEscrever(usuario) && !usuario.equals(ROOT_USER)) {
+            throw new PermissaoException("Usuário '" + usuario + "' não tem permissão de escrita.");
+        }
+
+        if (!anexar) {
+            arquivo.limparConteudo();
+        }
+
+        for (byte b : buffer) {
+            arquivo.adicionarByte(b);
+        }
+    }
+
     /**
      * Lê o conteúdo de um arquivo dentro do tamanho do buffer.
      */
@@ -327,4 +371,5 @@ public final class FileSystemImpl implements IFileSystem {
             dir.subdirs.remove(nome);
         }
     }
+
 }
