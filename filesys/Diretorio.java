@@ -31,6 +31,11 @@ public class Diretorio {
     return pai;
   }
 
+  // Adicionado para a funcionalidade 'mv'
+  public void setPai(Diretorio pai) {
+      this.pai = pai;
+  }
+
   public void addSubDiretorio(Diretorio dir) {
     subDiretorio.put(dir.getMetaDados().getNome(), dir);
   }
