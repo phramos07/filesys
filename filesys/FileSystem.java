@@ -1,5 +1,7 @@
 package filesys;
 
+import java.util.List;
+
 import exception.CaminhoJaExistenteException;
 import exception.CaminhoNaoEncontradoException;
 import exception.PermissaoException;
@@ -13,6 +15,10 @@ final public class FileSystem implements IFileSystem {
         fileSystemImpl = new FileSystemImpl();
     }
 
+    public FileSystem(List<Usuario> usuarios) {
+        fileSystemImpl = new FileSystemImpl(usuarios);
+    }
+
     @Override
     public void chmod(String caminho, String usuario, String usuarioAlvo, String permissao)
             throws CaminhoNaoEncontradoException, PermissaoException {
@@ -20,7 +26,7 @@ final public class FileSystem implements IFileSystem {
     }
 
     @Override
-    public void mkdir(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException {
+    public void mkdir(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
         fileSystemImpl.mkdir(caminho, usuario);
     }
 
@@ -31,7 +37,7 @@ final public class FileSystem implements IFileSystem {
     }
 
     @Override
-    public void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException {
+    public void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
         fileSystemImpl.touch(caminho, usuario);
     }
 

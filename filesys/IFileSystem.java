@@ -14,14 +14,14 @@ public interface IFileSystem {
 
     // Cria um novo diretório. Se o diretório já existir, será lançada uma exceção.
     // Se o usuario não tiver permissão para criar o diretório, será lançada uma exceção.
-    void mkdir(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException;
+    void mkdir(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException;
 
     // Remove um arquivo ou diretório. Se o diretório não existir, será lançada uma exceção.
     // Caso recursivo seja true, o diretório será removido recursivamente.
     void rm(String caminho, String usuario, boolean recursivo) throws CaminhoNaoEncontradoException, PermissaoException;
 
     // Cria um novo arquivo. Atenção: Se o arquivo já existir, será lançada uma exceção.
-    void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException;
+    void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException;
 
     // Escreve dados em um arquivo. Se o diretório não existir, será lançada uma exceção.
     // Caso o diretório exista, o arquivo será criado ou sobrescrito.
