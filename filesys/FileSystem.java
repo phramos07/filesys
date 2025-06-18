@@ -7,7 +7,7 @@ import exception.PermissaoException;
 // Essa classe deve servir apenas como proxy para o FileSystemImpl
 final public class FileSystem implements IFileSystem {
 
-    private final IFileSystem fileSystemImpl;
+    private final FileSystemImpl fileSystemImpl;
 
     public FileSystem() {
         fileSystemImpl = new FileSystemImpl();
@@ -63,5 +63,9 @@ final public class FileSystem implements IFileSystem {
     public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo)
             throws CaminhoNaoEncontradoException, PermissaoException {
         fileSystemImpl.cp(caminhoOrigem, caminhoDestino, usuario, recursivo);
+    }
+
+    public void addUser(String user) {
+        fileSystemImpl.addUser(user);
     }
 }
