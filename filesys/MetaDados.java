@@ -22,6 +22,12 @@ class MetaDados {
     }
 
     public boolean podeEscrever(String usuario) {
+        if (!permissoes.containsKey(usuario)) {
+            return false;
+        }
+        return permissoes.get(usuario).contains("w");
+    }
+
         return permissoes.containsKey(usuario) && permissoes.get(usuario).contains("w");
     }
 
@@ -52,4 +58,9 @@ class MetaDados {
     public void setTamanho(int tamanho) {
         this.tamanho = tamanho;
     }
+
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
+
 }

@@ -3,10 +3,6 @@ package filesys;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Arquivo {
-    public MetaDados metaDados;
-    private Bloco[] bloco;
-
 class Arquivo {
     private MetaDados metaDados;
     private Bloco[] bloco; // pode ser usado depois em write()
@@ -15,8 +11,12 @@ class Arquivo {
 
     public Arquivo(String nome, String dono) {
         this.metaDados = new MetaDados(nome, dono, "rwx");
+        this.conteudo = new ArrayList<>();
     }
 
+    public MetaDados getMetaDados() {
+        return metaDados;
+    }
 
     public List<Byte> getConteudo() {
         return conteudo;
@@ -29,8 +29,6 @@ class Arquivo {
     public void adicionarByte(byte b) {
         conteudo.add(b);
     }
-
-}
 
     public MetaDados getMetaDados() {
         return metaDados;
