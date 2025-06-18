@@ -1,17 +1,17 @@
 package filesys;
 
 public class Bloco {
-    byte[] bytes;
+    private byte[] dados;
 
-    public Bloco(){
-        bytes = new byte[4096];
+    public Bloco(int tamanho) {
+        this.dados = new byte[tamanho];
     }
 
-    public byte[] getDados(){
-        return bytes;
+    public byte[] getDados() {
+        return dados;
     }
 
-    public void setBytes(byte[] bytes){
-        this.bytes = bytes;
+    public void setDados(byte[] dados) {
+        this.dados = dados;
     }
 }

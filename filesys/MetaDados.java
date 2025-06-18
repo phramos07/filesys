@@ -1,37 +1,50 @@
 package filesys;
 
-/*classe base que tem o nome, permissões básicas e o dono, tanto Diretorio quanto Arquivo a implementam */
-public abstract class MetaDados {
-    
-    protected String nome;
-    protected String permissoesBasicas;
-    protected String dono;
+import java.util.HashMap;
+
+public class MetaDados {
+    private String nome;
+    private int tamanho;
+    private String dono;
+    private HashMap<String, String> permissoes;
+
+    public MetaDados(String nome, String dono) {
+        this.nome = nome;
+        this.dono = dono;
+        this.tamanho = 0;
+        this.permissoes = new HashMap<>();
+        this.permissoes.put(dono, "rwx");
+    }
 
     public String getNome() {
         return nome;
     }
-    public void setNome(String nome) {
-        this.nome = nome;
+
+    public int getTamanho() {
+        return tamanho;
     }
-    public String getPermissoesBasicas() {
-        return permissoesBasicas;
-    }
-    public void setPermissoesBasicas(String permissoesBasicas) {
-        this.permissoesBasicas = permissoesBasicas;
-    }
+
     public String getDono() {
         return dono;
     }
-    public void setDono(String dono) {
-        this.dono = dono;
+
+    public void setTamanho(int tamanho) {
+        this.tamanho = tamanho;
     }
 
-    public MetaDados(String nome, String permissoesBasicas, String dono) {
-        setNome(nome);
-        setPermissoesBasicas(permissoesBasicas);
-        setDono(dono);
+    public void setPermissao(String usuario, String perm) {
+        permissoes.put(usuario, perm);
     }
-    
-    public abstract void alterarPermissao(String usuarioAlvo, String permissao);
-       
+
+    public String getPermissao(String usuario) {
+        return permissoes.getOrDefault(usuario, "---");
+    }
+
+    public boolean temPermissao(String usuario, char tipo) {
+        return getPermissao(usuario).indexOf(tipo) != -1;
+    }
+
+     public void setNome(String nomeDestino) {
+        this.nome = nomeDestino;
+    }
 }
