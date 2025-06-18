@@ -175,50 +175,6 @@ public final class FileSystemImpl implements IFileSystem {
         atual.arquivos.put(nomeArquivo, novoArquivo);
     }
 
-
-    @Override
-    public void write(String caminho, String usuario, boolean anexar, byte[] buffer)
-            throws CaminhoNaoEncontradoException, PermissaoException {
-
-        String[] partes = Arrays.stream(caminho.split("/"))
-                .filter(p -> !p.isEmpty())
-                .toArray(String[]::new);
-
-        if (partes.length == 0) {
-            throw new CaminhoNaoEncontradoException("Caminho inválido.");
-        }
-
-        Diretorio atual = raiz;
-
-        for (int i = 0; i < partes.length - 1; i++) {
-            String parte = partes[i];
-            if (!atual.subdirs.containsKey(parte)) {
-                throw new CaminhoNaoEncontradoException("Diretório pai '" + parte + "' não encontrado.");
-            }
-            atual = atual.subdirs.get(parte);
-        }
-
-        String nomeArquivo = partes[partes.length - 1];
-
-        if (!atual.arquivos.containsKey(nomeArquivo)) {
-            throw new CaminhoNaoEncontradoException("Arquivo '" + nomeArquivo + "' não encontrado.");
-        }
-
-        Arquivo arquivo = atual.arquivos.get(nomeArquivo);
-
-        if (!arquivo.metaDados.podeEscrever(usuario) && !usuario.equals(ROOT_USER)) {
-            throw new PermissaoException("Usuário '" + usuario + "' não tem permissão de escrita.");
-        }
-
-        if (!anexar) {
-            arquivo.limparConteudo();
-        }
-
-        for (byte b : buffer) {
-            arquivo.adicionarByte(b);
-        }
-    }
-
     /**
      * Lê o conteúdo de um arquivo dentro do tamanho do buffer.
      */
@@ -280,50 +236,48 @@ public final class FileSystemImpl implements IFileSystem {
                 listar(dir.subdirs.get(nomeDir), caminho + "/" + nomeDir, true, indent + "  ");
             }
         }
-    }
+    }  
 
-    // Métodos não implementados (mv e cp)
     @Override
-    public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo)
+    public void write(String caminho, String usuario, boolean anexar, byte[] buffer)
             throws CaminhoNaoEncontradoException, PermissaoException {
 
-        String[] origem = extrairDiretorioENome(caminhoOrigem);
-        String[] destino = extrairDiretorioENome(caminhoDestino);
+        String[] partes = Arrays.stream(caminho.split("/"))
+                .filter(p -> !p.isEmpty())
+                .toArray(String[]::new);
 
-        Diretorio dirOrigem = navegarPara(origem[0]);
-        Diretorio dirDestino = navegarPara(destino[0]);
-
-        String nomeOrigem = origem[1];
-        String nomeDestino = destino[1];
-
-        if (!dirDestino.metaDados.podeEscrever(usuario)) {
-            throw new PermissaoException("Sem permissão no destino.");
+        if (partes.length == 0) {
+            throw new CaminhoNaoEncontradoException("Caminho inválido.");
         }
 
-        if (dirOrigem.arquivos.containsKey(nomeOrigem)) {
-            Arquivo arq = dirOrigem.arquivos.get(nomeOrigem);
-            Arquivo copia = new Arquivo(nomeDestino, usuario);
-            copia.conteudo.addAll(arq.conteudo);
-            dirDestino.arquivos.put(nomeDestino, copia);
-            return;
-        }
+        Diretorio atual = raiz;
 
-        if (dirOrigem.subdirs.containsKey(nomeOrigem)) {
-            if (!recursivo) {
-                throw new PermissaoException("Cópia de diretório requer modo recursivo.");
+        for (int i = 0; i < partes.length - 1; i++) {
+            String parte = partes[i];
+            if (!atual.subdirs.containsKey(parte)) {
+                throw new CaminhoNaoEncontradoException("Diretório pai '" + parte + "' não encontrado.");
             }
-
-            Diretorio origemDir = dirOrigem.subdirs.get(nomeOrigem);
-            Diretorio copiaDir = copiarDiretorio(origemDir, nomeDestino, usuario);
-            dirDestino.subdirs.put(nomeDestino, copiaDir);
-            return;
+            atual = atual.subdirs.get(parte);
         }
 
-        throw new CaminhoNaoEncontradoException("Origem não encontrada.");
-    }
+        String nomeArquivo = partes[partes.length - 1];
 
-    public void write(String caminho, String usuario, boolean anexar, byte[] buffer) {
-        throw new UnsupportedOperationException("Método não implementado 'write'");
+        if (!atual.arquivos.containsKey(nomeArquivo)) {
+            throw new CaminhoNaoEncontradoException("Arquivo '" + nomeArquivo + "' não encontrado.");
+        }
+
+        Arquivo arquivo = atual.arquivos.get(nomeArquivo);
+        if (!arquivo.getMetaDados().podeEscrever(usuario) && !usuario.equals(ROOT_USER)) {
+            throw new PermissaoException("Usuário '" + usuario + "' não tem permissão de escrita.");
+        }
+
+        if (!anexar) {
+            arquivo.limparConteudo();
+        }
+
+        for (byte b : buffer) {
+            arquivo.adicionarByte(b);
+        }
     }
 
   private String[] extrairDiretorioENome(String caminho) {
@@ -349,12 +303,12 @@ public final class FileSystemImpl implements IFileSystem {
 
     private Diretorio copiarDiretorio(Diretorio original, String novoNome, String dono) {
         Diretorio copia = new Diretorio(novoNome, dono);
-        copia.metaDados.permissoes.put(dono, "rwx");
+        copia.metaDados.setPermissao(dono, "rwx");
 
         for (String nomeArq : original.arquivos.keySet()) {
             Arquivo arq = original.arquivos.get(nomeArq);
             Arquivo novo = new Arquivo(nomeArq, dono);
-            novo.conteudo.addAll(arq.conteudo);
+            novo.getConteudo().addAll(arq.getConteudo());
             copia.arquivos.put(nomeArq, novo);
         }
 
@@ -401,9 +355,45 @@ public final class FileSystemImpl implements IFileSystem {
 
         throw new CaminhoNaoEncontradoException("Origem não encontrada.");
 
+    }
+
     @Override
-    public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo) {
-        throw new UnsupportedOperationException("Método não implementado 'cp'");
+    public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo)
+            throws CaminhoNaoEncontradoException, PermissaoException {
+
+        String[] origem = extrairDiretorioENome(caminhoOrigem);
+        String[] destino = extrairDiretorioENome(caminhoDestino);
+
+        Diretorio dirOrigem = navegarPara(origem[0]);
+        Diretorio dirDestino = navegarPara(destino[0]);
+
+        String nomeOrigem = origem[1];
+        String nomeDestino = destino[1];
+
+        if (!dirDestino.metaDados.podeEscrever(usuario)) {
+            throw new PermissaoException("Sem permissão no destino.");
+        }
+
+        if (dirOrigem.arquivos.containsKey(nomeOrigem)) {
+            Arquivo arq = dirOrigem.arquivos.get(nomeOrigem);
+            Arquivo copia = new Arquivo(nomeDestino, usuario);
+            copia.getConteudo().addAll(arq.getConteudo());
+            dirDestino.arquivos.put(nomeDestino, copia);
+            return;
+        }
+
+        if (dirOrigem.subdirs.containsKey(nomeOrigem)) {
+            if (!recursivo) {
+                throw new PermissaoException("Cópia de diretório requer modo recursivo.");
+            }
+
+            Diretorio origemDir = dirOrigem.subdirs.get(nomeOrigem);
+            Diretorio copiaDir = copiarDiretorio(origemDir, nomeDestino, usuario);
+            dirDestino.subdirs.put(nomeDestino, copiaDir);
+            return;
+        }
+
+        throw new CaminhoNaoEncontradoException("Origem não encontrada.");
     }
 
     /**
@@ -479,5 +469,4 @@ public final class FileSystemImpl implements IFileSystem {
             dir.subdirs.remove(nome);
         }
     }
-
 }

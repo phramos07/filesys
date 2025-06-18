@@ -29,9 +29,5 @@ class Arquivo {
     public void adicionarByte(byte b) {
         conteudo.add(b);
     }
-
-    public MetaDados getMetaDados() {
-        return metaDados;
-    }
 }
 
