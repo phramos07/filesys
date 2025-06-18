@@ -3,6 +3,7 @@ package filesys;
 import exception.CaminhoJaExistenteException;
 import exception.CaminhoNaoEncontradoException;
 import exception.PermissaoException;
+import filesys.core.Offset;
 
 // Apenas modifique essa interface caso seja EXTREMAMENTE necessário.
 // Documente & Justifique TODAS asalterações feitas.

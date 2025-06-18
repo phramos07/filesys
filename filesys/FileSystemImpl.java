@@ -6,6 +6,10 @@ import java.util.Map;
 import exception.CaminhoJaExistenteException;
 import exception.CaminhoNaoEncontradoException;
 import exception.PermissaoException;
+import filesys.core.Arquivo;
+import filesys.core.Bloco;
+import filesys.core.Diretorio;
+import filesys.core.Offset;
 
 // Implemente nesta classe o seu código do FileSystem.
 // A classe pode ser alterada.

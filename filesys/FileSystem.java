@@ -5,6 +5,7 @@ import java.util.Map;
 import exception.CaminhoJaExistenteException;
 import exception.CaminhoNaoEncontradoException;
 import exception.PermissaoException;
+import filesys.core.Offset;
 
 // Essa classe deve servir apenas como proxy para o FileSystemImpl
 final public class FileSystem implements IFileSystem {

@@ -1,4 +1,4 @@
-package filesys;
+package filesys.core;
 
 public class Offset {
     private int value;

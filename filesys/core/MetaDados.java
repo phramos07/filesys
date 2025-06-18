@@ -1,4 +1,4 @@
-package filesys;
+package filesys.core;
 
 import java.util.HashMap;
 

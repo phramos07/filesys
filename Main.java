@@ -1,6 +1,6 @@
 import filesys.IFileSystem;
-import filesys.Offset;
 import filesys.Usuario;
+import filesys.core.Offset;
 
 import java.util.HashMap;
 import java.util.Map;

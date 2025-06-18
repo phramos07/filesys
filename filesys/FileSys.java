@@ -1,5 +1,7 @@
 package filesys;
 
+import filesys.core.Diretorio;
+
 public class FileSys {
     private Diretorio raiz;
 
