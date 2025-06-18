@@ -1,106 +1,75 @@
 import filesys.IFileSystem;
+import filesys.FileSystem; // Importa sua classe proxy FileSystem
+import filesys.FileSystemImpl; // Importa a implementação para acessar o getCurrentUser
 
 import java.util.Scanner;
 import java.io.FileNotFoundException;
+import java.nio.charset.StandardCharsets; // Para converter String para byte[]
 
 import exception.PermissaoException;
 import exception.CaminhoJaExistenteException;
 import exception.CaminhoNaoEncontradoException;
 
-import filesys.FileSystem;
-
 // MENU INTERATIVO PARA O SISTEMA DE ARQUIVOS
 // SINTA-SE LIVRE PARA ALTERAR A CLASSE MAIN
 public class Main {
 
-    // Constantes úteis para a versão interativa. 
-    // Para esse tipo de execução, o tamanho max do buffer de 
-    // leitura pode ser menor.
+    // Constantes úteis para a versão interativa.
     private static final String ROOT_USER = "root";
     private static final String ROOT_DIR = "/";
-    private static final int READ_BUFFER_SIZE = 256;
+    private static final int READ_BUFFER_SIZE = 4096; // Tamanho do buffer de leitura (4KB)
 
-    // Sistema de arquivos
-    private static IFileSystem fileSystem;
+    // Sistema de arquivos (usando a classe proxy)
+    private static FileSystem fileSystemProxy; // Instância do proxy
+    private static FileSystemImpl fileSystemImpl; // Referência direta ao impl para o getCurrentUser e outros
 
     // Scanner para leitura de entrada do usuário
     private static Scanner scanner = new Scanner(System.in);
 
-    // Usuário que está executando o programa
+    // Usuário que está executando o programa (definido pelos argumentos da linha de comando)
     private static String user;
 
     // O sistema de arquivos é inteiramente virtual, ou seja, será reiniciado a cada execução do programa.
     // Logo, não é necessário salvar os arquivos em disco. O sistema será uma simulação em memória.
     public static void main(String[] args) {
-        // Usuário que está executando o programa.
-        // Para quaisquer operações que serão feitas por esse usuário em um caminho /path/**,
-        // deve-se checar se o usuário tem permissão de escrita (r) neste caminho.
-        if (args.length < 2) {
-            System.out.println("Usuário não fornecido");
+        // O usuário que está executando o programa é obtido dos argumentos da linha de comando.
+        // Isso simula o usuário que "logou" no sistema.
+        if (args.length < 1) { // Verifica se pelo menos o nome de usuário foi fornecido
+            System.out.println("Uso: java Main <nome_do_usuario>");
+            System.out.println("Exemplo: java Main joao");
             return;
         }
-        user = args[1];
+        user = args[0]; // Assume que o primeiro argumento é o nome do usuário
+
+        // Inicializa o sistema de arquivos.
+        fileSystemProxy = new FileSystem();
+        // Acessa a implementação real para poder usar métodos como getCurrentUser()
+        // Isso é um cast, pois fileSystemImpl é um atributo public final em FileSystem.java
+        fileSystemImpl = (FileSystemImpl) fileSystemProxy.fileSystemImpl;
         
-        // Carrega a lista de usuários do sistema a partir de arquivo
-        // Formato do arquivo users:
-        //      username dir permission
-        // Exemplo:
-        //      maria /** rw-
-        //      luzia /** rwx
-        // Essa permissão vale para o diretório raiz e sub diretórios.
-        // A partir do momento que um usuário cria outro diretório ou arquivo, 
-        // a permissão desse usuário é de leitura, escrita e execução nesse novo diretório/arquivo,
-        // e sempre será rwx para o usuário root.
-        try {
-            Scanner userScanner = new Scanner(new java.io.File("users/users"));
-            while (userScanner.hasNextLine()) {
-                String line = userScanner.nextLine().trim();
-                if (!line.isEmpty()) {
-                    String[] parts = line.split(" ");
-                    if (parts.length == 3) {
-                        String userListed = parts[0];
-                        String dir = parts[1];
-                        String dirPermission = parts[2];
-                        
-                        /* A FAZER:
-                         * Processar a permissão de todos os usuários existentes por diretório.
-                         * Por enquanto esse código somente imprime as permissões contidas no arquivo users.
-                        */
-                        System.out.println(userListed + " " + dir + " " + dirPermission); // Somente imprime o usuário, diretório e permissão
+        // Define o usuário inicial do sistema de arquivos para o usuário fornecido nos args.
+        // Se o usuário inicial for diferente de "root", as permissões serão aplicadas.
+        fileSystemImpl.changeUser(user);
 
-
-                    } else {
-                        System.out.println("Formato ruim no arquivo de usuários. Linha: " + line);
-                    }
-                }
-            }
-            userScanner.close();
-        } catch (FileNotFoundException e) { // Retorna se o arquivo de usuários não for encontrado
-            System.out.println("Arquivo de usuários não encontrado");
-
-            return;
-        }
-        
-        // Finalmente cria o Sistema de Arquivos
-        // Lista de usuários é imutável durante a execução do programa
-        // Obs: Como passar a lista de usuários para o FileSystem?
-        fileSystem = new FileSystem(/*usuários?*/);
-
-        // // DESCOMENTE O BLOCO ABAIXO PARA CRIAR O DIRETÓRIO RAIZ ANTES DE RODAR O MENU
-        // // Cria o diretório raiz do sistema. Root sempre tem permissão total "rwx"
+        // Não é mais necessário criar o diretório raiz, pois ele é criado no construtor de FileSystemImpl.
+        // O bloco comentado abaixo foi removido:
         // try {
         //     fileSystem.mkdir(ROOT_DIR, ROOT_USER);
         // } catch (CaminhoJaExistenteException | PermissaoException e) {
         //     System.out.println(e.getMessage());
         // }
 
-        // Menu interativo.
+        System.out.println("Bem-vindo ao Sistema de Arquivos Virtual!");
+        System.out.println("Usuário logado: " + fileSystemImpl.getCurrentUser());
+        System.out.println("Digite 'help' para ver os comandos disponíveis.");
+
+        // Menu interativo principal.
         menu();
     }
 
-    // Menu interativo para fins de teste.
+    // Menu interativo para fins de teste e demonstração.
     // Os testes junit não são feitos com esse menu,
-    // mas diretamente na interface IFileSystem
+    // mas diretamente na interface IFileSystem.
     public static void menu() {
         while (true) {
             System.out.println("\nComandos disponíveis:");
@@ -148,102 +117,173 @@ public class Main {
                         break;
                     case "0":
                         System.out.println("Encerrando...");
-
                         return;
                     default:
                         System.out.println("Comando inválido!");
-                } 
-            } catch (CaminhoNaoEncontradoException | CaminhoJaExistenteException | PermissaoException e) {
-                System.out.println("Erro: " + e.getMessage());
+                }
+            } catch (CaminhoNaoEncontradoException | CaminhoJaExistenteException | PermissaoException | IllegalArgumentException e) {
+                // Captura exceções e exibe mensagens de erro amigáveis.
+                System.err.println("Erro: " + e.getMessage());
             }
 
             System.out.println("Pressione Enter para continuar...");
             scanner.nextLine();
-            System.out.print("\033[H\033[2J");
-            System.out.flush();
+            // Limpa a tela (funciona em alguns terminais)
+            // System.out.print("\033[H\033[2J");
+            // System.out.flush();
         }
     }
 
+    /**
+     * Implementa o comando chmod para o menu interativo.
+     * Solicita o caminho, usuário alvo e novas permissões, e chama o método chmod do FileSystem.
+     * @throws CaminhoNaoEncontradoException Se o caminho não for encontrado.
+     * @throws PermissaoException Se o usuário atual não tiver permissão.
+     */
     public static void chmod() throws CaminhoNaoEncontradoException, PermissaoException {
         System.out.println("Insira o caminho do arquivo ou diretório:");
         String caminho = scanner.nextLine();
-        System.out.println("Insira o usuário para o qual deseja alterar as permissões:");
+        System.out.println("Insira o usuário para o qual deseja alterar as permissões (e.g., 'root', 'user1', 'other'):");
         String usuarioAlvo = scanner.nextLine();
-        System.out.println("Insira a permissão (formato: 3 caracteres\"rwx\"):");
+        System.out.println("Insira a permissão (formato: 3 caracteres 'rwx', 'rw-', 'r-x', '---'):");
         String permissoes = scanner.nextLine();
         
-        fileSystem.chmod(caminho, user, usuarioAlvo, permissoes);
+        fileSystemProxy.chmod(caminho, user, usuarioAlvo, permissoes);
     }
 
+    /**
+     * Implementa o comando mkdir para o menu interativo.
+     * Solicita o caminho para o novo diretório e chama o método mkdir do FileSystem.
+     * @throws CaminhoJaExistenteException Se o caminho já existir.
+     * @throws PermissaoException Se o usuário não tiver permissão.
+     */
     public static void mkdir() throws CaminhoJaExistenteException, PermissaoException {
-        System.out.println("Insira o caminho do diretório a ser criado:");
+        System.out.println("Insira o caminho do diretório a ser criado (ex: /home/user/newdir):");
         String caminho = scanner.nextLine();
         
-        fileSystem.mkdir(caminho, user);
+        fileSystemProxy.mkdir(caminho, user);
     }
 
+    /**
+     * Implementa o comando rm para o menu interativo.
+     * Solicita o caminho e se a remoção deve ser recursiva, e chama o método rm do FileSystem.
+     * @throws CaminhoNaoEncontradoException Se o caminho não for encontrado.
+     * @throws PermissaoException Se o usuário não tiver permissão.
+     */
     public static void rm() throws CaminhoNaoEncontradoException, PermissaoException {
-        System.out.println("Insira o caminho do diretório a ser removido:");
+        System.out.println("Insira o caminho do item a ser removido (ex: /home/user/file.txt ou /home/user/mydir):");
         String caminho = scanner.nextLine();
-        System.out.println("Remover recursivamente? (true/false):");
+        System.out.println("Remover recursivamente para diretórios? (true/false):");
         boolean recursivo = Boolean.parseBoolean(scanner.nextLine());
         
-        fileSystem.rm(caminho, user, recursivo);
+        fileSystemProxy.rm(caminho, user, recursivo);
     }
 
-    public static void touch() throws CaminhoJaExistenteException, PermissaoException {
-        System.out.println("Insira o caminho do arquivo a ser criado:");
+    /**
+     * Implementa o comando touch para o menu interativo.
+     * Solicita o caminho para o novo arquivo e chama o método touch do FileSystem.
+     * @throws CaminhoJaExistenteException Se o arquivo já existir como diretório.
+     * @throws PermissaoException Se o usuário não tiver permissão.
+     * @throws CaminhoNaoEncontradoException Se o diretório pai não existir.
+     */
+    public static void touch() throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
+        System.out.println("Insira o caminho do arquivo a ser criado ou atualizado (ex: /home/user/newfile.txt):");
         String caminho = scanner.nextLine();
         
-        fileSystem.touch(caminho, user);
+        fileSystemProxy.touch(caminho, user);
     }
 
+    /**
+     * Implementa o comando write para o menu interativo.
+     * Solicita o caminho, se deve anexar, e o conteúdo a ser escrito.
+     * @throws CaminhoNaoEncontradoException Se o arquivo não for encontrado.
+     * @throws PermissaoException Se o usuário não tiver permissão.
+     */
     public static void write() throws CaminhoNaoEncontradoException, PermissaoException {
-        System.out.println("Insira o caminho do arquivo a ser escrito:");
+        System.out.println("Insira o caminho do arquivo a ser escrito (ex: /home/user/data.txt):");
         String caminho = scanner.nextLine();
-        System.out.println("Anexar? (true/false):");
+        System.out.println("Anexar ao final do arquivo? (true/false):");
         boolean anexar = Boolean.parseBoolean(scanner.nextLine());
         System.out.println("Insira o conteúdo a ser escrito:");
         String content = scanner.nextLine();
-        byte[] buffer = content.getBytes();
+        byte[] buffer = content.getBytes(StandardCharsets.UTF_8); // Converte a string para bytes
         
-        fileSystem.write(caminho, user, anexar, buffer);
+        fileSystemProxy.write(caminho, user, anexar, buffer);
     }
 
+    /**
+     * Implementa o comando read para o menu interativo.
+     * Solicita o caminho do arquivo e tenta ler seu conteúdo para um buffer padrão.
+     * @throws CaminhoNaoEncontradoException Se o arquivo não for encontrado.
+     * @throws PermissaoException Se o usuário não tiver permissão.
+     */
     public static void read() throws CaminhoNaoEncontradoException, PermissaoException {
-        System.out.println("Insira o caminho do arquivo a ser lido:");
+        System.out.println("Insira o caminho do arquivo a ser lido (ex: /home/user/data.txt):");
         String caminho = scanner.nextLine();
-        byte[] buffer = new byte[READ_BUFFER_SIZE]; // Exemplo de tamanho de buffer por load/leitura . O que acontece se o Buffer for menor que o conteúdo a ser lido?     
+        byte[] buffer = new byte[READ_BUFFER_SIZE]; // Cria um buffer de tamanho fixo para a leitura.
+                                                   // O Main lerá o quanto couber no buffer ou o arquivo inteiro.
         
-        fileSystem.read(caminho, user, buffer); // Lógica para ler arquivos maiores que o buffer deve ser implementada. 
+        fileSystemProxy.read(caminho, user, buffer);
+        
+        // Para exibir o conteúdo, é preciso saber quantos bytes foram efetivamente lidos
+        // O método read em FileSystemImpl apenas imprime.
+        // Para ter o retorno aqui, teríamos que mudar a assinatura da interface IFileSystem.read
+        // Para essa demonstração, não mostraremos o conteúdo diretamente aqui, mas a chamada foi feita.
+        // Se a IFileSystem.read retornasse um byte[], poderíamos fazer:
+        // byte[] readData = fileSystemProxy.read(caminho, user, buffer);
+        // if (readData != null) {
+        //     System.out.println("Conteúdo lido: \"" + new String(readData, StandardCharsets.UTF_8) + "\"");
+        // } else {
+        //     System.out.println("Não foi possível ler o arquivo.");
+        // }
+        System.out.println("Verifique a saída do comando 'read' acima para o conteúdo lido (se houver).");
     }
 
+    /**
+     * Implementa o comando mv para o menu interativo.
+     * Solicita os caminhos de origem e destino para mover/renomear um item.
+     * @throws CaminhoNaoEncontradoException Se algum caminho não for encontrado.
+     * @throws PermissaoException Se o usuário não tiver permissão.
+     */
     public static void mv() throws CaminhoNaoEncontradoException, PermissaoException {
-        System.out.println("Insira o caminho do arquivo a ser movido:");
+        System.out.println("Insira o caminho antigo do arquivo/diretório (origem):");
         String caminhoAntigo = scanner.nextLine();
-        System.out.println("Insira o novo caminho do arquivo:");
+        System.out.println("Insira o novo caminho/nome para o arquivo/diretório (destino):");
         String caminhoNovo = scanner.nextLine();
         
-        fileSystem.mv(caminhoAntigo, caminhoNovo, user);
+        fileSystemProxy.mv(caminhoAntigo, caminhoNovo, user);
     }
 
+    /**
+     * Implementa o comando ls para o menu interativo.
+     * Solicita o caminho e se a listagem deve ser recursiva.
+     * @throws CaminhoNaoEncontradoException Se o caminho não for encontrado.
+     * @throws PermissaoException Se o usuário não tiver permissão.
+     */
     public static void ls() throws CaminhoNaoEncontradoException, PermissaoException {
-        System.out.println("Insira o caminho do diretório a ser listado:");
+        System.out.println("Insira o caminho do diretório a ser listado (ex: /home ou /):");
         String caminho = scanner.nextLine();
         System.out.println("Listar recursivamente? (true/false):");
         boolean recursivo = Boolean.parseBoolean(scanner.nextLine());
         
-        fileSystem.ls(caminho, user, recursivo);
+        fileSystemProxy.ls(caminho, user, recursivo);
     }
 
-    public static void cp() throws CaminhoNaoEncontradoException, PermissaoException {
-        System.out.println("Insira o caminho da origem do arquivo a ser copiado:");
+    /**
+     * Implementa o comando cp para o menu interativo.
+     * Solicita os caminhos de origem e destino para copiar um item.
+     * @throws CaminhoNaoEncontradoException Se algum caminho não for encontrado.
+     * @throws PermissaoException Se o usuário não tiver permissão.
+     * @throws CaminhoJaExistenteException Se o item de destino já existir.
+     */
+    public static void cp() throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException {
+        System.out.println("Insira o caminho da origem do arquivo/diretório a ser copiado:");
         String caminhoOrigem = scanner.nextLine();
-        System.out.println("Insira o caminho do destino do arquivo a ser copiado:");
+        System.out.println("Insira o caminho do destino do arquivo/diretório a ser copiado:");
         String caminhoDestino = scanner.nextLine();
-        System.out.println("Copiar recursivamente? (true/false):");
-        boolean recursivo = Boolean.parseBoolean(scanner.nextLine());
+        // A flag recursivo para cp é ignorada aqui, pois a implementação é naturalmente recursiva para diretórios.
+        boolean recursivo = true; // Força como true, pois a implementação de cp é recursiva para diretórios.
         
-        fileSystem.cp(caminhoOrigem, caminhoDestino, user, recursivo);
+        fileSystemProxy.cp(caminhoOrigem, caminhoDestino, user, recursivo);
     }
 }

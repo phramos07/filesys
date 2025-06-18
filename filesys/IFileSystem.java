@@ -43,5 +43,5 @@ public interface IFileSystem {
     void ls(String caminho, String usuario, boolean recursivo) throws CaminhoNaoEncontradoException, PermissaoException;
 
     // Copia um arquivo ou diretório. Se o diretório não existir, será lançada uma exceção.
-    void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo) throws CaminhoNaoEncontradoException, PermissaoException;
-} 
+    void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo) throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException;
+}
