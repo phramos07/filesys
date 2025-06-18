@@ -1,5 +1,8 @@
 import filesys.IFileSystem;
+import filesys.Usuario;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 import java.io.FileNotFoundException;
 
@@ -19,6 +22,9 @@ public class Main {
     private static final String ROOT_USER = "root";
     private static final String ROOT_DIR = "/";
     private static final int READ_BUFFER_SIZE = 256;
+
+    //lista de usuários do sistema
+    private static List<Usuario> usuários = new ArrayList<>(); 
 
     // Sistema de arquivos
     private static IFileSystem fileSystem;
@@ -68,7 +74,8 @@ public class Main {
                         */
                         System.out.println(userListed + " " + dir + " " + dirPermission); // Somente imprime o usuário, diretório e permissão
 
-
+                        // Adiciona o usuário à lista de usuários
+                        usuários.add(new Usuario(userListed, dir, dirPermission));
                     } else {
                         System.out.println("Formato ruim no arquivo de usuários. Linha: " + line);
                     }
@@ -84,7 +91,7 @@ public class Main {
         // Finalmente cria o Sistema de Arquivos
         // Lista de usuários é imutável durante a execução do programa
         // Obs: Como passar a lista de usuários para o FileSystem?
-        fileSystem = new FileSystem(/*usuários?*/);
+        fileSystem = new FileSystem(usuários);
 
         // // DESCOMENTE O BLOCO ABAIXO PARA CRIAR O DIRETÓRIO RAIZ ANTES DE RODAR O MENU
         // // Cria o diretório raiz do sistema. Root sempre tem permissão total "rwx"
