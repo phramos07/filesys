@@ -26,32 +26,38 @@ public class Diretorio {
         return subdiretorios;
     }
 
-    public void adicionarArquivo(Arquivo a) {
-        arquivos.add(a);
+    public void adicionarArquivo(Arquivo arquivo) {
+        if (arquivo != null) {
+            this.arquivos.add(arquivo);
+        }
     }
 
-    public void adicionarSubdiretorio(Diretorio d) {
-        subdiretorios.add(d);
+    public void adicionarSubdiretorio(Diretorio diretorio) {
+        if (diretorio != null) {
+            this.subdiretorios.add(diretorio);
+        }
     }
 
     public Diretorio buscarSubdiretorio(String nome) {
-        return subdiretorios.stream()
-            .filter(d -> d.getMetaDados().getNome().equals(nome))
-            .findFirst().orElse(null);
+        return this.subdiretorios.stream()
+                .filter(d -> nome.equals(d.getMetaDados().getNome()))
+                .findFirst()
+                .orElse(null);
     }
 
     public Arquivo buscarArquivo(String nome) {
-        return arquivos.stream()
-            .filter(a -> a.getMetaDados().getNome().equals(nome))
-            .findFirst().orElse(null);
+        return this.arquivos.stream()
+                .filter(a -> nome.equals(a.getMetaDados().getNome()))
+                .findFirst()
+                .orElse(null);
     }
-    
+
     public void removerArquivo(String nome) {
-        arquivos.removeIf(a -> a.getMetaDados().getNome().equals(nome));
+        this.arquivos.removeIf(a -> nome.equals(a.getMetaDados().getNome()));
     }
-    
+
     public void removerSubdiretorio(String nome) {
-        subdiretorios.removeIf(d -> d.getMetaDados().getNome().equals(nome));
+        this.subdiretorios.removeIf(d -> nome.equals(d.getMetaDados().getNome()));
     }
-    
+
 }

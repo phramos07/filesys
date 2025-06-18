@@ -22,7 +22,10 @@ public class Arquivo {
     }
 
     public void adicionarBloco(Bloco bloco) {
-        blocos.add(bloco);
-        metaDados.setTamanho(metaDados.getTamanho() + bloco.getDados().length);
+        if (bloco != null && bloco.getDados() != null) {
+            this.blocos.add(bloco);
+            int tamanhoBloco = bloco.getDados().length;
+            this.metaDados.setTamanho(this.metaDados.getTamanho() + tamanhoBloco);
+        }
     }
 }

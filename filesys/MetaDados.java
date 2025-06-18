@@ -40,7 +40,7 @@ public class MetaDados {
         return permissoes.getOrDefault(usuario, "---");
     }
 
-    public boolean temPermissao(String usuario, char tipo) {
+    public boolean checkPermissao(String usuario, char tipo) {
         return getPermissao(usuario).indexOf(tipo) != -1;
     }
 
