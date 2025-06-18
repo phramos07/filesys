@@ -10,19 +10,26 @@ public class VerificacaoUtil {
   private VerificacaoUtil() {
   }
 
-  public static void verificarPermissaoEscrita(Diretorio diretorio, String usuario, String caminhoAtual)
+  private static void verificarPermissao(Diretorio dir, String usuario, char tipoPermissao, String mensagemErro)
       throws PermissaoException {
-    if (!diretorio.temPermissao(usuario, 'w')) {
-      throw new PermissaoException("Sem permissão para criar em: " + caminhoAtual);
+    if (!dir.temPermissao(usuario, tipoPermissao)) {
+      throw new PermissaoException(mensagemErro);
     }
   }
 
-
-  public static void verificarLeituraDiretorio(Diretorio dir, String usuario, String caminho)
+  public static void verificarPermissaoEscrita(Diretorio diretorio, String usuario, String caminhoAtual)
       throws PermissaoException {
-    if (!dir.temPermissao(usuario, 'r')) {
-      throw new PermissaoException("Sem permissão de leitura para listar o diretório: " + caminho);
-    }
+    verificarPermissao(diretorio, usuario, 'w', "Sem permissão de escrita para acessar: " + caminhoAtual);
+  }
+
+  public static void verificarPermissaoExecucao(Diretorio diretorio, String usuario, String caminhoAtual)
+      throws PermissaoException {
+    verificarPermissao(diretorio, usuario, 'x', "Sem permissão de execução para acessar: " + caminhoAtual);
+  }
+
+  public static void verificarPermissaoLeitura(Diretorio dir, String usuario, String caminho)
+      throws PermissaoException {
+    verificarPermissao(dir, usuario, 'r', "Sem permissão de leitura para acessar: " + caminho);
   }
 
   public static void verificarRemocaoDiretorio(Diretorio alvo, boolean recursivo) throws PermissaoException {
@@ -43,10 +50,17 @@ public class VerificacaoUtil {
     }
   }
 
-  public static void verificarSeArquivoExiste(Diretorio parent, String nomeArquivo)
-      throws CaminhoJaExistenteException {
-    if (parent.getFilhos().containsKey(nomeArquivo)) {
-      throw new CaminhoJaExistenteException("Arquivo já existe: " + nomeArquivo);
+  public static void verificarSeArquivoOuDiretorioExiste(Diretorio parent, String nomeArquivo)
+      throws CaminhoJaExistenteException, OperacaoInvalidaException {
+
+    Diretorio existente = parent.getFilhos().get(nomeArquivo);
+    if (existente != null) {
+      if (existente.isArquivo()) {
+        throw new CaminhoJaExistenteException("Arquivo já existe: " + nomeArquivo);
+      } else {
+        throw new OperacaoInvalidaException(
+            "Não é possível criar um arquivo: já existe um diretório com o nome '" + nomeArquivo + "'");
+      }
     }
   }
 
