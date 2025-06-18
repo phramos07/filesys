@@ -5,10 +5,18 @@ import exception.CaminhoNaoEncontradoException;
 import exception.PermissaoException;
 
 // Essa classe deve servir apenas como proxy para o FileSystemImpl
+// Ela não deve conter a lógica de negócio do sistema de arquivos, apenas delegar.
 final public class FileSystem implements IFileSystem {
 
-    private final IFileSystem fileSystemImpl;
+    // A instância da implementação real do sistema de arquivos.
+    // Marque como public final para que Main.java possa acessá-la para o prompt de usuário,
+    // ou adicione um método getter adequado na interface IFileSystem se preferir.
+    public final IFileSystem fileSystemImpl; // <-- Tornada public para acesso em Main.java
 
+    /**
+     * Construtor da classe FileSystem.
+     * Inicializa a implementação real do sistema de arquivos.
+     */
     public FileSystem() {
         fileSystemImpl = new FileSystemImpl();
     }
@@ -61,7 +69,7 @@ final public class FileSystem implements IFileSystem {
 
     @Override
     public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo)
-            throws CaminhoNaoEncontradoException, PermissaoException {
+            throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException { // <-- Adicionado CaminhoJaExistenteException
         fileSystemImpl.cp(caminhoOrigem, caminhoDestino, usuario, recursivo);
     }
 }

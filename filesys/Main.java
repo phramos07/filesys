@@ -1,17 +1,11 @@
-import filesys.IFileSystem;
-import filesys.FileSystem; // Importa sua classe proxy FileSystem
-import filesys.FileSystemImpl; // Importa a implementação para acessar o getCurrentUser
+package filesys; 
 
 import java.util.Scanner;
-import java.io.FileNotFoundException;
-import java.nio.charset.StandardCharsets; // Para converter String para byte[]
-
+import java.nio.charset.StandardCharsets; 
 import exception.PermissaoException;
 import exception.CaminhoJaExistenteException;
 import exception.CaminhoNaoEncontradoException;
 
-// MENU INTERATIVO PARA O SISTEMA DE ARQUIVOS
-// SINTA-SE LIVRE PARA ALTERAR A CLASSE MAIN
 public class Main {
 
     // Constantes úteis para a versão interativa.
@@ -52,13 +46,6 @@ public class Main {
         fileSystemImpl.changeUser(user);
 
         // Não é mais necessário criar o diretório raiz, pois ele é criado no construtor de FileSystemImpl.
-        // O bloco comentado abaixo foi removido:
-        // try {
-        //     fileSystem.mkdir(ROOT_DIR, ROOT_USER);
-        // } catch (CaminhoJaExistenteException | PermissaoException e) {
-        //     System.out.println(e.getMessage());
-        // }
-
         System.out.println("Bem-vindo ao Sistema de Arquivos Virtual!");
         System.out.println("Usuário logado: " + fileSystemImpl.getCurrentUser());
         System.out.println("Digite 'help' para ver os comandos disponíveis.");
@@ -228,15 +215,21 @@ public class Main {
         // Para exibir o conteúdo, é preciso saber quantos bytes foram efetivamente lidos
         // O método read em FileSystemImpl apenas imprime.
         // Para ter o retorno aqui, teríamos que mudar a assinatura da interface IFileSystem.read
-        // Para essa demonstração, não mostraremos o conteúdo diretamente aqui, mas a chamada foi feita.
-        // Se a IFileSystem.read retornasse um byte[], poderíamos fazer:
-        // byte[] readData = fileSystemProxy.read(caminho, user, buffer);
-        // if (readData != null) {
-        //     System.out.println("Conteúdo lido: \"" + new String(readData, StandardCharsets.UTF_8) + "\"");
-        // } else {
-        //     System.out.println("Não foi possível ler o arquivo.");
-        // }
-        System.out.println("Verifique a saída do comando 'read' acima para o conteúdo lido (se houver).");
+        // A solução abaixo tenta mostrar o conteúdo lido, baseando-se no tamanho do arquivo.
+        try {
+            // Acessa o método getNodeAtPath da instância fileSystemImpl
+            Object node = fileSystemImpl.getNodeAtPath(caminho);
+            if (node instanceof filesys.File) { // Garante que é um objeto File do pacote filesys
+                filesys.File file = (filesys.File) node;
+                int actualLength = (int) Math.min(file.getSize(), READ_BUFFER_SIZE);
+                String readContent = new String(buffer, 0, actualLength, StandardCharsets.UTF_8);
+                System.out.println("Conteúdo lido: \"" + readContent + "\"");
+            } else {
+                System.out.println("Não foi possível exibir o conteúdo. O caminho não é um arquivo ou está vazio.");
+            }
+        } catch (CaminhoNaoEncontradoException e) {
+             System.out.println("Erro ao obter o arquivo para exibição do conteúdo: " + e.getMessage());
+        }
     }
 
     /**
