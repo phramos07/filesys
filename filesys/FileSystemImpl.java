@@ -9,17 +9,16 @@ import exception.CaminhoJaExistenteException;
 import exception.CaminhoNaoEncontradoException;
 import exception.PermissaoException;
 
-
 // Implemente nesta classe o seu código do FileSystem.
 // A classe pode ser alterada.
 // O construtor, argumentos do construtor podem ser modificados 
 // e atributos & métodos privados podem ser adicionados
 
-
 /**
  * Classe que implementa um sistema de arquivos em memória.
  * Controla operações como mkdir, touch, chmod, rm, ls e read,
- * além de gerenciar permissões por usuário e metadados de arquivos e diretórios.
+ * além de gerenciar permissões por usuário e metadados de arquivos e
+ * diretórios.
  */
 public final class FileSystemImpl implements IFileSystem {
 
@@ -107,7 +106,8 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     /**
-     * Remove um arquivo ou diretório. Diretórios podem ser removidos recursivamente.
+     * Remove um arquivo ou diretório. Diretórios podem ser removidos
+     * recursivamente.
      */
     @Override
     public void rm(String caminho, String usuario, boolean recursivo)
@@ -236,10 +236,10 @@ public final class FileSystemImpl implements IFileSystem {
                 listar(dir.subdirs.get(nomeDir), caminho + "/" + nomeDir, true, indent + "  ");
             }
         }
-    }  
+    }
 
     @Override
-    public void write(String caminho, String usuario, boolean anexar, byte[] buffer)
+    public void write(String caminho, String usuario, boolean anexar, Offset offset, byte[] buffer)
             throws CaminhoNaoEncontradoException, PermissaoException {
 
         String[] partes = Arrays.stream(caminho.split("/"))
@@ -271,16 +271,24 @@ public final class FileSystemImpl implements IFileSystem {
             throw new PermissaoException("Usuário '" + usuario + "' não tem permissão de escrita.");
         }
 
-        if (!anexar) {
+        List<Byte> conteudo = arquivo.getConteudo();
+        int posEscrita = anexar ? conteudo.size() : offset.getValue();
+        if (!anexar && offset.getValue() == 0) {
             arquivo.limparConteudo();
+            conteudo = arquivo.getConteudo();
         }
 
-        for (byte b : buffer) {
-            arquivo.adicionarByte(b);
+        for (int i = 0; i < buffer.length; i++) {
+            if (posEscrita < conteudo.size()) {
+                conteudo.set(posEscrita, buffer[i]);
+            } else {
+                conteudo.add(buffer[i]);
+            }
+            posEscrita++;
         }
     }
 
-  private String[] extrairDiretorioENome(String caminho) {
+    private String[] extrairDiretorioENome(String caminho) {
         String[] partes = Arrays.stream(caminho.split("/")).filter(p -> !p.isEmpty()).toArray(String[]::new);
         if (partes.length == 0)
             return new String[] { "/", "" };
@@ -443,9 +451,6 @@ public final class FileSystemImpl implements IFileSystem {
         removerRecursivo(dir);
     }
 
-
-    //Métodos auxiliares
-
     private boolean temPermissao(String usuario, MetaDados meta, char tipo) {
         if (ROOT_USER.equals(usuario))
             return true;
@@ -485,7 +490,8 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     private Diretorio navegarAteDiretorioPai(String[] partes) throws CaminhoNaoEncontradoException {
-        if (partes.length == 1) return raiz;
+        if (partes.length == 1)
+            return raiz;
         return navegarAteDiretorio(Arrays.copyOfRange(partes, 0, partes.length - 1));
     }
 

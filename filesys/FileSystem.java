@@ -26,7 +26,8 @@ final public class FileSystem implements IFileSystem {
     }
 
     @Override
-    public void mkdir(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
+    public void mkdir(String caminho, String usuario)
+            throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
         fileSystemImpl.mkdir(caminho, usuario);
     }
 
@@ -37,14 +38,15 @@ final public class FileSystem implements IFileSystem {
     }
 
     @Override
-    public void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
+    public void touch(String caminho, String usuario)
+            throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
         fileSystemImpl.touch(caminho, usuario);
     }
 
     @Override
-    public void write(String caminho, String usuario, boolean anexar, byte[] buffer)
+    public void write(String caminho, String usuario, boolean anexar, Offset offset, byte[] buffer)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        fileSystemImpl.write(caminho, usuario, anexar, buffer);
+        fileSystemImpl.write(caminho, usuario, anexar, offset, buffer);
     }
 
     @Override
