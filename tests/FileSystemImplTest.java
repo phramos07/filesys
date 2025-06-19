@@ -42,7 +42,8 @@ class FileSystemImplTest {
     void testTouchNoWritePermission() throws Exception {
         fs.mkdir("/docs", "root");
         fs.chmod("/docs", "root", "root", "---");
-        assertThrows(PermissaoException.class, () -> fs.touch("/docs/file.txt", "root"));
+        // Tenta criar arquivo como maria (não-root)
+        assertThrows(PermissaoException.class, () -> fs.touch("/docs/file.txt", "maria"));
     }
 
     /**
@@ -70,21 +71,31 @@ class FileSystemImplTest {
     void testWriteNoPermission() throws Exception {
         fs.mkdir("/docs", "root");
         fs.touch("/docs/file.txt", "root");
-        fs.chmod("/docs/file.txt", "root", "root", "r--");
-        assertThrows(PermissaoException.class, () -> fs.write("/docs/file.txt", "root", false, "fail".getBytes()));
+        fs.chmod("/docs/file.txt", "root", "root", "r--"); // remove permissão de escrita
+
+        // Tenta escrever como maria (não-root, não-dono)
+        assertThrows(PermissaoException.class, () -> {
+            fs.write("/docs/file.txt", "maria", false, "fail".getBytes());
+        });
     }
 
     /**
      * Testa se a leitura falha quando não há permissão de leitura.
      */
     @Test
-    void testReadNoPermission() throws Exception {
-        fs.mkdir("/docs", "root");
-        fs.touch("/docs/file.txt", "root");
-        fs.write("/docs/file.txt", "root", false, "abc".getBytes());
-        fs.chmod("/docs/file.txt", "root", "root", "---");
-        assertThrows(PermissaoException.class, () -> fs.read("/docs/file.txt", "root", new byte[10], new Offset()));
-    }
+        void testReadNoPermission() throws Exception {
+            fs.mkdir("/docs", "root");
+            fs.touch("/docs/file.txt", "root");
+            fs.write("/docs/file.txt", "root", false, "abc".getBytes());
+
+            // Remove todas as permissões do arquivo
+            fs.chmod("/docs/file.txt", "root", "root", "---");
+
+            // Tenta ler como um usuário não-root (deve lançar PermissaoException)
+            assertThrows(PermissaoException.class, () -> {
+                fs.read("/docs/file.txt", "maria", new byte[10], new Offset());
+            });
+}
 
     /**
      * Testa remoção de arquivos e diretórios.

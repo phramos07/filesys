@@ -317,9 +317,9 @@ public final class FileSystemImpl implements IFileSystem {
         }
         Arquivo arquivo = (Arquivo) obj;
 
-        // 2) Verifica permissão de leitura
-        if (!usuario.equals(ROOT_USER) && !arquivo.donoDiretorio.equals(usuario)
-                && !arquivo.permissoesPadrao.contains("r")) {
+        System.out.println("DEBUG: Permissão atual do arquivo: " + arquivo.permissoesPadrao);
+
+        if (!usuario.equals(ROOT_USER) && !arquivo.permissoesPadrao.contains("r")) {
             throw new PermissaoException("Sem permissão de leitura em: " + caminho);
         }
 
