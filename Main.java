@@ -1,4 +1,5 @@
 import filesys.IFileSystem;
+import filesys.Offset;
 import filesys.Usuario;
 
 import java.util.ArrayList;
@@ -214,8 +215,9 @@ public class Main {
         System.out.println("Insira o conteúdo a ser escrito:");
         String content = scanner.nextLine();
         byte[] buffer = content.getBytes();
+        Offset offset = new Offset(0);
         
-        fileSystem.write(caminho, user, anexar, buffer);
+        fileSystem.write(caminho, user, anexar, offset, buffer);
     }
 
     public static void read() throws CaminhoNaoEncontradoException, PermissaoException {

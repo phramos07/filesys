@@ -58,4 +58,14 @@ class MetaDados {
         this.nome = nome;
     }
 
+    @Override
+    public String toString() {
+        return "MetaDados{" +
+                "nome='" + nome + '\'' +
+                ", tamanho=" + tamanho +
+                ", dono='" + dono + '\'' +
+                ", permissoes=" + permissoes +
+                '}';
+    }
+
 }

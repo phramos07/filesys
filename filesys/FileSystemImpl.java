@@ -101,7 +101,7 @@ public final class FileSystemImpl implements IFileSystem {
         if (!usuario.equals(ROOT_USER) && !usuario.equals(meta.getDono())) {
             throw new PermissaoException("Apenas root ou o dono pode alterar permissões.");
         }
-
+        
         meta.setPermissao(usuarioAlvo, permissao);
     }
 
@@ -432,7 +432,7 @@ public final class FileSystemImpl implements IFileSystem {
      * Remove um usuário do sistema.
      */
     @Override
-    public void removeUser(String nome) throws CaminhoNaoEncontradoException, PermissaoException{
+    public void removeUser(String nome) throws CaminhoNaoEncontradoException, PermissaoException {
         Usuario usuario = usuarios.get(nome);
         if (usuario == null) {
             throw new CaminhoNaoEncontradoException("Usuário '" + nome + "' não encontrado.");
@@ -463,13 +463,17 @@ public final class FileSystemImpl implements IFileSystem {
         if (ROOT_USER.equals(usuario))
             return true;
 
+        // Primeiro: verifica permissão local no diretório pai (se o diretório já tem
+        // entrada para o usuário)
         String permissaoLocal = dirPai.metaDados.getPermissao(usuario);
-        if (permissaoLocal != null && permissaoLocal.contains("w")) {
-            return true;
+        if (permissaoLocal != null) {
+            return permissaoLocal.contains("w");
         }
 
+        // Se não houver permissão explícita no MetaDados, usa permissão global do
+        // arquivo users
         Usuario u = usuarios.get(usuario);
-        return u != null && u.getDiretorio().equals("/**") && u.getPermissoes().contains("w");
+        return u != null && "/**".equals(u.getDiretorio()) && u.getPermissoes().contains("w");
     }
 
     private String[] parseCaminho(String caminho) {
