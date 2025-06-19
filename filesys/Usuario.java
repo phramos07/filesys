@@ -10,7 +10,7 @@ public class Usuario {
     public Usuario(String nome, String permissao) {
         this.nome = nome;
         this.permissoesPorCaminho = new HashMap<>();
-        this.permissoesPorCaminho.put("**", permissao);
+        this.permissoesPorCaminho.put("/**", permissao);
     }
 
     public Usuario(String nome) {
@@ -23,16 +23,26 @@ public class Usuario {
     }
 
     public String getPermissaoParaCaminho(String caminho) {
-        String melhorPermissao = "---";
-        int melhorTamanho = -1;
+        String melhorPermissao = permissoesPorCaminho.getOrDefault("/**", "---");
+        int melhorScore = -1;
         for (Map.Entry<String, String> entry : permissoesPorCaminho.entrySet()) {
             String padrao = entry.getKey();
-            if (caminhoMatches(padrao, caminho) && padrao.length() > melhorTamanho) {
-                melhorPermissao = entry.getValue();
-                melhorTamanho = padrao.length();
+            if (caminhoMatches(padrao, caminho)) {
+                int score = getPadraoScore(padrao, caminho);
+                if (score > melhorScore) {
+                    melhorScore = score;
+                    melhorPermissao = entry.getValue();
+                }
             }
         }
         return melhorPermissao;
+    }
+
+    private int getPadraoScore(String padrao, String caminho) {
+        if (padrao.equals(caminho)) return 100; // exato
+        if (padrao.endsWith("/*")) return 10;   // filho direto
+        if (padrao.endsWith("/**")) return 1;   // recursivo
+        return 0; // outros
     }
 
     private boolean caminhoMatches(String padrao, String caminho) {
@@ -58,21 +68,21 @@ public class Usuario {
     }
 
     public boolean podeLer() {
-        String permissao = permissoesPorCaminho.get("**");
+        String permissao = permissoesPorCaminho.get("/**");
         return permissao != null && permissao.contains("r");
     }
 
     public boolean podeEscrever() {
-        String permissao = permissoesPorCaminho.get("**");
+        String permissao = permissoesPorCaminho.get("/**");
         return permissao != null && permissao.contains("w");
     }
 
     public boolean podeExecutar() {
-        String permissao = permissoesPorCaminho.get("**");
+        String permissao = permissoesPorCaminho.get("/**");
         return permissao != null && permissao.contains("x");
     }
 
     public String getPermissao() {
-        return permissoesPorCaminho.get("**");
+        return permissoesPorCaminho.get("/**");
     }
 }
