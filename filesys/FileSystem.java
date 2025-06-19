@@ -1,16 +1,32 @@
 package filesys;
 
+import java.util.Map;
+
 import exception.CaminhoJaExistenteException;
 import exception.CaminhoNaoEncontradoException;
 import exception.PermissaoException;
 
 // Essa classe deve servir apenas como proxy para o FileSystemImpl
+
 final public class FileSystem implements IFileSystem {
 
     private final IFileSystem fileSystemImpl;
 
+    // Implementação
+
+    public FileSystem(Map<String, Map<String, String>> permissoes) {
+        this.fileSystemImpl = new FileSystemImpl(permissoes);
+    }
+
     public FileSystem() {
-        fileSystemImpl = new FileSystemImpl();
+        this.fileSystemImpl = new FileSystemImpl();
+    }
+
+    // Função de add Usuário
+    public void addUser(String usuario) {
+        if (fileSystemImpl instanceof FileSystemImpl fsImpl) {
+            fsImpl.addUser(usuario);
+        }
     }
 
     @Override
@@ -64,4 +80,5 @@ final public class FileSystem implements IFileSystem {
             throws CaminhoNaoEncontradoException, PermissaoException {
         fileSystemImpl.cp(caminhoOrigem, caminhoDestino, usuario, recursivo);
     }
+
 }
