@@ -57,7 +57,7 @@ public class PermissionTest {
     @Test
     public void testTouchSuccess() throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
         // Tenta criar um arquivo com permissão de rwx
-        assertDoesNotThrow(() -> fileSystem.touch("/area1/arquivo.txt", "joao"));
+        assertDoesNotThrow(() -> fileSystem.touch("/area1/arquivo2.txt", "joao"));
     }
 
     @Test
@@ -212,7 +212,7 @@ public class PermissionTest {
     @Test
     public void testWriteSuccess() throws CaminhoNaoEncontradoException, PermissaoException {
         // Tenta escrever em um arquivo com permissão
-        assertDoesNotThrow(() -> fileSystem.write("/area1/area2/arquivo.txt", "joao", true, buffer));
+        assertDoesNotThrow(() -> fileSystem.write("/area1/arquivo.txt", "joao", true, buffer));
     }
 
     @Test
