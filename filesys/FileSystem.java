@@ -70,4 +70,15 @@ final public class FileSystem implements IFileSystem {
             throws CaminhoNaoEncontradoException, PermissaoException {
         fileSystemImpl.cp(caminhoOrigem, caminhoDestino, usuario, recursivo);
     }
+
+    @Override
+    public void addUser(String nome, String diretorio, String permissoes) throws CaminhoNaoEncontradoException {
+        fileSystemImpl.addUser(nome, diretorio, permissoes);
+    }
+    
+    @Override
+    public void removeUser(String nome) throws CaminhoNaoEncontradoException, PermissaoException {
+        fileSystemImpl.removeUser(nome);
+    }
+
 }

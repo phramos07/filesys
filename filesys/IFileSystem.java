@@ -7,6 +7,15 @@ import exception.PermissaoException;
 // Apenas modifique essa interface caso seja EXTREMAMENTE necessário.
 // Documente & Justifique TODAS asalterações feitas.
 public interface IFileSystem {
+
+    // Adiciona um novo usuário ao sistema de arquivos.
+    // O usuário deve ter um nome, um diretório inicial e permissões.
+    public void addUser(String nome, String diretorio, String permissoes)throws CaminhoNaoEncontradoException;
+
+    // Remove um usuário do sistema de arquivos.
+    // O usuário deve ser o dono do diretório que está tentando remover.
+    public void removeUser(String nome) throws CaminhoNaoEncontradoException, PermissaoException;
+
     // Altera as permissões de um arquivo ou diretório.
     // Configura a permissao do caminho para o usuarioAlvo.
     // Apenas o usuario root ou que tenha permissão de rw do caminho podem alterar as permissões.

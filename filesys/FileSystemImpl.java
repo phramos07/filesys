@@ -399,10 +399,50 @@ public final class FileSystemImpl implements IFileSystem {
     /**
      * Adiciona um usuário no sistema.
      */
-    public void addUser(String nome, String diretorio, String permissoes) {
-        Usuario usuario = new Usuario(nome, diretorio, permissoes);
-        usuarios.put(nome, usuario);
+    @Override
+    public void addUser(String nome, String diretorio, String permissoes) throws CaminhoNaoEncontradoException {
+        if (usuarios.containsKey(nome)) {
+            throw new IllegalArgumentException("Usuário já existe: " + nome);
+        }
+
+        if (diretorio == null || diretorio.isEmpty()) {
+            throw new IllegalArgumentException("Diretório inicial não pode ser nulo ou vazio.");
+        }
+
+        // Verifica se o diretório já existe
+        Diretorio dir = navegarPara(diretorio);
+        if (dir == null) {
+            throw new CaminhoNaoEncontradoException("Diretório '" + diretorio + "' não encontrado.");
+        }
+
+        // Cria o novo usuário
+        Usuario novoUsuario = new Usuario(nome, diretorio, permissoes);
+        usuarios.put(nome, novoUsuario);
     }
+
+    /**
+     * Remove um usuário do sistema.
+     */
+    @Override
+    public void removeUser(String nome) throws CaminhoNaoEncontradoException, PermissaoException{
+        Usuario usuario = usuarios.get(nome);
+        if (usuario == null) {
+            throw new CaminhoNaoEncontradoException("Usuário '" + nome + "' não encontrado.");
+        }
+
+        // Verifica se o usuário é o dono do diretório raiz
+        if (usuario.getDiretorio().equals("/") && !nome.equals(ROOT_USER)) {
+            throw new PermissaoException("Usuário não pode remover o diretório raiz.");
+        }
+
+        // Remove o usuário
+        usuarios.remove(nome);
+
+        // Remove o diretório do usuário, se existir
+        Diretorio dir = navegarPara(usuario.getDiretorio());
+        removerRecursivo(dir);
+    }
+
 
     //Métodos auxiliares
 
