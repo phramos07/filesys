@@ -19,102 +19,87 @@ public class PermissionTest {
   private static IFileSystem fileSystem;
 
   @BeforeAll
-  public static void setUp() throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException, OperacaoInvalidaException {
+  public static void setUp()
+      throws CaminhoJaExistenteException,
+          PermissaoException,
+          CaminhoNaoEncontradoException,
+          OperacaoInvalidaException {
     fileSystem = new FileSystemImpl();
-    fileSystem.addUser(new Usuario("maria", "rw-", "/"));
-    fileSystem.addUser(new Usuario("joao", "rwx", "/docs"));
+    fileSystem.addUser(new Usuario("completo", "rwx", "/"));
+    fileSystem.addUser(new Usuario("leitura_execucao", "r-x", "/"));
+    fileSystem.addUser(new Usuario("so_leitura", "r--", "/"));
+    fileSystem.addUser(new Usuario("so_escrita", "-w-", "/"));
+    fileSystem.addUser(new Usuario("so_execucao", "--x", "/"));
+    fileSystem.addUser(new Usuario("nenhuma", "---", "/"));
 
-    fileSystem.mkdir("/bin", "maria");
-    fileSystem.mkdir("/bin/subdir", "maria");
+    fileSystem.mkdir("/bin", "completo");
+    fileSystem.touch("/bin/arquivo.txt", "completo");
   }
 
   @Test
-  public void testReadPermission() throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException {
-    // Captura a saída do console
+  public void testPermissaoLeitura() throws Exception {
+    // Usuário com r pode ler
     ByteArrayOutputStream outContent = new ByteArrayOutputStream();
     System.setOut(new PrintStream(outContent));
-
-    // Maria tem permissão de leitura no diretório raiz e em todos os subdiretórios
-    fileSystem.ls("/", "maria", false);
-    assertTrue(outContent.toString().contains("/:\n"));
-
-    // Limpa a saída capturada
+    fileSystem.ls("/bin", "leitura_execucao", false);
+    assertTrue(outContent.toString().contains("arquivo.txt"));
     outContent.reset();
 
-    // Maria também pode listar subdiretórios como /bin
-    fileSystem.ls("/bin", "maria", false);
-    assertTrue(outContent.toString().contains("/bin:\n"));
+    // Usuário só com r NÃO pode ler porque não tem x para navegar
+    assertThrows(PermissaoException.class, () -> fileSystem.ls("/bin", "so_leitura", false));
 
-    // Limpa a saída capturada
-    outContent.reset();
+    // Usuário só com x NÃO pode ler porque não tem r
+    assertThrows(PermissaoException.class, () -> fileSystem.ls("/bin", "so_execucao", false));
 
-    // João não tem permissão de leitura no diretório raiz
-    assertThrows(PermissaoException.class, () -> fileSystem.ls("/", "joao", false));
-
-    // Restaura a saída padrão
+    // Usuário sem r nem x não pode ler
+    assertThrows(PermissaoException.class, () -> fileSystem.ls("/bin", "so_escrita", false));
+    assertThrows(PermissaoException.class, () -> fileSystem.ls("/bin", "nenhuma", false));
     System.setOut(System.out);
   }
 
   @Test
-  public void testWritePermission() throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException {
-    // Captura a saída do console
-    ByteArrayOutputStream outContent = new ByteArrayOutputStream();
-    System.setOut(new PrintStream(outContent));
+  public void testPermissaoEscrita() throws Exception {
+    // Usuário com w pode criar arquivos/diretórios
+    fileSystem.touch("/bin/novo.txt", "completo");
 
-    fileSystem.ls("/bin", "maria", false);
-    assertTrue(outContent.toString().contains("subdir"));
-
-    // Limpa a saída capturada
-    outContent.reset();
-
-    // João não pode criar um diretório no diretório raiz
-    assertThrows(PermissaoException.class, () -> fileSystem.mkdir("/bin2", "joao"));
-
-    // Restaura a saída padrão
-    System.setOut(System.out);
+    // Usuário sem w não pode criar arquivos/diretórios
+    assertThrows(PermissaoException.class, () -> fileSystem.touch("/bin/somenter.txt", "so_escrita"));
+    assertThrows(PermissaoException.class, () -> fileSystem.touch("/bin/semw.txt", "so_leitura"));
+    assertThrows(PermissaoException.class, () -> fileSystem.touch("/bin/semw2.txt", "so_execucao"));
+    assertThrows(PermissaoException.class, () -> fileSystem.touch("/bin/semw3.txt", "nenhuma"));
   }
 
   @Test
-  public void testExecutePermission() throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException, OperacaoInvalidaException {
-    // João pode criar um arquivo em /docs porque tem permissão rwx;
-    fileSystem.touch("/docs/file.txt", "joao");
+  public void testPermissaoExecucaoNavegacao() throws Exception {
+    // Usuário com x pode navegar/criar subdiretórios
+    fileSystem.mkdir("/bin/subx", "completo");
 
-    // Captura a saída do console
-    ByteArrayOutputStream outContent = new ByteArrayOutputStream();
-    System.setOut(new PrintStream(outContent));
-
-    fileSystem.ls("/docs", "joao", false);
-    assertTrue(outContent.toString().contains("file.txt"));
-
-    // Limpa a saída capturada
-    outContent.reset();
-
-    // Maria pode criar um arquivo em qualquer lugar porque tem permissões herdadas de /
-    fileSystem.touch("/docs/file2.txt", "maria");
-    fileSystem.ls("/docs", "maria", false);
-    assertTrue(outContent.toString().contains("file2.txt"));
-
-    // Restaura a saída padrão
-    System.setOut(System.out);
+    // Usuário sem x não pode navegar/criar subdiretórios
+    assertThrows(PermissaoException.class, () -> fileSystem.mkdir("/bin/somentex", "so_execucao"));
+    assertThrows(PermissaoException.class, () -> fileSystem.mkdir("/bin/semx", "so_leitura"));
+    assertThrows(PermissaoException.class, () -> fileSystem.mkdir("/bin/semx2", "so_escrita"));
+    assertThrows(PermissaoException.class, () -> fileSystem.mkdir("/bin/semx3", "nenhuma"));
   }
 
   @Test
-  public void testPermissionInheritance() throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException {
+  public void testPermissaoExecucaoLeituraArquivo() throws Exception {
+    // Usuário sem x não pode nem ler arquivos em subdiretórios
+    assertThrows(
+        PermissaoException.class, () -> fileSystem.ls("/bin", "so_leitura", false)); // sem x
+    assertThrows(
+        PermissaoException.class, () -> fileSystem.ls("/bin", "so_escrita", false)); // sem x
+    assertThrows(PermissaoException.class, () -> fileSystem.ls("/bin", "nenhuma", false)); // sem x
 
-    // Captura a saída do console
-    ByteArrayOutputStream outContent = new ByteArrayOutputStream();
-    System.setOut(new PrintStream(outContent));
+    // Usuário com x mas sem r NÃO pode ler (deve lançar exceção)
+    assertThrows(PermissaoException.class, () -> fileSystem.ls("/bin", "so_execucao", false));
+  }
 
-    fileSystem.ls("/bin", "maria", false);
-    assertTrue(outContent.toString().contains("subdir"));
-
-    // Limpa a saída capturada
-    outContent.reset();
-
-    // João não pode criar um subdiretório em /bin porque não tem permissão em /
-    assertThrows(PermissaoException.class, () -> fileSystem.mkdir("/bin/subdir2", "joao"));
-
-    // Restaura a saída padrão
-    System.setOut(System.out);
+  @Test
+  public void testNenhumaPermissao() {
+    // Usuário sem nenhuma permissão não pode fazer nada
+    assertThrows(PermissaoException.class, () -> fileSystem.ls("/", "nenhuma", false));
+    assertThrows(
+        PermissaoException.class, () -> fileSystem.touch("/bin/arquivo_novo.txt", "nenhuma"));
+    assertThrows(PermissaoException.class, () -> fileSystem.mkdir("/bin/dir_novo", "nenhuma"));
   }
 }
