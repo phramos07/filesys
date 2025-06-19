@@ -17,7 +17,7 @@ import filesys.IFileSystem;
 import filesys.Usuario;
 
 // Essa classe testa cenários de permissão
-public class PermissionTest {
+public class FileSystemImplTest {
     private static IFileSystem fileSystem;
     byte[] buffer = new byte[1024];
 
@@ -74,6 +74,12 @@ public class PermissionTest {
         assertThrows(CaminhoNaoEncontradoException.class, () -> fileSystem.touch("/area1/area2/inexistente/arquivo3.txt", "root"));
     }
 
+    @Test
+    public void testTouchAlreadyExists() {
+        // Tenta criar um arquivo que já existe
+        assertThrows(CaminhoJaExistenteException.class, () -> fileSystem.touch("/area1/area2/arquivo.txt", "joao"));
+    }
+
 
     // =============== CHMOD ===============
 
@@ -95,7 +101,15 @@ public class PermissionTest {
         assertThrows(CaminhoNaoEncontradoException.class, () -> fileSystem.chmod("/area1/area2/inexistente", "root", "tiago", "rwx"));
     }
 
+    @Test
+    public void testChmodInvalidPermission() {
+        // Tenta alterar as permissões de um diretório com permissões inválidas
+        assertThrows(IllegalArgumentException.class, () -> fileSystem.chmod("/area1/area2", "root", "tiago", "rw"));
+    }
+
+
     // =============== LS ===============
+
     @Test
     public void testLsSuccess() throws CaminhoNaoEncontradoException, PermissaoException {
         // Tenta listar o conteúdo de um diretório com permissão
@@ -120,7 +134,9 @@ public class PermissionTest {
         assertThrows(CaminhoNaoEncontradoException.class, () -> fileSystem.ls("/area1/area2/inexistente", "joao", true));
     }
 
+
     // =============== CP ===============
+
     @Test
     public void testCpSuccess() throws CaminhoNaoEncontradoException, PermissaoException {
         // Tenta copiar um arquivo com permissão
@@ -145,7 +161,9 @@ public class PermissionTest {
         assertDoesNotThrow(() -> fileSystem.cp("/area1/area2/arquivo.txt", "/area1/area2/arquivo.txt", "joao", true));
     }
 
+
     // =============== RM ===============
+
     @Test
     public void testRmSuccess() throws CaminhoNaoEncontradoException, PermissaoException {
         // Tenta remover um arquivo com permissão
@@ -163,6 +181,7 @@ public class PermissionTest {
         // Tenta remover um arquivo de um caminho inexistente
         assertThrows(CaminhoNaoEncontradoException.class, () -> fileSystem.rm("/area1/area2/inexistente/arquivo.txt", "joao", true));
     }
+
 
     // =============== MV ===============
 
@@ -190,6 +209,7 @@ public class PermissionTest {
         assertThrows(CaminhoNaoEncontradoException.class, () -> fileSystem.mv("/area1/area2/inexistente/arquivo.txt", "/area1/area2/arquivo_moved.txt", "root"));
     }
 
+
     // =============== READ ===============
 
     @Test
@@ -210,7 +230,9 @@ public class PermissionTest {
         assertThrows(CaminhoNaoEncontradoException.class, () -> fileSystem.read("/area1/area2/inexistente/arquivo.txt", "joao", buffer, 0));
     }
 
+
     // =============== WRITE ===============
+
     @Test
     public void testWriteSuccess() throws CaminhoNaoEncontradoException, PermissaoException {
         // Tenta escrever em um arquivo com permissão
@@ -228,6 +250,7 @@ public class PermissionTest {
         // Tenta escrever em um arquivo de um caminho inexistente
         assertThrows(CaminhoNaoEncontradoException.class, () -> fileSystem.write("/area1/area2/inexistente/arquivo.txt", "joao", true, buffer));
     }
+
 
     //=============== User ===============
 
@@ -261,6 +284,4 @@ public class PermissionTest {
         assertThrows(IllegalArgumentException.class, () -> fileSystem.addUser(new Usuario("carlos", null, "rwx")));
     }
 
-
-    
 }
