@@ -5,3 +5,11 @@ pedro /** rw-
 tiago /** rw-
 luzia /** rwx
 carla /** r--
+diogo /usr/bin/diogo rw-
+frieren /usr/bin/frieren rw-
+bocchi /home rw-
+peep /usr/include/benztruck rwx
+platao /boot r--
+gawrgura /usr/bin/gooba rwx
+pikachu /tmp rw-
+flamengo /usr/bin/arrasca rwx

@@ -28,7 +28,7 @@ clean:
 
 # Run the application with a username
 run: compile
-	$(JAVA) -cp $(BIN_DIR) $(MAIN_CLASS) -u $(USERNAME)
+	$(JAVA) -cp $(BIN_DIR) $(MAIN_CLASS) $(USERNAME)
 
 # Help target
 help:
