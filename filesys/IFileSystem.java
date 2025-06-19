@@ -5,7 +5,7 @@ import exception.CaminhoNaoEncontradoException;
 import exception.PermissaoException;
 
 // Apenas modifique essa interface caso seja EXTREMAMENTE necessário.
-// Documente & Justifique TODAS asalterações feitas.
+// Documente & Justifique TODAS as alterações feitas.
 public interface IFileSystem {
     // Altera as permissões de um arquivo ou diretório.
     // Configura a permissao do caminho para o usuarioAlvo.
@@ -21,7 +21,8 @@ public interface IFileSystem {
     void rm(String caminho, String usuario, boolean recursivo) throws CaminhoNaoEncontradoException, PermissaoException;
 
     // Cria um novo arquivo. Atenção: Se o arquivo já existir, será lançada uma exceção.
-    void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException;
+    // ADD: exceção CaminhoNaoEncontradoException
+    void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException;
 
     // Escreve dados em um arquivo. Se o diretório não existir, será lançada uma exceção.
     // Caso o diretório exista, o arquivo será criado ou sobrescrito.
@@ -31,7 +32,9 @@ public interface IFileSystem {
 
     // Lê dados de um arquivo. Se o arquivo não existir, será lançada uma exceção.
     // Leitura sequencial - todo o conteudo do arquivo sera lido e armazenado no buffer.
-    void read(String caminho, String usuario, byte[] buffer) throws CaminhoNaoEncontradoException, PermissaoException;
+    // ADD: offset para indicar a partir de qual posição do buffer os dados serão lidos.
+    // MOD: void -> int (objetivo: retornar offset do buffer após a leitura)
+    int read(String caminho, String usuario, byte[] buffer, int offset) throws CaminhoNaoEncontradoException, PermissaoException;
 
     // Move ou renomeia um arquivo ou diretório. Se o diretório não existir, será lançada uma exceção.
     // Se o diretório já existir, será sobrescrito.
@@ -44,4 +47,7 @@ public interface IFileSystem {
 
     // Copia um arquivo ou diretório. Se o diretório não existir, será lançada uma exceção.
     void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo) throws CaminhoNaoEncontradoException, PermissaoException;
+
+    // ADD: adiciona um usuário ao sistema de arquivos
+    void addUser(Usuario usuario);
 } 
