@@ -228,39 +228,82 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     @Override
-    public void rm(String caminho, String usuario, boolean recursivo)
-            throws CaminhoNaoEncontradoException, PermissaoException {
-        if (caminho == null || usuario == null) {
-            throw new IllegalArgumentException("Caminho e usuário não podem ser nulos");
-        }
+public void rm(String caminho, String usuario, boolean recursivo)
+        throws CaminhoNaoEncontradoException, PermissaoException {
 
-        caminho = caminho.replace("\\", "/");
-        if (caminho.endsWith("/"))
-            caminho = caminho.substring(0, caminho.length() - 1);
+    if (caminho == null || usuario == null) {
+        throw new IllegalArgumentException("Caminho e usuário não podem ser nulos");
+    }
 
-        Dir dir = irPara(caminho);
+    caminho = caminho.replace("\\", "/");
+    if (caminho.endsWith("/"))
+        caminho = caminho.substring(0, caminho.length() - 1);
 
-        if (!dir.temPerm(usuario, "w")) {
-            throw new PermissaoException("Usuário não tem permissão para remover: " + caminho);
-        }
-        if (dir.temSubdiretorios() && !recursivo) {
-            throw new PermissaoException(
-                    "Esse diretório contém subdiretórios. Use o parâmetro recursivo para removê-lo.");
-        }
+    Dir dir;
 
-        if (dir.isArquivo()) {
-            dir.getPai().removeFilho(dir.getNome());
-            System.out.println("Arquivo removido: " + caminho);
+    try {
+        dir = irPara(caminho);
+    } catch (CaminhoNaoEncontradoException e) {
+        // Tentativa de recuperar o arquivo pelo pai
+        int ultimoBarra = caminho.lastIndexOf('/');
+        if (ultimoBarra == -1) throw e;
+
+        String caminhoPai = caminho.substring(0, ultimoBarra);
+        String nomeArquivo = caminho.substring(ultimoBarra + 1);
+
+        Dir pai = irPara(caminhoPai);
+        Dir possivelArquivo = pai.getFilhos().get(nomeArquivo);
+
+        if (possivelArquivo != null && possivelArquivo.isArquivo()) {
+            dir = possivelArquivo;
         } else {
-            if (recursivo) {
-                for (Dir filho : dir.getFilhos().values()) {
-                    rm(filho.getCaminhoCompleto(), usuario, true);
-                }
-            }
-            dir.getPai().removeFilho(dir.getNome());
-            System.out.println("Diretório removido: " + caminho);
+            throw new CaminhoNaoEncontradoException("Arquivo ou diretório não encontrado: " + caminho);
         }
     }
+
+    // Busca o objeto usuário
+    Usuario usuarioObj = null;
+    for (Usuario user : usuarios) {
+        if (user.getNome().equals(usuario)) {
+            usuarioObj = user;
+            break;
+        }
+    }
+
+    if (usuarioObj == null) {
+        throw new IllegalArgumentException("Usuário não encontrado: " + usuario);
+    }
+
+    // Verifica permissão de escrita
+    if (!usuarioObj.getPermissoes().contains("w")) {
+        try {
+            dir.temPerm(usuario, "w");
+        } catch (IllegalArgumentException e) {
+            throw new PermissaoException("Usuário não tem permissão para remover: " + dir.getNome());
+        }
+    }
+
+    // Verifica se pode remover diretório com conteúdo
+    if (!dir.isArquivo() && dir.temSubdiretorios() && !recursivo) {
+        throw new PermissaoException(
+            "Esse diretório contém subdiretórios. Use o parâmetro recursivo para removê-lo.");
+    }
+
+    // Remoção
+    if (dir.isArquivo()) {
+        dir.getPai().removeFilho(dir.getNome());
+        System.out.println("Arquivo removido: " + caminho);
+    } else {
+        if (recursivo) {
+            for (Dir filho : new ArrayList<>(dir.getFilhos().values())) {
+                rm(filho.getCaminhoCompleto(), usuario, true);
+            }
+        }
+        dir.getPai().removeFilho(dir.getNome());
+        System.out.println("Diretório removido: " + caminho);
+    }
+}
+
 
     @Override
     public void touch(String caminho, String usuario)
@@ -326,9 +369,25 @@ public final class FileSystemImpl implements IFileSystem {
             throw new IllegalArgumentException("O caminho especificado não é um arquivo: " + caminho);
         }
 
-        if (!diretorio.temPerm(usuario, "w")) {
-            throw new PermissaoException("Usuário não tem permissão para escrever: " + caminho);
-        }
+        Usuario usuarioObj = null;
+
+            for (Usuario user : usuarios) {
+                if (user.getNome().equals(usuario)) {
+                    usuarioObj = user;
+                }
+            }
+
+            if (usuarioObj == null) {
+                new IllegalArgumentException("Usuário não encontrado: " + usuario);
+            }
+
+            if (!usuarioObj.getPermissoes().contains("w")) {
+                try {
+                    diretorio.temPerm(usuario, "w");
+                } catch(IllegalArgumentException e) {
+                    throw new PermissaoException("Usuário não tem permissão para criar diretório: " + diretorio);
+                }
+            }
 
         File arquivo = (File) diretorio;
         if (!anexar) arquivo.limparBlocos();
@@ -370,9 +429,26 @@ public final class FileSystemImpl implements IFileSystem {
             throw new IllegalArgumentException("O caminho especificado não é um arquivo: " + caminho);
         }
 
-        if (!diretorio.temPerm(usuario, "r")) {
-            throw new PermissaoException("Usuário não tem permissão para ler: " + caminho);
+        Usuario usuarioObj = null;
+
+        for (Usuario user : usuarios) {
+            if (user.getNome().equals(usuario)) {
+                usuarioObj = user;
+            }
         }
+
+        if (usuarioObj == null) {
+            new IllegalArgumentException("Usuário não encontrado: " + usuario);
+        }
+
+        if (!usuarioObj.getPermissoes().contains("r")) {
+            try {
+                diretorio.temPerm(usuario, "r");
+            } catch (IllegalArgumentException e) {
+                throw new PermissaoException("Usuário não tem permissão para criar diretório: " + diretorio);
+            }
+        }
+
 
         File arquivo = (File) diretorio;
         int bufferOffset = 0;

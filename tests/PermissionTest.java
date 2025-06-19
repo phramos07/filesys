@@ -9,7 +9,7 @@ import exception.CaminhoNaoEncontradoException;
 import exception.PermissaoException;
 
 import static org.junit.jupiter.api.Assertions.*;
-import org.junit.jupiter.api.Assertions.*;
+
 import org.junit.jupiter.api.BeforeAll;
 
 import filesys.FileSystemImpl;
@@ -199,7 +199,7 @@ public class PermissionTest {
     @Test
     public void testReadPermissionFail() {
         // Tenta ler um arquivo sem permissão
-        assertThrows(PermissaoException.class, () -> fileSystem.read("/area1/area2/arquivo.txt", "maria", buffer, 0));
+        assertThrows(PermissaoException.class, () -> fileSystem.read("/area1/area2/arquivo.txt", "cega", buffer, 0));
     }
 
     @Test
@@ -227,7 +227,15 @@ public class PermissionTest {
         assertThrows(CaminhoNaoEncontradoException.class, () -> fileSystem.write("/area1/area2/inexistente/arquivo.txt", "joao", true, buffer));
     }
 
+    //=============== User ===============
 
+    @Test
+    public void testAddUser() {
+        // Tenta adicionar um usuário com permissão
+        assertDoesNotThrow(() -> fileSystem.addUser(new Usuario("carlos", "/", "rwx")));
+    }
+
+    
 
 
     
