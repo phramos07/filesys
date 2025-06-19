@@ -1,7 +1,9 @@
 root /** rwx
 maria /** rw-
 joao /** rw-
-pedro /** rw-
+pedro /** rwx
 tiago /** rw-
-luzia /** rwx
 carla /** r--
+alvim /** rwx
+marcos /** r-x
+luisa /** -wx
