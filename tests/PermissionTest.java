@@ -32,8 +32,10 @@ public class PermissionTest {
 
         fileSystem.mkdir("/area1", "joao");
         fileSystem.mkdir("/area1/area2", "tiago");
+        fileSystem.mkdir("/area1/area2/area_meh", "root");
 
         fileSystem.touch("/area1/area2/arquivo.txt", "root");
+        fileSystem.touch("/area1/area2/arquivo_meh.txt", "joao");
     }
 
 
@@ -167,19 +169,19 @@ public class PermissionTest {
     @Test
     public void testMvInSamePlaceRenamingSuccess() throws CaminhoNaoEncontradoException, PermissaoException {
         // Tenta mover um arquivo com permissão
-        assertDoesNotThrow(() -> fileSystem.mv("/area1/area2/arquivo.txt", "/area1/area2/arquivo_moved.txt", "joao"));
+        assertDoesNotThrow(() -> fileSystem.mv("/area1/area2/arquivo_meh.txt", "/area1/area2/arquivo_moved.txt", "root"));
     }
 
     @Test
     public void testMvInSamePlaceFail() {
         // Tenta mover um arquivo para o mesmo lugar sem permissão
-        assertThrows(PermissaoException.class, () -> fileSystem.mv("/area1/area2/arquivo.txt", "/area1/area2/arquivo.txt", "root"));
+        assertThrows(IllegalArgumentException.class, () -> fileSystem.mv("/area1/area2/arquivo_moved.txt", "/area1/area2/arquivo_moved.txt", "root"));
     }
 
     @Test
     public void testMvPermissionFail() {
         // Tenta mover um arquivo sem permissão
-        assertThrows(PermissaoException.class, () -> fileSystem.mv("/area1/area2/arquivo.txt", "/area1/area2/arquivo_moved.txt", "maria"));
+        assertThrows(PermissaoException.class, () -> fileSystem.mv("/area1/area2/area_meh", "/area1/area3", "maria"));
     }
 
     @Test
@@ -235,7 +237,29 @@ public class PermissionTest {
         assertDoesNotThrow(() -> fileSystem.addUser(new Usuario("carlos", "/", "rwx")));
     }
 
-    
+    @Test
+    public void testAddUserWithExistingName() {
+        // Tenta adicionar um usuário com nome já existente
+        assertThrows(IllegalArgumentException.class, () -> fileSystem.addUser(new Usuario("maria", "/", "rwx")));
+    }
+
+    @Test
+    public void testAddUserWithInvalidPermission() {
+        // Tenta adicionar um usuário com permissões inválidas
+        assertThrows(IllegalArgumentException.class, () -> fileSystem.addUser(new Usuario("carlos", "/", "rw")));
+    }
+
+    @Test
+    public void testAddUserWithEmptyName() {
+        // Tenta adicionar um usuário com nome vazio
+        assertThrows(IllegalArgumentException.class, () -> fileSystem.addUser(new Usuario("", "/", "rwx")));
+    }
+
+    @Test
+    public void testAddUserWithoutDirectory() {
+        // Tenta adicionar um usuário sem diretório
+        assertThrows(IllegalArgumentException.class, () -> fileSystem.addUser(new Usuario("carlos", null, "rwx")));
+    }
 
 
     

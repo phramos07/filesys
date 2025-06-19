@@ -487,7 +487,7 @@ public void rm(String caminho, String usuario, boolean recursivo)
     public void mv(String caminhoAntigo, String caminhoNovo, String usuario)
             throws CaminhoNaoEncontradoException, PermissaoException {
         if (caminhoAntigo == null || caminhoNovo == null || usuario == null) {
-            throw new PermissaoException("Caminho antigo, caminho novo e usuário não podem ser nulos");
+            throw new IllegalArgumentException("Caminho antigo, caminho novo e usuário não podem ser nulos");
         }
 
         caminhoAntigo = caminhoAntigo.replace("\\", "/");
@@ -501,37 +501,53 @@ public void rm(String caminho, String usuario, boolean recursivo)
         }
 
         if (caminhoAntigo.equals(caminhoNovo)) {
-            throw new PermissaoException("Caminho antigo e caminho novo não podem ser iguais");
+            throw new IllegalArgumentException("Caminho antigo e caminho novo não podem ser iguais");
         }
 
         Dir dirantigo = irPara(caminhoAntigo);
 
-        if (!dirantigo.temPerm(usuario, "w")) {
-            throw new PermissaoException("Usuário não tem permissão para mover: " + caminhoAntigo);
+        Usuario usuarioObj = usuarios.stream()
+            .filter(u -> u.getNome().equals(usuario))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado: " + usuario));
+
+        if (!usuarioObj.getPermissoes().contains("r")) {
+            try {
+                dirantigo.temPerm(usuario, "r");
+            } catch(IllegalArgumentException e) {
+                throw new PermissaoException("Usuário não tem permissão para mover: " + caminhoAntigo);
+            }
         }
 
         try {
             Dir destino = irPara(caminhoNovo);
-            if (!destino.temPerm(usuario, "w")) {
+
+            try {
+                destino.temPerm(usuario, "w");
+            } catch(IllegalArgumentException e) {
                 throw new PermissaoException("Sem permissão de escrita no destino");
             }
+
             if (destino.getFilhos().containsKey(dirantigo.getNome())) {
-                throw new PermissaoException("Já existe um diretório ou arquivo com esse nome no destino");
+                throw new IllegalArgumentException("Já existe um diretório ou arquivo com esse nome no destino");
             }
 
             dirantigo.getPai().removeFilho(dirantigo.getNome());
             destino.addFilho(dirantigo);
-
         } catch (CaminhoNaoEncontradoException e) {
-
             int idx = caminhoNovo.lastIndexOf('/');
             String novoNome = caminhoNovo.substring(idx + 1);
             String caminhoPaiNovo = (idx <= 0) ? "/" : caminhoNovo.substring(0, idx);
             Dir novoPai = irPara(caminhoPaiNovo);
 
-            if (!novoPai.temPerm(usuario, "w")) {
-                throw new PermissaoException("Sem permissão de escrita no novo caminho");
+            if (!usuarioObj.getPermissoes().contains("w")) {
+                try {
+                    novoPai.temPerm(usuario, "w");
+                } catch(IllegalArgumentException ex) {
+                    throw new PermissaoException("Sem permissão de escrita no novo caminho");
+                }
             }
+
             if (novoPai.getFilhos().containsKey(novoNome)) {
                 throw new IllegalArgumentException("Já existe um objeto com esse nome no destino");
             }
@@ -591,10 +607,16 @@ public void cp(String caminhoOrigem, String caminhoDestino, String usuario, bool
         .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado: " + usuario));
 
     if (!usuarioObj.getPermissoes().contains("rw")) {
-        if (!origem.temPerm(usuario, "r"))
+        try {
+            origem.temPerm(usuario, "r");
+        } catch(IllegalArgumentException e) {
             throw new PermissaoException("Sem permissão de leitura em: " + caminhoOrigem);
-        if (!destino.temPerm(usuario, "w"))
+        }
+        try {
+            origem.temPerm(usuario, "w");
+        } catch(IllegalArgumentException e) {
             throw new PermissaoException("Sem permissão de escrita em: " + caminhoDestino);
+        }
     }
 
     String nomeOrigem = origem.getNome();
@@ -659,7 +681,7 @@ private void copiarConteudoArquivo(File origem, File destino, String usuario) {
 
     @Override
     public void addUser(Usuario usuario) {
-        if (usuario == null || usuario.getNome() == null || usuario.getPermissoes() == null) {
+        if (usuario == null || usuario.getNome() == null || usuario.getNome().isEmpty() || usuario.getPermissoes() == null || usuario.getPermissoes().isEmpty()) {
             throw new IllegalArgumentException("Usuário, nome e permissões não podem ser nulos");
         }
 
