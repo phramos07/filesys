@@ -171,7 +171,7 @@ public class Main {
                     default:
                         System.out.println("Comando inválido!");
                 } 
-            } catch (CaminhoNaoEncontradoException | CaminhoJaExistenteException | PermissaoException e) {
+            } catch (CaminhoNaoEncontradoException | CaminhoJaExistenteException | PermissaoException | IllegalArgumentException e) {
                 System.out.println("Erro: " + e.getMessage());
             }
 

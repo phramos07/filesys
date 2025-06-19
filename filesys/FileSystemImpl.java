@@ -91,7 +91,7 @@ public final class FileSystemImpl implements IFileSystem {
 
     @Override
     public void mkdir(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException {
-        if (caminho == null || usuario == null) {
+        if (caminho == null || caminho.isEmpty() || usuario == null || usuario.isEmpty()) {
             throw new IllegalArgumentException("Caminho e usuário não podem ser nulos");
         }
 
@@ -166,7 +166,7 @@ public final class FileSystemImpl implements IFileSystem {
                 try {
                     diretorioAtual.temPerm(usuario, "w");
                 } catch (IllegalArgumentException e) {
-                    throw new PermissaoException("Usuário não tem permissão para criar diretório: " + diretorioAtual);
+                    throw new PermissaoException("Usuário não tem permissão para criar diretório: " + caminhoAtual);
                 }
             }
 
@@ -182,7 +182,7 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void chmod(String caminho, String usuario, String usuarioAlvo, String permissao)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        if (caminho == null || usuario == null || usuarioAlvo == null || permissao == null) {
+        if (caminho == null || caminho.isEmpty() || usuario == null || usuario.isEmpty() || usuarioAlvo == null || usuarioAlvo.isEmpty() || permissao == null || permissao.isEmpty()) {
             throw new IllegalArgumentException("Caminho, usuário, usuário alvo e permissão não podem ser nulos");
         }
 
@@ -219,7 +219,7 @@ public final class FileSystemImpl implements IFileSystem {
             try {
                 dir.temPerm(usuario, "w");
             } catch (IllegalArgumentException e) {
-                throw new PermissaoException("Usuário não tem permissão para criar diretório: " + dir);
+                throw new PermissaoException("Usuário não tem permissão para criar diretório: " + caminho);
             }
         }
 
@@ -231,9 +231,10 @@ public final class FileSystemImpl implements IFileSystem {
     public void rm(String caminho, String usuario, boolean recursivo)
             throws CaminhoNaoEncontradoException, PermissaoException {
 
-        if (caminho == null || usuario == null) {
+        if (caminho == null || caminho.isEmpty() || usuario == null || usuario.isEmpty()) {
             throw new IllegalArgumentException("Caminho e usuário não podem ser nulos");
         }
+        
 
         caminho = caminho.replace("\\", "/");
         if (caminho.endsWith("/"))
@@ -308,7 +309,7 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void touch(String caminho, String usuario)
             throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
-        if (caminho == null || usuario == null) {
+        if (caminho == null || caminho.isEmpty() || usuario == null || usuario.isEmpty()) {
             throw new IllegalArgumentException("Caminho e usuário não podem ser nulos");
         }
 
@@ -342,7 +343,7 @@ public final class FileSystemImpl implements IFileSystem {
             try {
                 dirPai.temPerm(usuario, "w");
             } catch (IllegalArgumentException e) {
-                throw new PermissaoException("Usuário não tem permissão para criar diretório: " + dirPai);
+                throw new PermissaoException("Usuário não tem permissão para criar arquivo: " + caminho);
             }
         }
 
@@ -354,7 +355,7 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void write(String caminho, String usuario, boolean anexar, byte[] buffer)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        if (caminho == null || usuario == null || buffer == null) {
+        if (caminho == null || usuario == null || buffer == null || caminho.isEmpty() || usuario.isEmpty() || buffer.length == 0) {
             throw new IllegalArgumentException("Caminho, usuário e buffer não podem ser nulos");
         }
 
@@ -385,7 +386,7 @@ public final class FileSystemImpl implements IFileSystem {
             try {
                 diretorio.temPerm(usuario, "w");
             } catch (IllegalArgumentException e) {
-                throw new PermissaoException("Usuário não tem permissão para criar diretório: " + diretorio);
+                throw new PermissaoException("Usuário não tem permissão para criar diretório: " + caminho);
             }
         }
 
@@ -415,7 +416,7 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public int read(String caminho, String usuario, byte[] buffer, int offset)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        if (caminho == null || usuario == null || buffer == null) {
+        if (caminho == null || usuario == null || buffer == null || caminho.isEmpty() || usuario.isEmpty() || buffer.length == 0) {
             throw new IllegalArgumentException("Caminho, usuário e buffer não podem ser nulos");
         }
 
@@ -446,7 +447,7 @@ public final class FileSystemImpl implements IFileSystem {
             try {
                 diretorio.temPerm(usuario, "r");
             } catch (IllegalArgumentException e) {
-                throw new PermissaoException("Usuário não tem permissão para criar diretório: " + diretorio);
+                throw new PermissaoException("Usuário não tem permissão para criar diretório: " + caminho);
             }
         }
 
@@ -486,7 +487,7 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void mv(String caminhoAntigo, String caminhoNovo, String usuario)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        if (caminhoAntigo == null || caminhoNovo == null || usuario == null) {
+        if (caminhoAntigo == null || caminhoNovo == null || usuario == null || caminhoAntigo.isEmpty() || caminhoNovo.isEmpty() || usuario.isEmpty()) {
             throw new IllegalArgumentException("Caminho antigo, caminho novo e usuário não podem ser nulos");
         }
 
@@ -591,7 +592,7 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        if (caminhoOrigem == null || caminhoDestino == null || usuario == null) {
+        if (caminhoOrigem == null || caminhoDestino == null || usuario == null || caminhoOrigem.isEmpty() || caminhoDestino.isEmpty() || usuario.isEmpty()) {
             throw new IllegalArgumentException("Caminho de origem, destino e usuário não podem ser nulos");
         }
 
