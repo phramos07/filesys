@@ -13,8 +13,8 @@ import filesys.FileSystem;
 // SINTA-SE LIVRE PARA ALTERAR A CLASSE MAIN
 public class Main {
 
-    // Constantes úteis para a versão interativa. 
-    // Para esse tipo de execução, o tamanho max do buffer de 
+    // Constantes úteis para a versão interativa.
+    // Para esse tipo de execução, o tamanho max do buffer de
     // leitura pode ser menor.
     private static final String ROOT_USER = "root";
     private static final String ROOT_DIR = "/";
@@ -29,27 +29,31 @@ public class Main {
     // Usuário que está executando o programa
     private static String user;
 
-    // O sistema de arquivos é inteiramente virtual, ou seja, será reiniciado a cada execução do programa.
-    // Logo, não é necessário salvar os arquivos em disco. O sistema será uma simulação em memória.
+    // O sistema de arquivos é inteiramente virtual, ou seja, será reiniciado a cada
+    // execução do programa.
+    // Logo, não é necessário salvar os arquivos em disco. O sistema será uma
+    // simulação em memória.
     public static void main(String[] args) {
         // Usuário que está executando o programa.
-        // Para quaisquer operações que serão feitas por esse usuário em um caminho /path/**,
+        // Para quaisquer operações que serão feitas por esse usuário em um caminho
+        // /path/**,
         // deve-se checar se o usuário tem permissão de escrita (r) neste caminho.
         if (args.length < 2) {
             System.out.println("Usuário não fornecido");
             return;
         }
         user = args[1];
-        
+
         // Carrega a lista de usuários do sistema a partir de arquivo
         // Formato do arquivo users:
-        //      username dir permission
+        // username dir permission
         // Exemplo:
-        //      maria /** rw-
-        //      luzia /** rwx
+        // maria /** rw-
+        // luzia /** rwx
         // Essa permissão vale para o diretório raiz e sub diretórios.
-        // A partir do momento que um usuário cria outro diretório ou arquivo, 
-        // a permissão desse usuário é de leitura, escrita e execução nesse novo diretório/arquivo,
+        // A partir do momento que um usuário cria outro diretório ou arquivo,
+        // a permissão desse usuário é de leitura, escrita e execução nesse novo
+        // diretório/arquivo,
         // e sempre será rwx para o usuário root.
         try {
             Scanner userScanner = new Scanner(new java.io.File("users/users"));
@@ -61,13 +65,15 @@ public class Main {
                         String userListed = parts[0];
                         String dir = parts[1];
                         String dirPermission = parts[2];
-                        
-                        /* A FAZER:
-                         * Processar a permissão de todos os usuários existentes por diretório.
-                         * Por enquanto esse código somente imprime as permissões contidas no arquivo users.
-                        */
-                        System.out.println(userListed + " " + dir + " " + dirPermission); // Somente imprime o usuário, diretório e permissão
 
+                        /*
+                         * A FAZER:
+                         * Processar a permissão de todos os usuários existentes por diretório.
+                         * Por enquanto esse código somente imprime as permissões contidas no arquivo
+                         * users.
+                         */
+                        System.out.println(userListed + " " + dir + " " + dirPermission); // Somente imprime o usuário,
+                                                                                          // diretório e permissão
 
                     } else {
                         System.out.println("Formato ruim no arquivo de usuários. Linha: " + line);
@@ -80,19 +86,86 @@ public class Main {
 
             return;
         }
-        
+
         // Finalmente cria o Sistema de Arquivos
         // Lista de usuários é imutável durante a execução do programa
         // Obs: Como passar a lista de usuários para o FileSystem?
-        fileSystem = new FileSystem(/*usuários?*/);
+        fileSystem = new FileSystem(/* usuários? */);
 
-        // // DESCOMENTE O BLOCO ABAIXO PARA CRIAR O DIRETÓRIO RAIZ ANTES DE RODAR O MENU
+        fileSystem.addUser(user);
+
+        // Adicionar usuários do arquivo users ao sistema
+        try {
+            Scanner userScanner = new Scanner(new java.io.File("users/users"));
+            while (userScanner.hasNextLine()) {
+                String line = userScanner.nextLine().trim();
+                if (!line.isEmpty()) {
+                    String[] parts = line.split(" ");
+                    if (parts.length == 3) {
+                        String userListed = parts[0];
+                        String dir = parts[1];
+                        String dirPermission = parts[2];
+
+                        fileSystem.addUser(userListed);
+
+                        if (dir.equals("/**")) {
+                            try {
+                                fileSystem.chmod("/", ROOT_USER, userListed, dirPermission);
+                            } catch (Exception e) {
+                                System.out.println(
+                                        "Erro ao definir permissão para " + userListed + ": " + e.getMessage());
+                            }
+                        }
+
+                        System.out.println(userListed + " " + dir + " " + dirPermission);
+                    } else {
+                        System.out.println("Formato ruim no arquivo de usuários. Linha: " + line);
+                    }
+                }
+            }
+            userScanner.close();
+        } catch (FileNotFoundException e) {
+            System.out.println("Arquivo de usuários não encontrado");
+            return;
+        }
+
+        // // DESCOMENTE O BLOCO ABAIXO PARA CRIAR O DIRETÓRIO RAIZ ANTES DE RODAR O
+        // MENU
         // // Cria o diretório raiz do sistema. Root sempre tem permissão total "rwx"
         // try {
-        //     fileSystem.mkdir(ROOT_DIR, ROOT_USER);
+        // fileSystem.mkdir(ROOT_DIR, ROOT_USER);
         // } catch (CaminhoJaExistenteException | PermissaoException e) {
-        //     System.out.println(e.getMessage());
+        // System.out.println(e.getMessage());
         // }
+
+        // Configurar permissões para os usuários
+        try {
+            Scanner userScanner = new Scanner(new java.io.File("users/users"));
+            while (userScanner.hasNextLine()) {
+                String line = userScanner.nextLine().trim();
+                if (!line.isEmpty()) {
+                    String[] parts = line.split(" ");
+                    if (parts.length == 3) {
+                        String userListed = parts[0];
+                        String dir = parts[1];
+                        String dirPermission = parts[2];
+
+                        if (dir.equals("/**")) {
+                            try {
+                                fileSystem.chmod("/", ROOT_USER, userListed, dirPermission);
+                            } catch (Exception e) {
+                                System.out.println(
+                                        "Erro ao definir permissão para " + userListed + ": " + e.getMessage());
+                            }
+                        }
+                    }
+                }
+            }
+            userScanner.close();
+        } catch (FileNotFoundException e) {
+            System.out.println("Arquivo de usuários não encontrado");
+            return;
+        }
 
         // Menu interativo.
         menu();
@@ -152,7 +225,7 @@ public class Main {
                         return;
                     default:
                         System.out.println("Comando inválido!");
-                } 
+                }
             } catch (CaminhoNaoEncontradoException | CaminhoJaExistenteException | PermissaoException e) {
                 System.out.println("Erro: " + e.getMessage());
             }
@@ -171,14 +244,14 @@ public class Main {
         String usuarioAlvo = scanner.nextLine();
         System.out.println("Insira a permissão (formato: 3 caracteres\"rwx\"):");
         String permissoes = scanner.nextLine();
-        
+
         fileSystem.chmod(caminho, user, usuarioAlvo, permissoes);
     }
 
     public static void mkdir() throws CaminhoJaExistenteException, PermissaoException {
         System.out.println("Insira o caminho do diretório a ser criado:");
         String caminho = scanner.nextLine();
-        
+
         fileSystem.mkdir(caminho, user);
     }
 
@@ -187,14 +260,14 @@ public class Main {
         String caminho = scanner.nextLine();
         System.out.println("Remover recursivamente? (true/false):");
         boolean recursivo = Boolean.parseBoolean(scanner.nextLine());
-        
+
         fileSystem.rm(caminho, user, recursivo);
     }
 
     public static void touch() throws CaminhoJaExistenteException, PermissaoException {
         System.out.println("Insira o caminho do arquivo a ser criado:");
         String caminho = scanner.nextLine();
-        
+
         fileSystem.touch(caminho, user);
     }
 
@@ -206,16 +279,17 @@ public class Main {
         System.out.println("Insira o conteúdo a ser escrito:");
         String content = scanner.nextLine();
         byte[] buffer = content.getBytes();
-        
+
         fileSystem.write(caminho, user, anexar, buffer);
     }
 
     public static void read() throws CaminhoNaoEncontradoException, PermissaoException {
         System.out.println("Insira o caminho do arquivo a ser lido:");
         String caminho = scanner.nextLine();
-        byte[] buffer = new byte[READ_BUFFER_SIZE]; // Exemplo de tamanho de buffer por load/leitura . O que acontece se o Buffer for menor que o conteúdo a ser lido?     
-        
-        fileSystem.read(caminho, user, buffer); // Lógica para ler arquivos maiores que o buffer deve ser implementada. 
+        byte[] buffer = new byte[READ_BUFFER_SIZE]; // Exemplo de tamanho de buffer por load/leitura . O que acontece se
+                                                    // o Buffer for menor que o conteúdo a ser lido?
+
+        fileSystem.read(caminho, user, buffer); // Lógica para ler arquivos maiores que o buffer deve ser implementada.
     }
 
     public static void mv() throws CaminhoNaoEncontradoException, PermissaoException {
@@ -223,7 +297,7 @@ public class Main {
         String caminhoAntigo = scanner.nextLine();
         System.out.println("Insira o novo caminho do arquivo:");
         String caminhoNovo = scanner.nextLine();
-        
+
         fileSystem.mv(caminhoAntigo, caminhoNovo, user);
     }
 
@@ -232,7 +306,7 @@ public class Main {
         String caminho = scanner.nextLine();
         System.out.println("Listar recursivamente? (true/false):");
         boolean recursivo = Boolean.parseBoolean(scanner.nextLine());
-        
+
         fileSystem.ls(caminho, user, recursivo);
     }
 
@@ -243,7 +317,7 @@ public class Main {
         String caminhoDestino = scanner.nextLine();
         System.out.println("Copiar recursivamente? (true/false):");
         boolean recursivo = Boolean.parseBoolean(scanner.nextLine());
-        
+
         fileSystem.cp(caminhoOrigem, caminhoDestino, user, recursivo);
     }
 }
