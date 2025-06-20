@@ -252,6 +252,19 @@ public final class FileSystemImpl implements IFileSystem {
         String parentPath = pathParts[0];
         String fileName = pathParts[1];
 
+        if (fileName.isEmpty()) {
+            throw new IllegalArgumentException("Nome do arquivo não pode ser vazio");
+        }
+
+        if (!fileName.contains(".")) {
+            throw new PermissaoException("O arquivo deve ter uma extensão (ex: .txt, .doc)");
+        }
+
+        String[] fileNameParts = fileName.split("\\.");
+        if (fileNameParts.length < 2 || fileNameParts[fileNameParts.length - 1].isEmpty()) {
+            throw new PermissaoException("A extensão do arquivo não pode ser vazia");
+        }
+
         try {
             Diretorio parent = navigateTo(parentPath);
 
@@ -388,48 +401,79 @@ public final class FileSystemImpl implements IFileSystem {
             throw new PermissaoException("Não é permitido mover o diretório raiz.");
         }
 
+        while (caminhoAntigo.length() > 1 && caminhoAntigo.endsWith("/")) {
+            caminhoAntigo = caminhoAntigo.substring(0, caminhoAntigo.length() - 1);
+        }
+        while (caminhoNovo.length() > 1 && caminhoNovo.endsWith("/")) {
+            caminhoNovo = caminhoNovo.substring(0, caminhoNovo.length() - 1);
+        }
+
         String[] sourcePathParts = splitPath(caminhoAntigo);
         String sourceParentPath = sourcePathParts[0];
         String sourceName = sourcePathParts[1];
 
-        String[] destPathParts = splitPath(caminhoNovo);
-        String destParentPath = destPathParts[0];
-        String destName = destPathParts[1];
-
         Diretorio sourceParent = navigateTo(sourceParentPath);
-        Diretorio destParent = navigateTo(destParentPath);
+
+        Arquivo sourceFile = encontrarArquivo(sourceParent, sourceName);
+        Diretorio sourceDir = null;
+
+        if (sourceFile == null) {
+            sourceDir = encontrarSubdiretorio(sourceParent, sourceName);
+            if (sourceDir == null) {
+                throw new CaminhoNaoEncontradoException("Item não encontrado no caminho: " + caminhoAntigo);
+            }
+        }
 
         verificarPermissaoEscrita(usuario, sourceParent);
-        verificarPermissaoEscrita(usuario, destParent);
 
-        Arquivo arquivoExistente = encontrarArquivo(destParent, destName);
-        if (arquivoExistente != null) {
-            destParent.getArquivos().remove(arquivoExistente);
-        }
+        try {
+            Diretorio destDir = navigateTo(caminhoNovo);
 
-        Diretorio dirExistente = encontrarSubdiretorio(destParent, destName);
-        if (dirExistente != null) {
-            destParent.getSubDiretorios().remove(dirExistente);
-        }
+            verificarPermissaoEscrita(usuario, destDir);
 
-        Arquivo arquivo = encontrarArquivo(sourceParent, sourceName);
-        if (arquivo != null) {
-            sourceParent.getArquivos().remove(arquivo);
-            arquivo.getMetadata().setName(destName);
-            destParent.addFile(arquivo);
+            if (sourceFile != null) {
+                if (encontrarArquivo(destDir, sourceName) != null) {
+                    throw new PermissaoException("Já existe um arquivo com este nome no destino: " + sourceName);
+                }
+
+                sourceParent.getArquivos().remove(sourceFile);
+                destDir.addFile(sourceFile);
+            } else {
+                if (encontrarSubdiretorio(destDir, sourceName) != null) {
+                    throw new PermissaoException("Já existe um diretório com este nome no destino: " + sourceName);
+                }
+
+                sourceParent.getSubDiretorios().remove(sourceDir);
+                destDir.addSubDiretorio(sourceDir);
+            }
+
             return;
+        } catch (CaminhoNaoEncontradoException e) {
+            String[] destPathParts = splitPath(caminhoNovo);
+            String destParentPath = destPathParts[0];
+            String destName = destPathParts[1];
+
+            Diretorio destParent = navigateTo(destParentPath);
+            verificarPermissaoEscrita(usuario, destParent);
+
+            if (encontrarArquivo(destParent, destName) != null) {
+                throw new PermissaoException("Já existe um arquivo com este nome no destino: " + destName);
+            }
+
+            if (encontrarSubdiretorio(destParent, destName) != null) {
+                throw new PermissaoException("Já existe um diretório com este nome no destino: " + destName);
+            }
+
+            if (sourceFile != null) {
+                sourceParent.getArquivos().remove(sourceFile);
+                sourceFile.getMetadata().setName(destName);
+                destParent.addFile(sourceFile);
+            } else {
+                sourceParent.getSubDiretorios().remove(sourceDir);
+                sourceDir.getMetadata().setName(destName);
+                destParent.addSubDiretorio(sourceDir);
+            }
         }
-
-        Diretorio subDir = encontrarSubdiretorio(sourceParent, sourceName);
-        if (subDir != null) {
-            sourceParent.getSubDiretorios().remove(subDir);
-            subDir.getMetadata().setName(destName);
-            destParent.addSubDiretorio(subDir);
-            return;
-        }
-
-        throw new CaminhoNaoEncontradoException("Item não encontrado no caminho: " + caminhoAntigo);
-
     }
 
     /**
