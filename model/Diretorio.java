@@ -32,7 +32,7 @@ public class Diretorio extends ElementoFS {
         String permissoesUsuario = acessosPorUsuario.get(usuario);
         if (permissoesUsuario != null && permissoesUsuario.indexOf(tipoPermissao) >= 0) return true;
         // Verifica permissão global do usuário (/**)
-        Usuario usuarioGlobal = FileSystemImpl.getUsuarioGlobal(usuario); // Implemente esse método estático
+        Usuario usuarioGlobal = FileSystemImpl.getUsuarioGlobal(usuario); 
         if (usuarioGlobal != null && usuarioGlobal.getDiretorio().equals("/**") && usuarioGlobal.getPermissao().indexOf(tipoPermissao) >= 0) {
             return true;
         }

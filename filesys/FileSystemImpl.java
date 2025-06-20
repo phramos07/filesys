@@ -25,14 +25,12 @@ public final class FileSystemImpl implements IFileSystem {
             this.usuarios.put(usuario.getNome(), usuario);
             usuariosGlobais.put(usuario.getNome(), usuario);
         }
-        // TODO: Carregar usuários adicionais do arquivo users/users se necessário
     }
 
     public static Usuario getUsuarioGlobal(String nome) {
         return usuariosGlobais.get(nome);
     }
 
-    // TODO: Validar se o método navegar cobre todos os casos de caminhos relativos e absolutos
     private ElementoFS navegar(String caminho) throws CaminhoNaoEncontradoException {
         if (caminho.equals("/")) return raiz;
         String[] partes = caminho.split("/");
@@ -95,10 +93,9 @@ public final class FileSystemImpl implements IFileSystem {
         } else {
             elem.setPermissoesPadrao(permissao);
         }
-        // TODO: Validar permissões para arquivos se for necessário permissões específicas por usuário
     }
 
-    // TODO: Implementar método rm (remoção de arquivos/diretórios)
+  
     @Override
     public void rm(String caminho, String usuario, boolean recursivo)
             throws CaminhoNaoEncontradoException, PermissaoException {
@@ -149,10 +146,10 @@ public final class FileSystemImpl implements IFileSystem {
         if (pai.getFilhos().containsKey(nomeArquivo)) throw new CaminhoJaExistenteException("Arquivo já existe: " + nomeArquivo);
         if (!pai.temPermissao(usuario, 'w')) throw new PermissaoException("Sem permissão para criar arquivo em: " + caminhoPai);
         pai.adicionarFilho(new Arquivo(nomeArquivo, "rw-", usuario));
-        // TODO: Permitir criar arquivos com permissões diferentes se necessário
+        
     }
 
-    // TODO: Implementar método write (escrita em arquivos)
+   
     @Override
     public void write(String caminho, String usuario, boolean anexar, byte[] buffer)
             throws CaminhoNaoEncontradoException, PermissaoException {
@@ -184,7 +181,6 @@ public final class FileSystemImpl implements IFileSystem {
         }
     }
 
-    // TODO: Implementar método read (leitura de arquivos)
     @Override
     public void read(String caminho, String usuario, byte[] buffer)
             throws CaminhoNaoEncontradoException, PermissaoException {
@@ -209,7 +205,6 @@ public final class FileSystemImpl implements IFileSystem {
         }
     }
 
-    // TODO: Implementar método mv (movimentação/renomeação)
     @Override
     public void mv(String caminhoAntigo, String caminhoNovo, String usuario)
             throws CaminhoNaoEncontradoException, PermissaoException {
@@ -249,7 +244,6 @@ public final class FileSystemImpl implements IFileSystem {
         paiNovo.adicionarFilho(elemento);
     }
 
-    // TODO: Implementar método ls (listagem de diretórios)
     @Override
     public void ls(String caminho, String usuario, boolean recursivo) throws CaminhoNaoEncontradoException, PermissaoException {
         ElementoFS elemento = navegar(caminho);
@@ -282,7 +276,6 @@ public final class FileSystemImpl implements IFileSystem {
         }
     }
 
-    // TODO: Implementar método cp (cópia de arquivos/diretórios)
     @Override
     public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo)
             throws CaminhoNaoEncontradoException, PermissaoException {
@@ -326,12 +319,10 @@ public final class FileSystemImpl implements IFileSystem {
         }
     }
 
-    // TODO: Implementar carregamento de usuários a partir do arquivo users/users se necessário
     public void addUser(String user) {
         throw new UnsupportedOperationException("Método não implementado 'addUser'");
     }
 
-    // TODO: Adicionar métodos auxiliares para facilitar operações recursivas, busca de pai, etc.
     public int getTamanhoArquivo(String caminho) throws CaminhoNaoEncontradoException {
         ElementoFS elemento = navegar(caminho);
         if (!elemento.isArquivo()) throw new CaminhoNaoEncontradoException("O caminho não é um arquivo.");

@@ -4,26 +4,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Arquivo extends ElementoFS {
-    private List<byte[]> blocos;
+    private List<byte[]> blocos; // conteúdo do arquivo
     private long tamanho;
     
 
     public Arquivo(String nome, String permissoes, String dono) {
         super(nome, permissoes, dono);
-        // this.arquivo = new Bloco[0];
         this.blocos = new ArrayList<>();
         this.tamanho = 0;
     }
-
-    /*
-     * public Bloco[] getArquivo() {
-     * return arquivo;
-     * }
-     * 
-     * public void setArquivo(Bloco[] arquivo) {
-     * this.arquivo = arquivo;
-     * }
-     */
 
     public void adicionarBloco(byte[] dados) {
         blocos.add(dados);
