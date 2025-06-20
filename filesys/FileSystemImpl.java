@@ -9,7 +9,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-// Implementação central do sistema de arquivos virtual, incluindo permissões e operações principais.
+/**
+ * Implementa a interface IFileSystem, contendo a lógica central
+ * para as operações do sistema de arquivos virtual.
+ * Lida com a estrutura de diretórios e arquivos, e gerencia permissões
+ * e exceções conforme especificado.
+ */
 public final class FileSystemImpl implements IFileSystem {
     private Directory root;
     private String currentUser;
@@ -21,14 +26,12 @@ public final class FileSystemImpl implements IFileSystem {
         System.out.println("Sistema de arquivos inicializado. Usuário atual: " + currentUser);
     }
 
-    // Divide um caminho em componentes (ex: "/a/b/c" -> ["a","b","c"])
     private List<String> getPathComponents(String path) {
         return Arrays.stream(path.split("/"))
                      .filter(s -> !s.isEmpty())
                      .collect(Collectors.toList());
     }
 
-    // Resolve o caminho para obter o diretório pai e o nome do nó alvo.
     private String[] resolveParentAndName(String path) {
         if ("/".equals(path)) {
             return new String[]{"", ""};
@@ -46,8 +49,8 @@ public final class FileSystemImpl implements IFileSystem {
         return new String[]{parentPath, name};
     }
 
-    // Retorna o nó (Directory ou File) no caminho especificado.
-    private Object getNodeAtPath(String path) {
+    // MUDANÇA: Tornar público para acesso por Main e Testes
+    public Object getNodeAtPath(String path) {
         if ("/".equals(path) || path.isEmpty()) {
             return root;
         }
@@ -74,7 +77,6 @@ public final class FileSystemImpl implements IFileSystem {
         return null;
     }
 
-    // Retorna o diretório pai do caminho especificado, verificando permissão de navegação.
     private Directory getParentDirectory(String path, String currentUser) throws CaminhoNaoEncontradoException, PermissaoException {
         if ("/".equals(path) || path.isEmpty()) {
             return null;
@@ -92,7 +94,6 @@ public final class FileSystemImpl implements IFileSystem {
         throw new CaminhoNaoEncontradoException("Caminho pai '" + parentPath + "' não existe ou não é um diretório.");
     }
 
-    // Apenas root ou dono com permissão de escrita pode alterar permissões.
     @Override
     public void chmod(String caminho, String usuario, String usuarioAlvo, String permissao)
             throws CaminhoNaoEncontradoException, PermissaoException {
@@ -189,6 +190,7 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     @Override
+    // CORREÇÃO: Adicionado CaminhoNaoEncontradoException ao throws para compatibilidade com IFileSystem
     public void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
         if (caminho == null || caminho.isEmpty() || "/".equals(caminho)) {
             throw new IllegalArgumentException("Caminho inválido para touch.");
@@ -196,7 +198,7 @@ public final class FileSystemImpl implements IFileSystem {
         String[] parentAndName = resolveParentAndName(caminho);
         String parentPath = parentAndName[0];
         String fileName = parentAndName[1];
-        Directory parentDir = getParentDirectory(caminho, usuario);
+        Directory parentDir = getParentDirectory(caminho, usuario); // Este pode lançar CaminhoNaoEncontradoException
         if (parentDir == null) {
              parentDir = root;
              if (!parentDir.getMetaData().canWrite(usuario)) {
@@ -286,7 +288,6 @@ public final class FileSystemImpl implements IFileSystem {
         if (sourceParentDir == null) {
             throw new CaminhoNaoEncontradoException("Caminho pai de origem não existe para '" + caminhoAntigo + "'.");
         }
-        // Permissão de escrita no diretório pai da origem e destino é obrigatória.
         if (!sourceParentDir.getMetaData().canWrite(usuario)) {
             throw new PermissaoException("Permissão negada: não pode remover item em '" + sourceParentAndName[0] + "' para o usuário '" + usuario + "'.");
         }
@@ -370,17 +371,16 @@ public final class FileSystemImpl implements IFileSystem {
                 }
             }
         } catch (CaminhoJaExistenteException e) {
-            throw new PermissaoException(e.getMessage());
+            throw new PermissaoException(e.getMessage()); // Re-lança como PermissaoException para compatibilidade
         }
     }
-
+    
     @Override
     public void ls(String caminho, String usuario, boolean recursivo) throws CaminhoNaoEncontradoException, PermissaoException {
         Object node = getNodeAtPath(caminho);
         if (node == null) {
             throw new CaminhoNaoEncontradoException("ls: '" + caminho + "': Nenhum arquivo ou diretório encontrado.");
         }
-        // Se for arquivo, só lista informações se tiver permissão de leitura.
         if (node instanceof File) {
             File file = (File) node;
             if (!file.getMetaData().canRead(usuario)) {
@@ -526,7 +526,6 @@ public final class FileSystemImpl implements IFileSystem {
         }
     }
 
-    // Copia recursivamente arquivos e subdiretórios.
     private void cpRecursiveHelper(Directory source, Directory destination, String currentUser)
             throws PermissaoException, CaminhoNaoEncontradoException, CaminhoJaExistenteException {
         for (File file : source.getFiles().values()) {
@@ -540,7 +539,6 @@ public final class FileSystemImpl implements IFileSystem {
         }
     }
 
-    // Métodos auxiliares para simulação de login e usuário atual.
     public void changeUser(String newUser) {
         if (newUser == null || newUser.trim().isEmpty()) {
             System.out.println("Erro: Nome de usuário inválido.");
