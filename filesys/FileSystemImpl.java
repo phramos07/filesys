@@ -101,7 +101,7 @@ public final class FileSystemImpl implements IFileSystem {
         if (!usuario.equals(ROOT_USER) && !usuario.equals(meta.getDono())) {
             throw new PermissaoException("Apenas root ou o dono pode alterar permissões.");
         }
-        
+
         meta.setPermissao(usuarioAlvo, permissao);
     }
 
@@ -127,12 +127,19 @@ public final class FileSystemImpl implements IFileSystem {
         }
 
         if (atual.arquivos.containsKey(nomeAlvo)) {
+            Arquivo arq = atual.arquivos.get(nomeAlvo);
+            if (!temPermissao(usuario, arq.getMetaDados(), 'w')) {
+                throw new PermissaoException("Usuário '" + usuario + "' não tem permissão de exclusão no arquivo.");
+            }
             atual.arquivos.remove(nomeAlvo);
             return;
         }
 
         if (atual.subdirs.containsKey(nomeAlvo)) {
             Diretorio dirAlvo = atual.subdirs.get(nomeAlvo);
+            if (!temPermissao(usuario, dirAlvo.metaDados, 'w')) {
+                throw new PermissaoException("Usuário '" + usuario + "' não tem permissão de exclusão no diretório.");
+            }
             if (!recursivo && (!dirAlvo.arquivos.isEmpty() || !dirAlvo.subdirs.isEmpty())) {
                 throw new PermissaoException("Diretório não está vazio. Use o modo recursivo.");
             }
