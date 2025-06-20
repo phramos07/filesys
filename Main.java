@@ -228,6 +228,11 @@ public class Main {
                 }
             } catch (CaminhoNaoEncontradoException | CaminhoJaExistenteException | PermissaoException e) {
                 System.out.println("Erro: " + e.getMessage());
+            } catch (IllegalArgumentException e) {
+                System.out.println("Erro de argumento: " + e.getMessage());
+            } catch (Exception e) {
+                System.out.println("Erro inesperado: " + e.getMessage());
+                e.printStackTrace();
             }
 
             System.out.println("Pressione Enter para continuar...");
