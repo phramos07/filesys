@@ -77,7 +77,7 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void mkdir(String caminho, String usuario)
             throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
-
+        
         String[] partes = parseCaminho(caminho);
 
         if (partes.length == 0) {
@@ -85,9 +85,16 @@ public final class FileSystemImpl implements IFileSystem {
         }
 
         Diretorio atual = raiz;
+
         for (int i = 0; i < partes.length; i++) {
             String nomeDir = partes[i];
-            if (!atual.subdirs.containsKey(nomeDir)) {
+            boolean ultimo = (i == partes.length - 1);
+
+            if (atual.subdirs.containsKey(nomeDir)) {
+                if (ultimo) {
+                    throw new CaminhoJaExistenteException("Diretório já existe: " + caminho);
+                }
+            } else {
                 if (!permiteCriarEm(usuario, atual)) {
                     throw new PermissaoException(
                             "Usuário " + usuario + " não tem permissão para criar nesse diretório.");
@@ -95,6 +102,7 @@ public final class FileSystemImpl implements IFileSystem {
                 Diretorio novo = new Diretorio(nomeDir, usuario);
                 atual.subdirs.put(nomeDir, novo);
             }
+
             atual = atual.subdirs.get(nomeDir);
         }
     }
@@ -280,6 +288,10 @@ public final class FileSystemImpl implements IFileSystem {
 
         String[] partes = parseCaminho(caminho);
         Diretorio atual = navegarAteDiretorio(partes);
+
+        Usuario u = usuarios.get(usuario);
+        System.out.println("usuario: " + u.getPermissoes());
+        System.out.println("matadados: " + atual.metaDados.getPermissao(usuario));
 
         if (!temPermissao(usuario, atual.metaDados, 'r')) {
             throw new PermissaoException("Sem permissão de leitura.");
@@ -521,9 +533,17 @@ public final class FileSystemImpl implements IFileSystem {
     private boolean temPermissao(String usuario, MetaDados meta, char tipo) {
         if (ROOT_USER.equals(usuario))
             return true;
-
+        // Tenta obter permissão do MetaDados (local)
         String permissao = meta.getPermissao(usuario);
-        return permissao != null && permissao.indexOf(tipo) != -1;
+        if (permissao != null) {
+            return permissao.indexOf(tipo) != -1;
+        }
+
+        // Se não tem no MetaDados, tenta a permissão global (/**)
+        Usuario u = usuarios.get(usuario);
+        return u != null &&
+                "/**".equals(u.getDiretorio()) &&
+                u.getPermissoes().indexOf(tipo) != -1;
     }
 
     private boolean permiteCriarEm(String usuario, Diretorio dirPai) {
