@@ -317,8 +317,6 @@ public final class FileSystemImpl implements IFileSystem {
         }
         Arquivo arquivo = (Arquivo) obj;
 
-        System.out.println("DEBUG: Permissão atual do arquivo: " + arquivo.permissoesPadrao);
-
         if (!usuario.equals(ROOT_USER) && !arquivo.permissoesPadrao.contains("r")) {
             throw new PermissaoException("Sem permissão de leitura em: " + caminho);
         }
@@ -398,6 +396,13 @@ public final class FileSystemImpl implements IFileSystem {
         // 1) Busca o objeto pelo caminho fornecido
         Object obj = navegar(caminho);
 
+        // **Novo**: se for arquivo e não for recursivo, imprime o próprio nome e
+        // retorna
+        if (obj instanceof Arquivo && !recursivo) {
+            System.out.println(((Arquivo) obj).getNomeDiretorio());
+            return;
+        }
+
         // 2) Se não for um diretório, lança exceção
         if (!(obj instanceof Diretorio)) {
             throw new CaminhoNaoEncontradoException("Não é um diretório: " + caminho);
@@ -418,7 +423,10 @@ public final class FileSystemImpl implements IFileSystem {
         for (ElementoFS filho : dir.getFilhos().values()) {
             System.out.println(prefixo + filho.getNomeDiretorio());
             if (recursivo && !filho.isArquivo()) {
-                listarConteudo((Diretorio) filho, caminho + "/" + filho.getNomeDiretorio(), true, prefixo + "  ");
+                listarConteudo((Diretorio) filho,
+                        caminho + "/" + filho.getNomeDiretorio(),
+                        true,
+                        prefixo + "  ");
             }
         }
     }
