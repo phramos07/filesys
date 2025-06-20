@@ -525,112 +525,92 @@ public final class FileSystemImpl implements IFileSystem {
             throw new PermissaoException("Origem e destino não podem ser iguais");
         }
 
+        while (caminhoOrigem.length() > 1 && caminhoOrigem.endsWith("/")) {
+            caminhoOrigem = caminhoOrigem.substring(0, caminhoOrigem.length() - 1);
+        }
+        while (caminhoDestino.length() > 1 && caminhoDestino.endsWith("/")) {
+            caminhoDestino = caminhoDestino.substring(0, caminhoDestino.length() - 1);
+        }
+
         String[] sourcePathParts = splitPath(caminhoOrigem);
         String sourceParentPath = sourcePathParts[0];
         String sourceName = sourcePathParts[1];
 
-        String[] destPathParts = splitPath(caminhoDestino);
-        String destParentPath = destPathParts[0];
-        String destName = destPathParts[1];
-
         Diretorio sourceParent = navigateTo(sourceParentPath);
-        Diretorio destParent = navigateTo(destParentPath);
 
-        if (!usuario.equals(ROOT_USER) &&
-                !usuario.equals(sourceParent.getMetadata().getOwner()) &&
-                !temPermissao(usuario, sourceParent.getMetadata(), 'r')) {
-            throw new PermissaoException("Sem permissão para ler do caminho: " + sourceParentPath);
+        Arquivo sourceFile = encontrarArquivo(sourceParent, sourceName);
+        Diretorio sourceDir = null;
+
+        if (sourceFile == null) {
+            sourceDir = encontrarSubdiretorio(sourceParent, sourceName);
+            if (sourceDir == null) {
+                throw new CaminhoNaoEncontradoException("Item não encontrado no caminho: " + caminhoOrigem);
+            }
+
+            if (!recursivo) {
+                throw new PermissaoException("Cópia de diretório requer o modo recursivo.");
+            }
         }
 
-        if (!usuario.equals(ROOT_USER) &&
-                !usuario.equals(destParent.getMetadata().getOwner()) &&
-                !temPermissao(usuario, destParent.getMetadata(), 'w')) {
-            throw new PermissaoException("Sem permissão para escrever no caminho: " + destParentPath);
+        if (sourceFile != null) {
+            if (!usuario.equals(ROOT_USER) &&
+                    !usuario.equals(sourceFile.getMetadata().getOwner()) &&
+                    !temPermissao(usuario, sourceFile.getMetadata(), 'r')) {
+                throw new PermissaoException("Sem permissão para ler o arquivo: " + sourceName);
+            }
+        } else {
+            if (!usuario.equals(ROOT_USER) &&
+                    !usuario.equals(sourceDir.getMetadata().getOwner()) &&
+                    !temPermissao(usuario, sourceDir.getMetadata(), 'r')) {
+                throw new PermissaoException("Sem permissão para ler o diretório: " + sourceName);
+            }
         }
 
-        Arquivo arquivoExistente = encontrarArquivo(destParent, destName);
-        if (arquivoExistente != null) {
+        Diretorio destDir = null;
+        String destName = "";
+
+        try {
+            destDir = navigateTo(caminhoDestino);
+
+            destName = sourceName;
+
+        } catch (CaminhoNaoEncontradoException e) {
+            String[] destPathParts = splitPath(caminhoDestino);
+            String destParentPath = destPathParts[0];
+            destName = destPathParts[1];
+
+            try {
+                destDir = navigateTo(destParentPath);
+            } catch (CaminhoNaoEncontradoException ex) {
+                throw new CaminhoNaoEncontradoException("Diretório de destino não encontrado: " + destParentPath);
+            }
+        }
+
+        verificarPermissaoEscrita(usuario, destDir);
+
+        if (encontrarArquivo(destDir, destName) != null) {
             throw new PermissaoException("Já existe um arquivo com este nome no destino: " + destName);
         }
 
-        Diretorio dirExistente = encontrarSubdiretorio(destParent, destName);
-        if (dirExistente != null) {
-            destParent.getSubDiretorios().remove(dirExistente);
+        if (encontrarSubdiretorio(destDir, destName) != null) {
+            throw new PermissaoException("Já existe um diretório com este nome no destino: " + destName);
         }
 
-        Arquivo arquivo = encontrarArquivo(sourceParent, sourceName);
-        if (arquivo != null) {
-            if (!usuario.equals(ROOT_USER) &&
-                    !usuario.equals(arquivo.getMetadata().getOwner()) &&
-                    !temPermissao(usuario, arquivo.getMetadata(), 'r')) {
-                throw new PermissaoException("Sem permissão para ler o arquivo: " + sourceName);
-            }
-
+        if (sourceFile != null) {
             Arquivo novoArquivo = new Arquivo(destName, usuario);
 
-            for (Bloco bloco : arquivo.getBlocos()) {
-                byte[] data = bloco.getDados();
+            for (Bloco bloco : sourceFile.getBlocos()) {
+                byte[] data = bloco.getDados(); 
                 byte[] newData = new byte[data.length];
                 System.arraycopy(data, 0, newData, 0, data.length);
                 novoArquivo.addBloco(new Bloco(newData));
             }
 
-            destParent.addFile(novoArquivo);
-            return;
+            destDir.addFile(novoArquivo);
+        } else {
+            Diretorio novoDiretorio = copyDiretorio(sourceDir, destName, usuario);
+            destDir.addSubDiretorio(novoDiretorio);
         }
-
-        Diretorio subDir = encontrarSubdiretorio(sourceParent, sourceName);
-        if (subDir != null) {
-            if (!recursivo) {
-                throw new PermissaoException("Cópia de diretório requer o modo recursivo.");
-            }
-
-            if (!usuario.equals(ROOT_USER) &&
-                    !usuario.equals(subDir.getMetadata().getOwner()) &&
-                    !temPermissao(usuario, subDir.getMetadata(), 'r')) {
-                throw new PermissaoException("Sem permissão para ler o diretório: " + sourceName);
-            }
-
-            Diretorio novoDiretorio = new Diretorio(usuario, destName);
-
-            if (recursivo) {
-                for (Arquivo arq : subDir.getArquivos()) {
-                    if (!usuario.equals(ROOT_USER) &&
-                            !usuario.equals(arq.getMetadata().getOwner()) &&
-                            !temPermissao(usuario, arq.getMetadata(), 'r')) {
-                        continue;
-                    }
-
-                    Arquivo novoArq = new Arquivo(arq.getMetadata().getName(), usuario);
-
-                    for (Bloco bloco : arq.getBlocos()) {
-                        byte[] data = bloco.getDados();
-                        byte[] newData = new byte[data.length];
-                        System.arraycopy(data, 0, newData, 0, data.length);
-                        novoArq.addBloco(new Bloco(newData));
-                    }
-
-                    novoDiretorio.addFile(novoArq);
-                }
-
-                for (Diretorio dir : subDir.getSubDiretorios()) {
-                    if (!usuario.equals(ROOT_USER) &&
-                            !usuario.equals(dir.getMetadata().getOwner()) &&
-                            !temPermissao(usuario, dir.getMetadata(), 'r')) {
-                        continue;
-                    }
-
-                    Diretorio novoSubDir = copyDiretorio(dir, dir.getMetadata().getName(), usuario);
-                    novoDiretorio.addSubDiretorio(novoSubDir);
-                }
-            }
-
-            destParent.addSubDiretorio(novoDiretorio);
-            return;
-        }
-
-        throw new CaminhoNaoEncontradoException("Item não encontrado no caminho: " + caminhoOrigem);
-
     }
 
     /**
