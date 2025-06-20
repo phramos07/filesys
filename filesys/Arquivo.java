@@ -36,7 +36,7 @@ public class Arquivo extends Diretorio {
 
     public void addBloco(Bloco bloco) {
         this.blocos.add(bloco);
-    }
+    } 
 
     public void clearBlocos() {
         this.blocos.clear();

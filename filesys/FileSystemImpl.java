@@ -14,46 +14,43 @@ import java.util.Set;
 import java.util.StringTokenizer;
 
 /**
- * Classe {@code FileSystemImpl} implementa a interface {@link IFileSystem} e
- * fornece a lógica para um sistema de arquivos
- * hierárquico com suporte a permissões de usuários, manipulação de arquivos e
- * diretórios.
- * 
+ * A classe {@code FileSystemImpl} é a implementação principal da interface {@link IFileSystem},
+ * responsável por gerenciar toda a lógica de um sistema de arquivos hierárquico com suporte a permissões,
+ * usuários, arquivos e diretórios.
+ *
  * <p>
- * Essa classe gerencia um conjunto de usuários, um diretório raiz e oferece
- * métodos para operações como criação,
- * remoção, leitura, escrita, cópia e movimentação de arquivos e diretórios.
- * Além disso, permite a configuração de
- * permissões específicas para usuários em diferentes caminhos do sistema de
- * arquivos.
- * 
+ * Esta classe mantém um conjunto de usuários, um diretório raiz e provê métodos para operações como:
+ * criação, remoção, leitura, escrita, cópia, movimentação e listagem de arquivos e diretórios.
+ * Também permite a configuração de permissões específicas para diferentes usuários em cada caminho do sistema.
+ * </p>
+ *
  * <p>
- * O sistema de arquivos é inicializado com um diretório raiz ("/") e um usuário
- * padrão ("root") com permissões
- * completas. Usuários adicionais podem ser adicionados e gerenciados
- * dinamicamente.
- * 
+ * Ao ser inicializada, garante a existência do diretório raiz ("/") e do usuário padrão ("root") com permissões totais.
+ * Usuários adicionais podem ser adicionados e gerenciados dinamicamente.
+ * </p>
+ *
  * <p>
- * Principais funcionalidades:
+ * Funcionalidades principais:
  * <ul>
- * <li>Gerenciamento de usuários e permissões.</li>
- * <li>Criação e remoção de arquivos e diretórios.</li>
- * <li>Leitura e escrita em arquivos.</li>
- * <li>Movimentação e cópia de arquivos e diretórios.</li>
- * <li>Listagem de conteúdo de diretórios com suporte a recursividade.</li>
+ *   <li>Gerenciamento de usuários e permissões.</li>
+ *   <li>Criação e remoção de arquivos e diretórios.</li>
+ *   <li>Leitura e escrita em arquivos.</li>
+ *   <li>Movimentação e cópia de arquivos e diretórios.</li>
+ *   <li>Listagem de conteúdo de diretórios, com suporte a recursividade.</li>
  * </ul>
- * 
+ * </p>
+ *
  * <p>
- * Exceções específicas são lançadas para tratar erros como permissões
- * insuficientes, caminhos inexistentes,
- * ou tentativas de operações inválidas.
- * 
+ * Exceções específicas são lançadas para tratar situações como permissões insuficientes,
+ * caminhos inexistentes ou operações inválidas.
+ * </p>
+ *
  * <p>
- * Essa classe é imutável no sentido de que não permite a modificação direta de
- * seus atributos internos,
- * mas fornece métodos para manipular o estado do sistema de arquivos de forma
- * controlada.
+ * Embora os atributos internos não possam ser modificados diretamente, a classe fornece métodos
+ * para manipular o estado do sistema de arquivos de forma controlada e segura.
+ * </p>
  */
+
 public final class FileSystemImpl implements IFileSystem {
     private static final String ROOT_USER = "root";
     private Set<Usuario> users = new HashSet<>();

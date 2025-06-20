@@ -8,11 +8,11 @@ import exception.PermissaoException;
 /**
  * Interface para as operações de um sistema de arquivos virtual.
  * 
- * <p> IFyleSystem é implementada por FileSystemImpl, que contém a lógica de manipulação de arquivos e diretórios e FyleSystem atua como um proxy que delega as chamadas para a implementação real.
- * <p> Essa interface define os métodos necessários para gerenciar usuários, permissões e operações de arquivos.
- * <p> O sistema de arquivos é inicializado com um diretório raiz padrão ("/") e um usuário padrão ("root")
- * <p> <strong> Não é necessário passar parâmetros para o construtor e nem adicionar o diretório e o usuário root </strong>
- * <p> <strong> Importante: </strong> O usuário <code>root</code> não pode ser removido.
+ *  IFyleSystem é implementada por FileSystemImpl, que contém a lógica de manipulação de arquivos e diretórios e FyleSystem atua como um proxy que delega as chamadas para a implementação real.
+ *  Essa interface define os métodos necessários para gerenciar usuários, permissões e operações de arquivos.
+ *  O sistema de arquivos é inicializado com um diretório raiz padrão ("/") e um usuário padrão ("root")
+ *  Não é necessário passar parâmetros para o construtor e nem adicionar o diretório e o usuário root >
+ *  O usuário root não pode ser removido.
  */
 public interface IFileSystem {
 
@@ -26,7 +26,7 @@ public interface IFileSystem {
     /**
      * Remove um usuário do sistema.
      * 
-     * <strong>Importante:</strong> O usuário <code>root</code> não pode ser removido.
+     * O usuário root não pode ser removido.
      * 
      * @param username Nome do usuário a ser removido.
      */
@@ -35,9 +35,9 @@ public interface IFileSystem {
     /**
      * Altera as permissões de um caminho para um usuário específico.
      * 
-     * <p>
-     * Apenas o usuário <code>root</code> ou aquele com permissão <code>rw</code> no caminho pode alterar permissões.
-     * </p>
+     *
+     * Apenas o usuário root ou aquele com permissão 
+     * rw no caminho pode alterar permissões.
      *
      * @param caminho Caminho do arquivo ou diretório.
      * @param usuario Usuário que está realizando a operação.
@@ -77,7 +77,7 @@ public interface IFileSystem {
     /**
      * Cria um novo arquivo vazio.
      * 
-     * <strong>Atenção:</strong> Se o arquivo já existir, será lançada uma exceção.
+     * Se o arquivo já existir, será lançada uma exceção.
      *
      * @param caminho Caminho do arquivo.
      * @param usuario Usuário que está criando o arquivo.
@@ -92,10 +92,10 @@ public interface IFileSystem {
     /**
      * Escreve dados em um arquivo.
      * 
-     * <p>
+     * 
      * Caso o arquivo não exista, será lançado um erro.
-     * Se <code>anexar</code> for <code>true</code>, os dados serão adicionados ao final do arquivo.
-     * </p>
+     * Se anexar for true, os dados serão adicionados ao final do arquivo.
+     * 
      *
      * @param caminho Caminho do arquivo.
      * @param usuario Usuário que está escrevendo.
@@ -111,8 +111,8 @@ public interface IFileSystem {
     /**
      * Lê dados de um arquivo sequencialmente.
      * 
-     * <p> Todo o conteúdo do arquivo será lido a partir de um <code>Offset</code> e armazenado no buffer.
-     * </p>
+     *Todo o conteúdo do arquivo será lido a partir de um Offset e armazenado no buffer.
+     * 
      *
      * @param caminho Caminho do arquivo.
      * @param usuario Usuário que está lendo.
@@ -128,9 +128,9 @@ public interface IFileSystem {
     /**
      * Move ou renomeia um arquivo ou diretório.
      * 
-     * <p>
+     * 
      * A operação é recursiva. Se o destino já existir, será sobrescrito.
-     * </p>
+     * 
      *
      * @param caminhoAntigo Caminho original.
      * @param caminhoNovo Novo caminho.
@@ -146,7 +146,7 @@ public interface IFileSystem {
      * 
      * @param caminho Caminho do diretório.
      * @param usuario Usuário que está acessando.
-     * @param recursivo Se <code>true</code>, lista recursivamente os subdiretórios.
+     * @param recursivo Se true, lista recursivamente os subdiretórios.
      * @throws CaminhoNaoEncontradoException Se o diretório não existir.
      * @throws PermissaoException Se o usuário não tiver permissão de leitura.
      */
@@ -159,7 +159,7 @@ public interface IFileSystem {
      * @param caminhoOrigem Caminho de origem.
      * @param caminhoDestino Caminho de destino.
      * @param usuario Usuário que está realizando a operação.
-     * @param recursivo Se <code>true</code>, copia diretórios recursivamente.
+     * @param recursivo Se true, copia diretórios recursivamente.
      * @throws CaminhoNaoEncontradoException Se a origem não existir.
      * @throws PermissaoException Se o usuário não tiver permissão.
      */

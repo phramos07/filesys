@@ -68,10 +68,7 @@ public class Main {
                         String dirPermission = parts[2];
                         
                         /* 
-                        A FAZER:
-                         * Processar a permissão de todos os usuários existentes por diretório.
-                         * Por enquanto esse código somente imprime as permissões contidas no arquivo users.
-                        
+                         
                         System.out.println(userListed + " " + dir + " " + dirPermission); // Somente imprime o usuário, diretório e permissão
                         */
 

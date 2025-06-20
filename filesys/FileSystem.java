@@ -6,17 +6,18 @@ import exception.OperacaoInvalidaException;
 import exception.PermissaoException;
 
 /**
- * Classe {@code FileSystem} atua como um proxy para a implementação real do
- * sistema de arquivos {@link FileSystemImpl}.
- * 
- * <p>
- * Essa classe encapsula a lógica interna e fornece uma interface padronizada
- * para operações em sistemas de arquivos,
- * delegando todas as chamadas de método à instância de {@code FileSystemImpl}.
+ * A classe {@code FileSystem} funciona como um proxy para a implementação real do sistema de arquivos, 
+ * {@link FileSystemImpl}.
  *
  * <p>
- * Inicializa com um diretório raiz padrão ("/") e um usuário padrão ("root")
- * com permissões completas.
+ * Esta classe oferece uma interface padronizada para operações em sistemas de arquivos virtuais,
+ * delegando todas as chamadas de método para uma instância de {@code FileSystemImpl}.
+ * </p>
+ *
+ * <p>
+ * Ao ser inicializada, garante a existência de um diretório raiz ("/") e de um usuário padrão ("root")
+ * com permissões totais, facilitando o gerenciamento de arquivos, diretórios, permissões e usuários.
+ * </p>
  */
 final public class FileSystem implements IFileSystem {
 
