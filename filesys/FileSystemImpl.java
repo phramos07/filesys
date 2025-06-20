@@ -91,68 +91,84 @@ public final class FileSystemImpl implements IFileSystem {
     public void chmod(String caminho, String usuario, String usuarioAlvo, String permissao)
             throws CaminhoNaoEncontradoException, PermissaoException {
 
-        validarParametros(caminho, usuario, usuarioAlvo, permissao);
+        if (caminho == null || caminho.isEmpty() || usuario == null || usuario.isEmpty() ||
+                usuarioAlvo == null || usuarioAlvo.isEmpty() || permissao == null || permissao.isEmpty()) {
+            throw new IllegalArgumentException("Parâmetros inválidos");
+        }
 
-        verificarUsuario(usuario);
-        verificarUsuario(usuarioAlvo);
+        if (!users.contains(usuario)) {
+            throw new PermissaoException("Usuário não existe: " + usuario);
+        }
 
-        String[] pathParts = splitPath(caminho);
-        String parentPath = pathParts[0];
-        String itemName = pathParts[1];
+        if (!users.contains(usuarioAlvo)) {
+            users.add(usuarioAlvo);
+        }
 
-        // Se o caminho for a raiz
+        if (permissao.length() != 3 && permissao.length() != 3) {
+            throw new IllegalArgumentException("Formato de permissão inválido: " + permissao);
+        }
+
         if (caminho.equals("/")) {
             if (!usuario.equals(ROOT_USER)) {
                 throw new PermissaoException("Somente root pode alterar permissões da raiz.");
             }
 
-            // Validar permissões
-            for (char c : permissao.toCharArray()) {
-                if (c != 'r' && c != 'w' && c != 'x' && c != '-') {
-                    throw new IllegalArgumentException("Permissão inválida: " + c + ". Use apenas r, w, x ou -");
+            String cleanPermission = "";
+            for (int i = 0; i < permissao.length(); i++) {
+                char c = permissao.charAt(i);
+                if (c != '-') {
+                    cleanPermission += c;
                 }
             }
-
-            // Configurar permissões para a raiz
-            root.getMetadata().getPermissions().put(usuarioAlvo, permissao.replace("-", ""));
+            root.getMetadata().getPermissions().put(usuarioAlvo, cleanPermission);
             return;
         }
 
-        Diretorio parent = navigateTo(parentPath);
+        try {
+            String[] pathParts = splitPath(caminho);
+            String parentPath = pathParts[0];
+            String itemName = pathParts[1];
 
-        Arquivo arquivo = encontrarArquivo(parent, itemName);
-        if (arquivo != null) {
-            if (!usuario.equals(ROOT_USER) && !usuario.equals(arquivo.getMetadata().getOwner())) {
-                throw new PermissaoException("Somente root ou dono pode alterar permissões.");
-            }
+            Diretorio parent = navigateTo(parentPath);
 
-            for (char c : permissao.toCharArray()) {
-                if (c != 'r' && c != 'w' && c != 'x' && c != '-') {
-                    throw new IllegalArgumentException("Permissão inválida: " + c + ". Use apenas r, w, x ou -");
+            Arquivo arquivo = encontrarArquivo(parent, itemName);
+            if (arquivo != null) {
+                if (!usuario.equals(ROOT_USER) && !usuario.equals(arquivo.getMetadata().getOwner())) {
+                    throw new PermissaoException("Somente root ou dono pode alterar permissões.");
                 }
-            }
 
-            arquivo.getMetadata().getPermissions().put(usuarioAlvo, permissao.replace("-", ""));
-            return;
-        }
-
-        Diretorio dir = encontrarSubdiretorio(parent, itemName);
-        if (dir != null) {
-            if (!usuario.equals(ROOT_USER) && !usuario.equals(dir.getMetadata().getOwner())) {
-                throw new PermissaoException("Somente root ou dono pode alterar permissões.");
-            }
-
-            for (char c : permissao.toCharArray()) {
-                if (c != 'r' && c != 'w' && c != 'x' && c != '-') {
-                    throw new IllegalArgumentException("Permissão inválida: " + c + ". Use apenas r, w, x ou -");
+                String cleanPermission = "";
+                for (int i = 0; i < permissao.length(); i++) {
+                    char c = permissao.charAt(i);
+                    if (c != '-') {
+                        cleanPermission += c;
+                    }
                 }
+                arquivo.getMetadata().getPermissions().put(usuarioAlvo, cleanPermission);
+                return;
             }
 
-            dir.getMetadata().getPermissions().put(usuarioAlvo, permissao.replace("-", ""));
-            return;
-        }
+            Diretorio dir = encontrarSubdiretorio(parent, itemName);
+            if (dir != null) {
+                if (!usuario.equals(ROOT_USER) && !usuario.equals(dir.getMetadata().getOwner())) {
+                    throw new PermissaoException("Somente root ou dono pode alterar permissões.");
+                }
 
-        throw new CaminhoNaoEncontradoException("Item não encontrado: " + caminho);
+                String cleanPermission = "";
+                for (int i = 0; i < permissao.length(); i++) {
+                    char c = permissao.charAt(i);
+                    if (c != '-') {
+                        cleanPermission += c;
+                    }
+                }
+                dir.getMetadata().getPermissions().put(usuarioAlvo, cleanPermission);
+                return;
+            }
+
+            throw new CaminhoNaoEncontradoException("Item não encontrado: " + caminho);
+        } catch (CaminhoNaoEncontradoException e) {
+            throw e;
+        }
     }
 
     /**
@@ -301,6 +317,13 @@ public final class FileSystemImpl implements IFileSystem {
 
         Bloco bloco = new Bloco(buffer);
         arquivo.addBloco(bloco);
+
+        System.out.println("Dados escritos com sucesso no arquivo: " + fileName);
+        if (anexar) {
+            System.out.println("Conteúdo anexado ao final do arquivo");
+        } else {
+            System.out.println("Arquivo sobrescrito");
+        }
     }
 
     /**
@@ -338,8 +361,11 @@ public final class FileSystemImpl implements IFileSystem {
         }
 
         byte[] data = arquivo.read();
-        System.arraycopy(data, 0, buffer, 0, Math.min(data.length, buffer.length));
+        int length = Math.min(data.length, buffer.length);
+        System.arraycopy(data, 0, buffer, 0, length);
 
+        System.out.println("Conteúdo lido do arquivo " + fileName + ":");
+        System.out.println(new String(buffer, 0, length));
     }
 
     /**
@@ -451,6 +477,10 @@ public final class FileSystemImpl implements IFileSystem {
 
         verificarUsuario(usuario);
 
+        if (caminhoOrigem.equals(caminhoDestino)) {
+            throw new PermissaoException("Origem e destino não podem ser iguais");
+        }
+
         String[] sourcePathParts = splitPath(caminhoOrigem);
         String sourceParentPath = sourcePathParts[0];
         String sourceName = sourcePathParts[1];
@@ -462,36 +492,95 @@ public final class FileSystemImpl implements IFileSystem {
         Diretorio sourceParent = navigateTo(sourceParentPath);
         Diretorio destParent = navigateTo(destParentPath);
 
-        if (!usuario.equals(ROOT_USER) && !temPermissao(usuario, sourceParent, 'r')) {
+        if (!usuario.equals(ROOT_USER) &&
+                !usuario.equals(sourceParent.getMetadata().getOwner()) &&
+                !temPermissao(usuario, sourceParent.getMetadata(), 'r')) {
             throw new PermissaoException("Sem permissão para ler do caminho: " + sourceParentPath);
         }
 
-        if (!usuario.equals(ROOT_USER) && !temPermissao(usuario, destParent, 'w')) {
+        if (!usuario.equals(ROOT_USER) &&
+                !usuario.equals(destParent.getMetadata().getOwner()) &&
+                !temPermissao(usuario, destParent.getMetadata(), 'w')) {
             throw new PermissaoException("Sem permissão para escrever no caminho: " + destParentPath);
         }
 
-        if (encontrarArquivo(destParent, destName) != null) {
-            throw new PermissaoException("Já existe um arquivo com este nome no destino: " + destName);
+        Arquivo arquivoExistente = encontrarArquivo(destParent, destName);
+        if (arquivoExistente != null) {
+            destParent.getArquivos().remove(arquivoExistente);
         }
 
-        if (encontrarSubdiretorio(destParent, destName) != null) {
-            throw new PermissaoException("Já existe um diretório com este nome no destino: " + destName);
+        Diretorio dirExistente = encontrarSubdiretorio(destParent, destName);
+        if (dirExistente != null) {
+            destParent.getSubDiretorios().remove(dirExistente);
         }
 
         Arquivo arquivo = encontrarArquivo(sourceParent, sourceName);
         if (arquivo != null) {
+            if (!usuario.equals(ROOT_USER) &&
+                    !usuario.equals(arquivo.getMetadata().getOwner()) &&
+                    !temPermissao(usuario, arquivo.getMetadata(), 'r')) {
+                throw new PermissaoException("Sem permissão para ler o arquivo: " + sourceName);
+            }
+
             Arquivo novoArquivo = new Arquivo(destName, usuario);
-            novoArquivo.setBlocos(new ArrayList(arquivo.getBlocos()));
+
+            for (Bloco bloco : arquivo.getBlocos()) {
+                byte[] data = bloco.getDados();
+                byte[] newData = new byte[data.length];
+                System.arraycopy(data, 0, newData, 0, data.length);
+                novoArquivo.addBloco(new Bloco(newData));
+            }
+
             destParent.addFile(novoArquivo);
             return;
         }
 
         Diretorio subDir = encontrarSubdiretorio(sourceParent, sourceName);
         if (subDir != null) {
-            if (!recursivo) {
-                throw new PermissaoException("Cópia de diretório requer o modo recursivo.");
+            if (!recursivo && (!subDir.getArquivos().isEmpty() || !subDir.getSubDiretorios().isEmpty())) {
+                throw new PermissaoException("Cópia de diretório não vazio requer o modo recursivo.");
             }
-            Diretorio novoDiretorio = copyDiretorio(subDir, destName, usuario);
+
+            if (!usuario.equals(ROOT_USER) &&
+                    !usuario.equals(subDir.getMetadata().getOwner()) &&
+                    !temPermissao(usuario, subDir.getMetadata(), 'r')) {
+                throw new PermissaoException("Sem permissão para ler o diretório: " + sourceName);
+            }
+
+            Diretorio novoDiretorio = new Diretorio(usuario, destName);
+
+            if (recursivo) {
+                for (Arquivo arq : subDir.getArquivos()) {
+                    if (!usuario.equals(ROOT_USER) &&
+                            !usuario.equals(arq.getMetadata().getOwner()) &&
+                            !temPermissao(usuario, arq.getMetadata(), 'r')) {
+                        continue;
+                    }
+
+                    Arquivo novoArq = new Arquivo(arq.getMetadata().getName(), usuario);
+
+                    for (Bloco bloco : arq.getBlocos()) {
+                        byte[] data = bloco.getDados();
+                        byte[] newData = new byte[data.length];
+                        System.arraycopy(data, 0, newData, 0, data.length);
+                        novoArq.addBloco(new Bloco(newData));
+                    }
+
+                    novoDiretorio.addFile(novoArq);
+                }
+
+                for (Diretorio dir : subDir.getSubDiretorios()) {
+                    if (!usuario.equals(ROOT_USER) &&
+                            !usuario.equals(dir.getMetadata().getOwner()) &&
+                            !temPermissao(usuario, dir.getMetadata(), 'r')) {
+                        continue;
+                    }
+
+                    Diretorio novoSubDir = copyDiretorio(dir, dir.getMetadata().getName(), usuario);
+                    novoDiretorio.addSubDiretorio(novoSubDir);
+                }
+            }
+
             destParent.addSubDiretorio(novoDiretorio);
             return;
         }
@@ -499,18 +588,25 @@ public final class FileSystemImpl implements IFileSystem {
         throw new CaminhoNaoEncontradoException("Item não encontrado no caminho: " + caminhoOrigem);
 
     }
-
     /**
      * Adiciona um novo usuário ao sistema.
      * 
      * @param user Nome do usuário a ser adicionado
-     * @throws UnsupportedOperationException Se o usuário já existir
+     * @throws IllegalArgumentException Se o nome do usuário for nulo ou vazio
      */
+
+    @Override
     public void addUser(String user) {
-        if (users.contains(user)) {
-            throw new UnsupportedOperationException("Usuário já existe: " + user);
+        if (user == null || user.isEmpty()) {
+            throw new IllegalArgumentException("Nome de usuário não pode ser nulo ou vazio");
         }
-        users.add(user);
+
+        if (!users.contains(user)) {
+            users.add(user);
+            System.out.println("Usuário adicionado: " + user);
+        } else {
+            System.out.println("Usuário já existe: " + user);
+        }
     }
 
     /**
@@ -583,13 +679,37 @@ public final class FileSystemImpl implements IFileSystem {
     private Diretorio copyDiretorio(Diretorio source, String newName, String usuario) {
         Diretorio novoDiretorio = new Diretorio(usuario, newName);
 
+        for (String user : source.getMetadata().getPermissions().keySet()) {
+            novoDiretorio.getMetadata().getPermissions().put(
+                    user, source.getMetadata().getPermissions().get(user));
+        }
+
         for (Arquivo arquivo : source.getArquivos()) {
+            if (!usuario.equals(ROOT_USER) &&
+                    !usuario.equals(arquivo.getMetadata().getOwner()) &&
+                    !temPermissao(usuario, arquivo.getMetadata(), 'r')) {
+                continue;
+            }
+
             Arquivo novoArquivo = new Arquivo(arquivo.getMetadata().getName(), usuario);
-            novoArquivo.setBlocos(new ArrayList<>(arquivo.getBlocos()));
+
+            for (Bloco bloco : arquivo.getBlocos()) {
+                byte[] data = bloco.getDados();
+                byte[] newData = new byte[data.length];
+                System.arraycopy(data, 0, newData, 0, data.length);
+                novoArquivo.addBloco(new Bloco(newData));
+            }
+
             novoDiretorio.addFile(novoArquivo);
         }
 
         for (Diretorio subDir : source.getSubDiretorios()) {
+            if (!usuario.equals(ROOT_USER) &&
+                    !usuario.equals(subDir.getMetadata().getOwner()) &&
+                    !temPermissao(usuario, subDir.getMetadata(), 'r')) {
+                continue;
+            }
+
             Diretorio novoSubDir = copyDiretorio(subDir, subDir.getMetadata().getName(), usuario);
             novoDiretorio.addSubDiretorio(novoSubDir);
         }
