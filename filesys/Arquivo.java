@@ -66,4 +66,45 @@ class Arquivo {
     public void adicionarByte(byte b) {
         conteudo.add(b);
     }
+
+    /**
+     * Adiciona uma lista de bytes ao conteúdo do arquivo.
+     * 
+     * @param bytes Lista de bytes a serem adicionados
+     */
+    public void adicionarBytes(List<Byte> bytes) {
+        conteudo.addAll(bytes);
+    }
+
+    /**
+     * Retorna o tamanho do conteúdo do arquivo.
+     * 
+     * @return Tamanho do conteúdo em bytes
+     */
+
+    public int tamanho() {
+        return conteudo.size();
+    }
+
+    /**
+     * Retorna os blocos de dados do arquivo.
+     * Atualmente não utilizado, mas pode ser implementado para escrita em blocos.
+     * 
+     * @return Array de blocos
+     */
+    public Bloco[] getBloco() {
+        return bloco;
+    }
+
+    /**
+     * Define os blocos de dados do arquivo.
+     * Atualmente não utilizado, mas pode ser implementado para escrita em blocos.
+     * 
+     * @param bloco Array de blocos a serem definidos
+     */
+    public void setBloco(Bloco[] bloco) {
+        this.bloco = bloco;
+    }
+
+
 }
