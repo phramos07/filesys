@@ -506,7 +506,7 @@ public final class FileSystemImpl implements IFileSystem {
 
         Arquivo arquivoExistente = encontrarArquivo(destParent, destName);
         if (arquivoExistente != null) {
-            destParent.getArquivos().remove(arquivoExistente);
+            throw new PermissaoException("Já existe um arquivo com este nome no destino: " + destName);
         }
 
         Diretorio dirExistente = encontrarSubdiretorio(destParent, destName);
@@ -537,8 +537,8 @@ public final class FileSystemImpl implements IFileSystem {
 
         Diretorio subDir = encontrarSubdiretorio(sourceParent, sourceName);
         if (subDir != null) {
-            if (!recursivo && (!subDir.getArquivos().isEmpty() || !subDir.getSubDiretorios().isEmpty())) {
-                throw new PermissaoException("Cópia de diretório não vazio requer o modo recursivo.");
+            if (!recursivo) {
+                throw new PermissaoException("Cópia de diretório requer o modo recursivo.");
             }
 
             if (!usuario.equals(ROOT_USER) &&
@@ -588,6 +588,7 @@ public final class FileSystemImpl implements IFileSystem {
         throw new CaminhoNaoEncontradoException("Item não encontrado no caminho: " + caminhoOrigem);
 
     }
+
     /**
      * Adiciona um novo usuário ao sistema.
      * 
