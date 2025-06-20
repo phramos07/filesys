@@ -63,20 +63,19 @@ public final class FileSystemImpl implements IFileSystem {
             throw new CaminhoJaExistenteException("Não é possível criar o diretório raiz '/'");
         }
 
-        Diretorio atual = navegarAteDiretorioPai(partes);
-
-        String nomeNovo = partes[partes.length - 1];
-
-        if (atual.subdirs.containsKey(nomeNovo) || atual.arquivos.containsKey(nomeNovo)) {
-            throw new CaminhoJaExistenteException("Caminho já existe: " + caminho);
+        Diretorio atual = raiz;
+        for (int i = 0; i < partes.length; i++) {
+            String nomeDir = partes[i];
+            if (!atual.subdirs.containsKey(nomeDir)) {
+                if (!permiteCriarEm(usuario, atual)) {
+                    throw new PermissaoException(
+                            "Usuário " + usuario + " não tem permissão para criar nesse diretório.");
+                }
+                Diretorio novo = new Diretorio(nomeDir, usuario);
+                atual.subdirs.put(nomeDir, novo);
+            }
+            atual = atual.subdirs.get(nomeDir);
         }
-
-        if (!permiteCriarEm(usuario, atual)) {
-            throw new PermissaoException("Usuário " + usuario + " não tem permissão para criar nesse diretório.");
-        }
-
-        Diretorio novo = new Diretorio(nomeNovo, usuario);
-        atual.subdirs.put(nomeNovo, novo);
     }
 
     /**
