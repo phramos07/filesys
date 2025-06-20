@@ -15,10 +15,23 @@ import exception.PermissaoException;
 // e atributos & métodos privados podem ser adicionados
 
 /**
- * Classe que implementa um sistema de arquivos em memória.
- * Controla operações como mkdir, touch, chmod, rm, ls e read,
- * além de gerenciar permissões por usuário e metadados de arquivos e
- * diretórios.
+ * Implementação de um sistema de arquivos virtual em memória.
+ * 
+ * Esta classe gerencia operações de criação, remoção, leitura, escrita,
+ * alteração de permissões e manipulação de arquivos e diretórios,
+ * além do controle de usuários e permissões.
+ * 
+ * <p>
+ * Cada operação verifica as permissões do usuário conforme necessário,
+ * garantindo a segurança e integridade do sistema de arquivos.
+ * </p>
+ * 
+ * <p>
+ * Diretórios intermediários são criados automaticamente em mkdir (comportamento
+ * -p).
+ * </p>
+ * 
+ * @author SeuNome
  */
 public final class FileSystemImpl implements IFileSystem {
 
@@ -51,7 +64,15 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     /**
-     * Cria um diretório no caminho especificado.
+     * Cria um diretório no caminho especificado, criando diretórios intermediários
+     * automaticamente (comportamento -p).
+     *
+     * @param caminho Caminho absoluto do diretório a ser criado.
+     * @param usuario Usuário solicitante.
+     * @throws CaminhoJaExistenteException   se o diretório já existir.
+     * @throws PermissaoException            se o usuário não tiver permissão de
+     *                                       escrita.
+     * @throws CaminhoNaoEncontradoException se algum diretório pai não existir.
      */
     @Override
     public void mkdir(String caminho, String usuario)
@@ -79,7 +100,15 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     /**
-     * Altera permissões de um arquivo ou diretório.
+     * Altera as permissões de um arquivo ou diretório.
+     *
+     * @param caminho     Caminho do arquivo ou diretório.
+     * @param usuario     Usuário solicitante.
+     * @param usuarioAlvo Usuário alvo da alteração de permissão.
+     * @param permissao   Permissão a ser atribuída (ex: "rwx").
+     * @throws CaminhoNaoEncontradoException Se o caminho não existir.
+     * @throws PermissaoException            Se o usuário não for root ou dono do
+     *                                       item.
      */
     @Override
     public void chmod(String caminho, String usuario, String usuarioAlvo, String permissao)
@@ -107,6 +136,13 @@ public final class FileSystemImpl implements IFileSystem {
     /**
      * Remove um arquivo ou diretório. Diretórios podem ser removidos
      * recursivamente.
+     *
+     * @param caminho   Caminho do arquivo ou diretório a ser removido.
+     * @param usuario   Usuário solicitante.
+     * @param recursivo Se true, remove diretórios recursivamente.
+     * @throws CaminhoNaoEncontradoException Se o caminho não existir.
+     * @throws PermissaoException            Se o usuário não tiver permissão de
+     *                                       exclusão.
      */
     @Override
     public void rm(String caminho, String usuario, boolean recursivo)
@@ -154,6 +190,13 @@ public final class FileSystemImpl implements IFileSystem {
 
     /**
      * Cria um arquivo no sistema.
+     *
+     * @param caminho Caminho do arquivo a ser criado.
+     * @param usuario Usuário solicitante.
+     * @throws CaminhoJaExistenteException   Se já existir um item com o mesmo nome.
+     * @throws PermissaoException            Se o usuário não tiver permissão de
+     *                                       escrita no diretório pai.
+     * @throws CaminhoNaoEncontradoException Se o diretório pai não existir.
      */
     @Override
     public void touch(String caminho, String usuario)
@@ -183,6 +226,13 @@ public final class FileSystemImpl implements IFileSystem {
 
     /**
      * Lê o conteúdo de um arquivo dentro do tamanho do buffer.
+     *
+     * @param caminho Caminho do arquivo a ser lido.
+     * @param usuario Usuário solicitante.
+     * @param buffer  Buffer de leitura.
+     * @throws CaminhoNaoEncontradoException Se o arquivo não existir.
+     * @throws PermissaoException            Se o usuário não tiver permissão de
+     *                                       leitura.
      */
     @Override
     public void read(String caminho, String usuario, byte[] buffer)
@@ -216,6 +266,13 @@ public final class FileSystemImpl implements IFileSystem {
 
     /**
      * Lista os arquivos e diretórios em um caminho, com opção recursiva.
+     *
+     * @param caminho   Caminho do diretório a ser listado.
+     * @param usuario   Usuário solicitante.
+     * @param recursivo Se true, lista recursivamente.
+     * @throws CaminhoNaoEncontradoException Se o diretório não existir.
+     * @throws PermissaoException            Se o usuário não tiver permissão de
+     *                                       leitura.
      */
     @Override
     public void ls(String caminho, String usuario, boolean recursivo)
@@ -412,6 +469,10 @@ public final class FileSystemImpl implements IFileSystem {
 
     /**
      * Adiciona um usuário no sistema.
+     *
+     * @param nome       Nome do usuário.
+     * @param diretorio  Diretório inicial do usuário.
+     * @param permissoes Permissões iniciais.
      */
     @Override
     public void addUser(String nome, String diretorio, String permissoes) throws CaminhoNaoEncontradoException {
