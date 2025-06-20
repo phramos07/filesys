@@ -2,12 +2,14 @@ package tests;
 
 import static org.junit.Assert.assertTrue;
 
+import java.util.Collections;
+
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.BeforeAll;
 
 import filesys.FileSystemImpl;
 import filesys.IFileSystem;
+import filesys.Usuario;
 
 // Essa classe testa cenários de permissão
 public class PermissionTest {
@@ -15,7 +17,7 @@ public class PermissionTest {
 
     @BeforeAll
     public static void setUp() {
-        fileSystem = new FileSystemImpl(/*args...*/);
+        fileSystem = new FileSystemImpl(Collections.singletonList(new Usuario("root", "rwx", "/")));
     }
 
     @Test
