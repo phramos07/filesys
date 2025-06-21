@@ -215,12 +215,14 @@ public final class FileSystemImpl implements IFileSystem {
             new IllegalArgumentException("Usuário não encontrado: " + usuario);
         }
 
-        if (!usuarioObj.getPermissoes().contains("w")) {
+        if (usuarioObj.getPermissoes().contains("w")) {
             try {
                 dir.temPerm(usuario, "w");
             } catch (IllegalArgumentException e) {
                 throw new PermissaoException("Usuário não tem permissão para criar diretório: " + caminho);
             }
+        } else {
+            throw new PermissaoException("Usuário não tem permissão para criar diretório: " + caminho);
         }
 
         dir.setPermissoesUsuario(usuarioAlvo, permissao);
@@ -277,12 +279,14 @@ public final class FileSystemImpl implements IFileSystem {
         }
 
         // Verifica permissão de escrita
-        if (!usuarioObj.getPermissoes().contains("w")) {
+        if (usuarioObj.getPermissoes().contains("w")) {
             try {
                 dir.temPerm(usuario, "w");
             } catch (IllegalArgumentException e) {
                 throw new PermissaoException("Usuário não tem permissão para remover: " + dir.getNome());
             }
+        } else {
+            throw new PermissaoException("Usuário não tem permissão para remover: " + dir.getNome());
         }
 
         // Verifica se pode remover diretório com conteúdo
@@ -339,12 +343,14 @@ public final class FileSystemImpl implements IFileSystem {
             new IllegalArgumentException("Usuário não encontrado: " + usuario);
         }
 
-        if (!usuarioObj.getPermissoes().contains("w")) {
+        if (usuarioObj.getPermissoes().contains("w")) {
             try {
                 dirPai.temPerm(usuario, "w");
             } catch (IllegalArgumentException e) {
                 throw new PermissaoException("Usuário não tem permissão para criar arquivo: " + caminho);
             }
+        } else {
+            throw new PermissaoException("Usuário não tem permissão para criar arquivo: " + caminho);
         }
 
         File novoArquivo = new File(nomeArquivo, usuario, "rwx");
@@ -366,6 +372,10 @@ public final class FileSystemImpl implements IFileSystem {
 
         Dir diretorio = irPara(caminho);
 
+        if (diretorio == null) {
+            throw new CaminhoNaoEncontradoException("Caminho não encontrado: " + caminho);
+        }
+
         if (!diretorio.isArquivo()) {
             throw new IllegalArgumentException("O caminho especificado não é um arquivo: " + caminho);
         }
@@ -382,12 +392,14 @@ public final class FileSystemImpl implements IFileSystem {
             new IllegalArgumentException("Usuário não encontrado: " + usuario);
         }
 
-        if (!usuarioObj.getPermissoes().contains("w")) {
+        if (usuarioObj.getPermissoes().contains("w")) {
             try {
                 diretorio.temPerm(usuario, "w");
             } catch (IllegalArgumentException e) {
                 throw new PermissaoException("Usuário não tem permissão para criar diretório: " + caminho);
             }
+        } else {
+            throw new PermissaoException("Usuário não tem permissão para criar diretório: " + caminho);
         }
 
         File arquivo = (File) diretorio;
@@ -443,12 +455,14 @@ public final class FileSystemImpl implements IFileSystem {
             new IllegalArgumentException("Usuário não encontrado: " + usuario);
         }
 
-        if (!usuarioObj.getPermissoes().contains("r")) {
+        if (usuarioObj.getPermissoes().contains("r")) {
             try {
                 diretorio.temPerm(usuario, "r");
             } catch (IllegalArgumentException e) {
                 throw new PermissaoException("Usuário não tem permissão para criar diretório: " + caminho);
             }
+        } else {
+            throw new PermissaoException("Usuário não tem permissão para criar diretório: " + caminho);
         }
 
         File arquivo = (File) diretorio;
@@ -512,20 +526,26 @@ public final class FileSystemImpl implements IFileSystem {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado: " + usuario));
 
-        if (!usuarioObj.getPermissoes().contains("r")) {
+        if (usuarioObj.getPermissoes().contains("r")) {
             try {
                 dirantigo.temPerm(usuario, "r");
             } catch (IllegalArgumentException e) {
                 throw new PermissaoException("Usuário não tem permissão para mover: " + caminhoAntigo);
             }
+        } else {
+            throw new PermissaoException("Usuário não tem permissão para mover: " + caminhoAntigo);
         }
 
         try {
             Dir destino = irPara(caminhoNovo);
 
-            try {
-                destino.temPerm(usuario, "w");
-            } catch (IllegalArgumentException e) {
+            if (usuarioObj.getPermissoes().contains("w")) {
+                try {
+                    destino.temPerm(usuario, "w");
+                } catch (IllegalArgumentException e) {
+                    throw new PermissaoException("Sem permissão de escrita no destino");
+                }
+            } else {
                 throw new PermissaoException("Sem permissão de escrita no destino");
             }
 
@@ -541,12 +561,14 @@ public final class FileSystemImpl implements IFileSystem {
             String caminhoPaiNovo = (idx <= 0) ? "/" : caminhoNovo.substring(0, idx);
             Dir novoPai = irPara(caminhoPaiNovo);
 
-            if (!usuarioObj.getPermissoes().contains("w")) {
+            if (usuarioObj.getPermissoes().contains("w")) {
                 try {
                     novoPai.temPerm(usuario, "w");
                 } catch (IllegalArgumentException ex) {
                     throw new PermissaoException("Sem permissão de escrita no novo caminho");
                 }
+            } else {
+                throw new PermissaoException("Sem permissão de escrita no novo caminho");
             }
 
             if (novoPai.getFilhos().containsKey(novoNome)) {
@@ -577,12 +599,14 @@ public final class FileSystemImpl implements IFileSystem {
             new IllegalArgumentException("Usuário não encontrado: " + usuario);
         }
 
-        if (!usuarioObj.getPermissoes().contains("r")) {
+        if (usuarioObj.getPermissoes().contains("r")) {
             try {
                 diretorio.temPerm(usuario, "r");
             } catch (IllegalArgumentException e) {
                 throw new PermissaoException("Você não tem permissão para listar este diretório!");
             }
+        } else {
+            throw new PermissaoException("Você não tem permissão para listar este diretório!");
         }
 
         String output = lsRecursivo(diretorio, caminho, recursivo, usuario);
@@ -607,7 +631,7 @@ public final class FileSystemImpl implements IFileSystem {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado: " + usuario));
 
-        if (!usuarioObj.getPermissoes().contains("rw")) {
+        if (usuarioObj.getPermissoes().contains("rw")) {
             try {
                 origem.temPerm(usuario, "r");
             } catch (IllegalArgumentException e) {
@@ -618,6 +642,8 @@ public final class FileSystemImpl implements IFileSystem {
             } catch (IllegalArgumentException e) {
                 throw new PermissaoException("Sem permissão de escrita em: " + caminhoDestino);
             }
+        } else {
+            throw new PermissaoException("Usuário não tem permissão para copiar: " + caminhoOrigem);
         }
 
         String nomeOrigem = origem.getNome();
