@@ -1,5 +1,9 @@
 import filesys.IFileSystem;
+import filesys.Offset;
+import filesys.Usuario;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 import java.io.FileNotFoundException;
 
@@ -19,6 +23,9 @@ public class Main {
     private static final String ROOT_USER = "root";
     private static final String ROOT_DIR = "/";
     private static final int READ_BUFFER_SIZE = 256;
+
+    //lista de usuários do sistema
+    private static List<Usuario> usuários = new ArrayList<>(); 
 
     // Sistema de arquivos
     private static IFileSystem fileSystem;
@@ -68,7 +75,8 @@ public class Main {
                         */
                         System.out.println(userListed + " " + dir + " " + dirPermission); // Somente imprime o usuário, diretório e permissão
 
-
+                        // Adiciona o usuário à lista de usuários
+                        usuários.add(new Usuario(userListed, dir, dirPermission));
                     } else {
                         System.out.println("Formato ruim no arquivo de usuários. Linha: " + line);
                     }
@@ -84,15 +92,16 @@ public class Main {
         // Finalmente cria o Sistema de Arquivos
         // Lista de usuários é imutável durante a execução do programa
         // Obs: Como passar a lista de usuários para o FileSystem?
-        fileSystem = new FileSystem(/*usuários?*/);
+        fileSystem = new FileSystem(usuários);
 
         // // DESCOMENTE O BLOCO ABAIXO PARA CRIAR O DIRETÓRIO RAIZ ANTES DE RODAR O MENU
         // // Cria o diretório raiz do sistema. Root sempre tem permissão total "rwx"
-        // try {
-        //     fileSystem.mkdir(ROOT_DIR, ROOT_USER);
-        // } catch (CaminhoJaExistenteException | PermissaoException e) {
-        //     System.out.println(e.getMessage());
-        // }
+        /* 
+        try {
+            fileSystem.mkdir(ROOT_DIR, ROOT_USER);
+        } catch (CaminhoJaExistenteException | PermissaoException e) {
+            System.out.println(e.getMessage());
+        }*/
 
         // Menu interativo.
         menu();
@@ -175,7 +184,7 @@ public class Main {
         fileSystem.chmod(caminho, user, usuarioAlvo, permissoes);
     }
 
-    public static void mkdir() throws CaminhoJaExistenteException, PermissaoException {
+    public static void mkdir() throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException{
         System.out.println("Insira o caminho do diretório a ser criado:");
         String caminho = scanner.nextLine();
         
@@ -191,7 +200,7 @@ public class Main {
         fileSystem.rm(caminho, user, recursivo);
     }
 
-    public static void touch() throws CaminhoJaExistenteException, PermissaoException {
+    public static void touch() throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
         System.out.println("Insira o caminho do arquivo a ser criado:");
         String caminho = scanner.nextLine();
         
@@ -206,8 +215,9 @@ public class Main {
         System.out.println("Insira o conteúdo a ser escrito:");
         String content = scanner.nextLine();
         byte[] buffer = content.getBytes();
+        Offset offset = new Offset(0);
         
-        fileSystem.write(caminho, user, anexar, buffer);
+        fileSystem.write(caminho, user, anexar, offset, buffer);
     }
 
     public static void read() throws CaminhoNaoEncontradoException, PermissaoException {
