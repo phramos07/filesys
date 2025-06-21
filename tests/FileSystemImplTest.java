@@ -31,10 +31,10 @@ public class FileSystemImplTest {
         fileSystem.addUser(new Usuario("cega", "/", "-wx"));
 
         fileSystem.mkdir("/area1", "joao");
-        fileSystem.mkdir("/area1/area2", "tiago");
+        fileSystem.mkdir("/area1/area2", "joao");
         fileSystem.mkdir("/area1/area2/area_meh", "root");
 
-        fileSystem.touch("/area1/area2/arquivo.txt", "root");
+        fileSystem.touch("/area1/area2/arquivo.txt", "joao");
         fileSystem.touch("/area1/area2/arquivo_meh.txt", "joao");
     }
 
@@ -236,7 +236,7 @@ public class FileSystemImplTest {
     @Test
     public void testWriteSuccess() throws CaminhoNaoEncontradoException, PermissaoException {
         // Tenta escrever em um arquivo com permissão
-        assertDoesNotThrow(() -> fileSystem.write("/area1/arquivo.txt", "joao", true, buffer));
+        assertDoesNotThrow(() -> fileSystem.write("/area1/arquivo2.txt", "joao", true, buffer));
     }
 
     @Test
