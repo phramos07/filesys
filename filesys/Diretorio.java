@@ -21,7 +21,6 @@ public class Diretorio {
 
     public Diretorio(String owner, String name) {
         this.metadata = new Metadata(name, owner);
-        this.metadata.getPermissions().put(owner, "rwx");
         this.subDiretorios = new ArrayList<>();
         this.arquivos = new ArrayList<>();
     }

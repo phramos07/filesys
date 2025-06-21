@@ -56,6 +56,8 @@ public final class FileSystemImpl implements IFileSystem {
                 throw new IllegalArgumentException("Nome do diretório não pode ser vazio");
             }
 
+            verificarPermissaoExecucaoCaminho(usuario, parentPath);
+
             Diretorio parent = navigateTo(parentPath);
 
             if (encontrarSubdiretorio(parent, nome) != null) {
@@ -69,6 +71,16 @@ public final class FileSystemImpl implements IFileSystem {
             verificarPermissaoEscrita(usuario, parent);
 
             Diretorio newDirectory = new Diretorio(usuario, nome);
+
+            newDirectory.getMetadata().getPermissions().put(usuario, "rwx");
+
+            for (String user : parent.getMetadata().getPermissions().keySet()) {
+                if (!user.equals(usuario)) {
+                    newDirectory.getMetadata().getPermissions().put(
+                            user, parent.getMetadata().getPermissions().get(user));
+                }
+            }
+
             parent.addSubDiretorio(newDirectory);
 
         } catch (CaminhoNaoEncontradoException e) {
@@ -108,6 +120,12 @@ public final class FileSystemImpl implements IFileSystem {
             throw new IllegalArgumentException("Formato de permissão inválido: " + permissao);
         }
 
+        for (int i = 0; i < permissao.length(); i++) {
+            char c = permissao.charAt(i);
+            if (c != 'r' && c != 'w' && c != 'x' && c != '-') {
+                throw new IllegalArgumentException("Caractere de permissão inválido: " + c);
+            }
+        }
         if (caminho.equals("/")) {
             if (!usuario.equals(ROOT_USER)) {
                 throw new PermissaoException("Somente root pode alterar permissões da raiz.");
@@ -121,6 +139,9 @@ public final class FileSystemImpl implements IFileSystem {
                 }
             }
             root.getMetadata().getPermissions().put(usuarioAlvo, cleanPermission);
+            System.out.println("Permissões alteradas para " + usuarioAlvo + " em " + caminho + ": " + permissao);
+            aplicarPermissoesRecursivamente(root, usuario, usuarioAlvo, cleanPermission);
+
             return;
         }
 
@@ -128,13 +149,16 @@ public final class FileSystemImpl implements IFileSystem {
             String[] pathParts = splitPath(caminho);
             String parentPath = pathParts[0];
             String itemName = pathParts[1];
+            verificarPermissaoExecucaoCaminho(usuario, parentPath);
 
             Diretorio parent = navigateTo(parentPath);
 
             Arquivo arquivo = encontrarArquivo(parent, itemName);
             if (arquivo != null) {
-                if (!usuario.equals(ROOT_USER) && !usuario.equals(arquivo.getMetadata().getOwner())) {
-                    throw new PermissaoException("Somente root ou dono pode alterar permissões.");
+                if (!usuario.equals(ROOT_USER) &&
+                        (!temPermissao(usuario, arquivo.getMetadata(), 'r')
+                                || !temPermissao(usuario, arquivo.getMetadata(), 'w'))) {
+                    throw new PermissaoException("Somente root ou usuário com permissão rw podem alterar permissões.");
                 }
 
                 String cleanPermission = "";
@@ -145,13 +169,16 @@ public final class FileSystemImpl implements IFileSystem {
                     }
                 }
                 arquivo.getMetadata().getPermissions().put(usuarioAlvo, cleanPermission);
+                System.out.println("Permissões alteradas para " + usuarioAlvo + " em " + caminho + ": " + permissao);
                 return;
             }
 
             Diretorio dir = encontrarSubdiretorio(parent, itemName);
             if (dir != null) {
-                if (!usuario.equals(ROOT_USER) && !usuario.equals(dir.getMetadata().getOwner())) {
-                    throw new PermissaoException("Somente root ou dono pode alterar permissões.");
+                if (!usuario.equals(ROOT_USER) &&
+                        (!temPermissao(usuario, dir.getMetadata(), 'r')
+                                || !temPermissao(usuario, dir.getMetadata(), 'w'))) {
+                    throw new PermissaoException("Somente root ou usuário com permissão rw podem alterar permissões.");
                 }
 
                 String cleanPermission = "";
@@ -162,6 +189,8 @@ public final class FileSystemImpl implements IFileSystem {
                     }
                 }
                 dir.getMetadata().getPermissions().put(usuarioAlvo, cleanPermission);
+                System.out.println("Permissões alteradas para " + usuarioAlvo + " em " + caminho + ": " + permissao);
+                aplicarPermissoesRecursivamente(dir, usuario, usuarioAlvo, cleanPermission);
                 return;
             }
 
@@ -196,6 +225,7 @@ public final class FileSystemImpl implements IFileSystem {
         String[] pathParts = splitPath(caminho);
         String parentPath = pathParts[0];
         String nome = pathParts[1];
+        verificarPermissaoExecucaoCaminho(usuario, parentPath);
 
         Diretorio parent = navigateTo(parentPath);
 
@@ -267,6 +297,7 @@ public final class FileSystemImpl implements IFileSystem {
 
         try {
             Diretorio parent = navigateTo(parentPath);
+            verificarPermissaoExecucaoCaminho(usuario, parentPath);
 
             if (encontrarArquivo(parent, fileName) != null) {
                 throw new CaminhoJaExistenteException("Arquivo já existe: " + fileName);
@@ -279,6 +310,16 @@ public final class FileSystemImpl implements IFileSystem {
             verificarPermissaoEscrita(usuario, parent);
 
             Arquivo novo = new Arquivo(fileName, usuario);
+            novo.getMetadata().getPermissions().put(usuario, "rwx");
+
+            for (String user : parent.getMetadata().getPermissions().keySet()) {
+                if (!user.equals(usuario)) {
+                    novo.getMetadata().getPermissions().put(
+                            user, parent.getMetadata().getPermissions().get(user));
+                    System.out.println("Arquivo " + fileName + " herdando permissão " +
+                            parent.getMetadata().getPermissions().get(user) + " para usuário " + user);
+                }
+            }
             parent.addFile(novo);
 
         } catch (CaminhoNaoEncontradoException e) {
@@ -309,6 +350,7 @@ public final class FileSystemImpl implements IFileSystem {
         String[] pathParts = splitPath(caminho);
         String parentPath = pathParts[0];
         String fileName = pathParts[1];
+        verificarPermissaoExecucaoCaminho(usuario, parentPath);
 
         Diretorio dir = navigateTo(parentPath);
         Arquivo arquivo = encontrarArquivo(dir, fileName);
@@ -317,9 +359,7 @@ public final class FileSystemImpl implements IFileSystem {
             throw new CaminhoNaoEncontradoException("Arquivo não encontrado: " + fileName);
         }
 
-        if (!usuario.equals(ROOT_USER) &&
-                !usuario.equals(arquivo.getMetadata().getOwner()) &&
-                !temPermissao(usuario, arquivo.getMetadata(), 'w')) {
+        if (!usuario.equals(ROOT_USER) && !temPermissao(usuario, arquivo.getMetadata(), 'w')) {
             throw new PermissaoException("Sem permissão de escrita no arquivo: " + fileName);
         }
 
@@ -359,6 +399,7 @@ public final class FileSystemImpl implements IFileSystem {
         String[] pathParts = splitPath(caminho);
         String parentPath = pathParts[0];
         String fileName = pathParts[1];
+        verificarPermissaoExecucaoCaminho(usuario, parentPath);
 
         Diretorio dir = navigateTo(parentPath);
         Arquivo arquivo = encontrarArquivo(dir, fileName);
@@ -367,9 +408,7 @@ public final class FileSystemImpl implements IFileSystem {
             throw new CaminhoNaoEncontradoException("Arquivo não encontrado: " + fileName);
         }
 
-        if (!usuario.equals(ROOT_USER) &&
-                !usuario.equals(arquivo.getMetadata().getOwner()) &&
-                !temPermissao(usuario, arquivo.getMetadata(), 'r')) {
+        if (!usuario.equals(ROOT_USER) && !temPermissao(usuario, arquivo.getMetadata(), 'r')) {
             throw new PermissaoException("Sem permissão de leitura no arquivo: " + fileName);
         }
 
@@ -411,6 +450,7 @@ public final class FileSystemImpl implements IFileSystem {
         String[] sourcePathParts = splitPath(caminhoAntigo);
         String sourceParentPath = sourcePathParts[0];
         String sourceName = sourcePathParts[1];
+        verificarPermissaoExecucaoCaminho(usuario, sourceParentPath);
 
         Diretorio sourceParent = navigateTo(sourceParentPath);
 
@@ -493,11 +533,11 @@ public final class FileSystemImpl implements IFileSystem {
 
         verificarUsuario(usuario);
 
+        verificarPermissaoExecucaoCaminho(usuario, caminho);
+
         Diretorio dir = navigateTo(caminho);
 
-        if (!usuario.equals(ROOT_USER) &&
-                !usuario.equals(dir.getMetadata().getOwner()) &&
-                !temPermissao(usuario, dir.getMetadata(), 'r')) {
+        if (!usuario.equals(ROOT_USER) && !temPermissao(usuario, dir.getMetadata(), 'r')) {
             throw new PermissaoException("Sem permissão de leitura no diretório: " + caminho);
         }
 
@@ -535,6 +575,7 @@ public final class FileSystemImpl implements IFileSystem {
         String[] sourcePathParts = splitPath(caminhoOrigem);
         String sourceParentPath = sourcePathParts[0];
         String sourceName = sourcePathParts[1];
+        verificarPermissaoExecucaoCaminho(usuario, sourceParentPath);
 
         Diretorio sourceParent = navigateTo(sourceParentPath);
 
@@ -600,7 +641,7 @@ public final class FileSystemImpl implements IFileSystem {
             Arquivo novoArquivo = new Arquivo(destName, usuario);
 
             for (Bloco bloco : sourceFile.getBlocos()) {
-                byte[] data = bloco.getDados(); 
+                byte[] data = bloco.getDados();
                 byte[] newData = new byte[data.length];
                 System.arraycopy(data, 0, newData, 0, data.length);
                 novoArquivo.addBloco(new Bloco(newData));
@@ -830,18 +871,6 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     /**
-     * Verifica se o usuário tem a permissão especificada em um diretório.
-     * 
-     * @param usuario   Nome do usuário
-     * @param diretorio Diretório a ser verificado
-     * @param permissao Caractere de permissão ('r', 'w' ou 'x')
-     * @return true se o usuário tem a permissão, false caso contrário
-     */
-    private boolean temPermissao(String usuario, Diretorio diretorio, char permissao) {
-        return temPermissao(usuario, diretorio.getMetadata(), permissao);
-    }
-
-    /**
      * Verifica se o usuário tem a permissão especificada.
      * 
      * @param usuario   Nome do usuário
@@ -850,16 +879,17 @@ public final class FileSystemImpl implements IFileSystem {
      * @return true se o usuário tem a permissão, false caso contrário
      */
     private boolean temPermissao(String usuario, Metadata metadata, char permissao) {
+
         if (usuario.equals(ROOT_USER)) {
             return true;
         }
 
-        if (usuario.equals(metadata.getOwner())) {
-            return true;
+        if (metadata.getPermissions().containsKey(usuario)) {
+            String perms = metadata.getPermissions().get(usuario);
+            return perms.contains(String.valueOf(permissao));
         }
 
-        String perms = metadata.getPermissions().getOrDefault(usuario, "");
-        return perms.contains(String.valueOf(permissao));
+        return false;
     }
 
     /**
@@ -877,16 +907,71 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     /**
-     * Verifica se o usuário tem permissão para ler o diretório.
+     * Verifica se o usuário tem permissão de execução em todos os diretórios do
+     * caminho.
      * 
      * @param usuario Nome do usuário
-     * @param dir     Diretório a ser verificado
-     * @throws PermissaoException Se o usuário não tiver permissão de leitura
+     * @param caminho Caminho a ser verificado
+     * @throws PermissaoException            Se o usuário não tiver permissão de
+     *                                       execução em algum diretório do caminho
+     * @throws CaminhoNaoEncontradoException Se algum diretório do caminho não
+     *                                       existir
      */
-    private void verificarPermissaoLeitura(String usuario, Diretorio dir) throws PermissaoException {
-        if (!temPermissao(usuario, dir.getMetadata(), 'r')) {
-            throw new PermissaoException("Usuário " + usuario + " não tem permissão de leitura em " +
-                    dir.getMetadata().getName());
+    private void verificarPermissaoExecucaoCaminho(String usuario, String caminho)
+            throws PermissaoException, CaminhoNaoEncontradoException {
+
+        if (usuario.equals(ROOT_USER)) {
+            return;
+        }
+
+        if (caminho.equals("/")) {
+            return;
+        }
+
+        String[] parts = caminho.split("/");
+        StringBuilder currentPath = new StringBuilder();
+
+        for (String part : parts) {
+            if (part.isEmpty()) {
+                continue;
+            }
+
+            currentPath.append("/").append(part);
+
+            try {
+                Diretorio dir = navigateTo(currentPath.toString());
+
+                if (!temPermissao(usuario, dir.getMetadata(), 'x')) {
+                    throw new PermissaoException("Sem permissão de execução no diretório: " + currentPath.toString());
+                }
+
+            } catch (CaminhoNaoEncontradoException e) {
+                if (currentPath.toString().equals(caminho)) {
+                    break;
+                }
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * Aplica permissões recursivamente a todos os arquivos e diretórios dentro de
+     * um diretório.
+     * 
+     * @param dir         Diretório a partir do qual aplicar permissões
+     *                    recursivamente
+     * @param usuario     Usuário que está alterando as permissões
+     * @param usuarioAlvo Usuário alvo das permissões
+     * @param permissao   Permissões a serem aplicadas
+     */
+    private void aplicarPermissoesRecursivamente(Diretorio dir, String usuario, String usuarioAlvo, String permissao) {
+        for (Arquivo arquivo : dir.getArquivos()) {
+            arquivo.getMetadata().getPermissions().put(usuarioAlvo, permissao);
+        }
+
+        for (Diretorio subDir : dir.getSubDiretorios()) {
+            subDir.getMetadata().getPermissions().put(usuarioAlvo, permissao);
+            aplicarPermissoesRecursivamente(subDir, usuario, usuarioAlvo, permissao);
         }
     }
 }
