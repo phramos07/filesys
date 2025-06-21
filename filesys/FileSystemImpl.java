@@ -319,10 +319,22 @@ public final class FileSystemImpl implements IFileSystem {
     @Override
     public void ls(String caminho, String usuario, boolean recursivo)
             throws CaminhoNaoEncontradoException, PermissaoException {
-        Diretorio dir = navegarParaDiretorio(caminho);
-        checarPermissaoLeitura(dir.getMetaDados(), usuario);
-        System.out.println("Listando " + caminho + ":");
-        listarConteudo(dir, "", recursivo);
+        try {
+            Diretorio dir = navegarParaDiretorio(caminho);
+            checarPermissaoLeitura(dir.getMetaDados(), usuario);
+            System.out.println("Listando " + caminho + ":");
+            listarConteudo(dir, "", recursivo);
+        } catch (CaminhoNaoEncontradoException e) {
+            // Se não for diretório, tente como arquivo
+            Object obj = encontrarObjeto(caminho);
+            if (obj instanceof Arquivo) {
+                Arquivo arq = (Arquivo) obj;
+                checarPermissaoLeitura(arq.getMetaDados(), usuario);
+                System.out.println(arq.getMetaDados().getNome());
+            } else {
+                throw e;
+            }
+        }
     }
 
     private void listarConteudo(Diretorio dir, String prefixo, boolean recursivo) {

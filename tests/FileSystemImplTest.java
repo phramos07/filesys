@@ -160,6 +160,9 @@ public class FileSystemImplTest {
         String oldPath = "/home/" + user + "/original.txt";
         String newPath = "/home/novo.txt";
         fs.touch(oldPath, user);
+        
+        // Concede permissão de escrita ao usuário "mirelly" em /home
+        fs.chmod("/home", rootUser, user, "rwx");
 
         fs.mv(oldPath, newPath, user);
 
@@ -173,6 +176,8 @@ public class FileSystemImplTest {
         String newPath = "/home/" + user + "/novo_nome.txt";
         fs.touch(oldPath, user);
 
+        // Concede permissão de escrita ao usuário "mirelly" em /home
+        fs.chmod("/home", rootUser, user, "rwx");
         fs.mv(oldPath, newPath, user);
 
         assertThrows(CaminhoNaoEncontradoException.class, () -> fs.ls(oldPath, user, false));
@@ -185,7 +190,9 @@ public class FileSystemImplTest {
         String newPath = "/home/pasta_movida";
         fs.mkdir(oldPath, user);
         fs.touch(oldPath + "/file.txt", user);
-
+                
+        // Concede permissão de escrita ao usuário "mirelly" em /home
+        fs.chmod("/home", rootUser, user, "rwx");
         fs.mv(oldPath, newPath, user);
 
         assertThrows(CaminhoNaoEncontradoException.class, () -> fs.ls(oldPath, user, false));
@@ -200,7 +207,9 @@ public class FileSystemImplTest {
         fs.touch(sourcePath, user);
         String content = "conteudo para copiar";
         fs.write(sourcePath, user, false, content.getBytes());
-
+                
+        // Concede permissão de escrita ao usuário "mirelly" em /home
+        fs.chmod("/home", rootUser, user, "rwx");
         fs.cp(sourcePath, destPath, user, false);
 
         byte[] readBuffer = new byte[50];
@@ -219,7 +228,9 @@ public class FileSystemImplTest {
         fs.touch(sourcePath + "/file1.txt", user);
         fs.mkdir(sourcePath + "/subdir", user);
         fs.touch(sourcePath + "/subdir/file2.txt", user);
-
+                
+        // Concede permissão de escrita ao usuário "mirelly" em /home
+        fs.chmod("/home", rootUser, user, "rwx");
         fs.cp(sourcePath, destPath, user, true);
 
         assertDoesNotThrow(() -> fs.ls(destPath, rootUser, false));
