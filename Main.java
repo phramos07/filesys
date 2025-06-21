@@ -1,5 +1,8 @@
 import filesys.IFileSystem;
+import filesys.Usuario;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 import java.io.FileNotFoundException;
 
@@ -7,7 +10,9 @@ import exception.PermissaoException;
 import exception.CaminhoJaExistenteException;
 import exception.CaminhoNaoEncontradoException;
 
+
 import filesys.FileSystem;
+import filesys.Dir;
 
 // MENU INTERATIVO PARA O SISTEMA DE ARQUIVOS
 // SINTA-SE LIVRE PARA ALTERAR A CLASSE MAIN
@@ -28,6 +33,9 @@ public class Main {
 
     // Usuário que está executando o programa
     private static String user;
+
+    // Lista de usuários
+    private static List<Usuario> usuarios = new ArrayList<>();
 
     // O sistema de arquivos é inteiramente virtual, ou seja, será reiniciado a cada execução do programa.
     // Logo, não é necessário salvar os arquivos em disco. O sistema será uma simulação em memória.
@@ -68,7 +76,8 @@ public class Main {
                         */
                         System.out.println(userListed + " " + dir + " " + dirPermission); // Somente imprime o usuário, diretório e permissão
 
-
+                        // Adicionar usuário à lista
+                        usuarios.add(new Usuario(userListed, dir, dirPermission));
                     } else {
                         System.out.println("Formato ruim no arquivo de usuários. Linha: " + line);
                     }
@@ -80,19 +89,28 @@ public class Main {
 
             return;
         }
-        
+
+        /* REMOVER ISSO PQ NÃO PRECISA
+        System.out.println("Usuários carregados:");
+        for (Usuario user : usuarios) {
+            System.out.println(user);
+        }
+        */
+
         // Finalmente cria o Sistema de Arquivos
         // Lista de usuários é imutável durante a execução do programa
         // Obs: Como passar a lista de usuários para o FileSystem?
-        fileSystem = new FileSystem(/*usuários?*/);
+        fileSystem = new FileSystem(usuarios);
 
         // // DESCOMENTE O BLOCO ABAIXO PARA CRIAR O DIRETÓRIO RAIZ ANTES DE RODAR O MENU
-        // // Cria o diretório raiz do sistema. Root sempre tem permissão total "rwx"
-        // try {
-        //     fileSystem.mkdir(ROOT_DIR, ROOT_USER);
-        // } catch (CaminhoJaExistenteException | PermissaoException e) {
-        //     System.out.println(e.getMessage());
-        // }
+        // Cria o diretório raiz do sistema. Root sempre tem permissão total "rwx"
+        /*
+        try {
+            fileSystem.mkdir(ROOT_DIR, ROOT_USER);
+        } catch (CaminhoJaExistenteException | PermissaoException e) {
+            System.out.println(e.getMessage());
+        }
+        */
 
         // Menu interativo.
         menu();
@@ -153,7 +171,7 @@ public class Main {
                     default:
                         System.out.println("Comando inválido!");
                 } 
-            } catch (CaminhoNaoEncontradoException | CaminhoJaExistenteException | PermissaoException e) {
+            } catch (CaminhoNaoEncontradoException | CaminhoJaExistenteException | PermissaoException | IllegalArgumentException e) {
                 System.out.println("Erro: " + e.getMessage());
             }
 
@@ -185,13 +203,15 @@ public class Main {
     public static void rm() throws CaminhoNaoEncontradoException, PermissaoException {
         System.out.println("Insira o caminho do diretório a ser removido:");
         String caminho = scanner.nextLine();
+        
         System.out.println("Remover recursivamente? (true/false):");
         boolean recursivo = Boolean.parseBoolean(scanner.nextLine());
         
         fileSystem.rm(caminho, user, recursivo);
     }
 
-    public static void touch() throws CaminhoJaExistenteException, PermissaoException {
+
+    public static void touch() throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
         System.out.println("Insira o caminho do arquivo a ser criado:");
         String caminho = scanner.nextLine();
         
@@ -210,12 +230,32 @@ public class Main {
         fileSystem.write(caminho, user, anexar, buffer);
     }
 
+    // Read foi modificado
     public static void read() throws CaminhoNaoEncontradoException, PermissaoException {
         System.out.println("Insira o caminho do arquivo a ser lido:");
         String caminho = scanner.nextLine();
         byte[] buffer = new byte[READ_BUFFER_SIZE]; // Exemplo de tamanho de buffer por load/leitura . O que acontece se o Buffer for menor que o conteúdo a ser lido?     
-        
-        fileSystem.read(caminho, user, buffer); // Lógica para ler arquivos maiores que o buffer deve ser implementada. 
+
+        int offset = 0; // Offset para leitura
+        int offsetAntes;
+        int leitura;
+
+        System.out.println("Lendo arquivo: " + caminho + "\n");
+
+        do {
+            offsetAntes = offset; // Salva o offset antes da leitura
+            offset += fileSystem.read(caminho, user, buffer, offset); // Lê o arquivo no caminho especificado
+            leitura = offset - offsetAntes; // Calcula a quantidade de bytes lidos nesta iteração
+
+            if (leitura > 0) {
+                System.out.write(buffer, 0, leitura); // Escreve os bytes lidos no console
+            } else {
+                break; // Se não houver mais bytes para ler, sai do loop
+            }
+        } while (leitura > 0); // Garante que o offset seja não negativo
+
+        System.out.flush(); // Garante que todos os bytes sejam escritos no console
+        System.out.println("\n\nLeitura concluída.");
     }
 
     public static void mv() throws CaminhoNaoEncontradoException, PermissaoException {
@@ -228,9 +268,9 @@ public class Main {
     }
 
     public static void ls() throws CaminhoNaoEncontradoException, PermissaoException {
-        System.out.println("Insira o caminho do diretório a ser listado:");
+        System.out.print("Insira o caminho do diretório a ser listado: ");
         String caminho = scanner.nextLine();
-        System.out.println("Listar recursivamente? (true/false):");
+        System.out.print("Listar recursivamente? (true/false): ");
         boolean recursivo = Boolean.parseBoolean(scanner.nextLine());
         
         fileSystem.ls(caminho, user, recursivo);
