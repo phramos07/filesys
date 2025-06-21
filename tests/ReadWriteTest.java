@@ -67,7 +67,7 @@ public class ReadWriteTest {
     }
 
     @Test
-    public void testEscritaSemPermissao() throws CaminhoNaoExistenteException, PermissaoException {
+    public void testEscritaSemPermissao() throws CaminhoNaoEncontradoException, PermissaoException {
         String outroUsuario = "user1";
         fs.chmod(caminhoArquivo, usuario, outroUsuario, "---");
 

@@ -37,18 +37,18 @@ public final class FileSystemImpl implements IFileSystem {
         }
         return atual;
     }
-    
+
     // Retorna [objetoPai, nomeFinal]. O objeto pai é sempre um Diretorio.
     private Object[] navegarParaPai(String caminho) throws CaminhoNaoEncontradoException {
         if (!caminho.startsWith("/"))
             throw new CaminhoNaoEncontradoException("Caminho inválido: " + caminho);
         if (caminho.equals("/")) {
-            return new Object[]{raiz, "/"};
+            return new Object[] { raiz, "/" };
         }
         int idx = caminho.lastIndexOf('/');
         String pathPai = (idx == 0) ? "/" : caminho.substring(0, idx);
         String nomeFinal = caminho.substring(idx + 1);
-        if (nomeFinal.isEmpty()){
+        if (nomeFinal.isEmpty()) {
             throw new CaminhoNaoEncontradoException("Nome do arquivo/diretório não pode ser vazio.");
         }
         Diretorio pai = navegarParaDiretorio(pathPai);
@@ -69,7 +69,6 @@ public final class FileSystemImpl implements IFileSystem {
             throw new CaminhoNaoEncontradoException("Arquivo ou diretório não encontrado: " + caminho);
         }
     }
-
 
     private void checarPermissaoEscrita(MetaDados meta, String usuario) throws PermissaoException {
         if (!meta.hasPermissao(usuario, 'w')) {
@@ -120,9 +119,10 @@ public final class FileSystemImpl implements IFileSystem {
             throw new CaminhoJaExistenteException("Diretório pai não encontrado para o caminho: " + caminho);
         }
     }
-    
+
     @Override
-    public void rm(String caminho, String usuario, boolean recursivo) throws CaminhoNaoEncontradoException, PermissaoException {
+    public void rm(String caminho, String usuario, boolean recursivo)
+            throws CaminhoNaoEncontradoException, PermissaoException {
         if (caminho.equals("/")) {
             throw new PermissaoException("Não é permitido remover o diretório raiz.");
         }
@@ -159,9 +159,9 @@ public final class FileSystemImpl implements IFileSystem {
         dir.getArquivos().clear();
     }
 
-
     @Override
-    public void write(String caminho, String usuario, boolean anexar, byte[] buffer) throws CaminhoNaoEncontradoException, PermissaoException {
+    public void write(String caminho, String usuario, boolean anexar, byte[] buffer)
+            throws CaminhoNaoEncontradoException, PermissaoException {
         Object obj = encontrarObjeto(caminho);
         if (!(obj instanceof Arquivo)) {
             throw new CaminhoNaoEncontradoException("O caminho especificado não é um arquivo: " + caminho);
@@ -175,7 +175,7 @@ public final class FileSystemImpl implements IFileSystem {
         }
 
         int offset = 0;
-        while(offset < buffer.length) {
+        while (offset < buffer.length) {
             Bloco bloco = new Bloco(TAMANHO_BLOCO);
             int tamanhoCopia = Math.min(TAMANHO_BLOCO, buffer.length - offset);
             byte[] dadosBloco = Arrays.copyOfRange(buffer, offset, offset + tamanhoCopia);
@@ -185,9 +185,10 @@ public final class FileSystemImpl implements IFileSystem {
         }
         arq.getMetaDados().setTamanho(arq.getMetaDados().getTamanho() + buffer.length);
     }
-    
+
     @Override
-    public void read(String caminho, String usuario, byte[] buffer) throws CaminhoNaoEncontradoException, PermissaoException {
+    public void read(String caminho, String usuario, byte[] buffer)
+            throws CaminhoNaoEncontradoException, PermissaoException {
         Object obj = encontrarObjeto(caminho);
         if (!(obj instanceof Arquivo)) {
             throw new CaminhoNaoEncontradoException("O caminho especificado não é um arquivo: " + caminho);
@@ -195,10 +196,10 @@ public final class FileSystemImpl implements IFileSystem {
         Arquivo arq = (Arquivo) obj;
         checarPermissaoLeitura(arq.getMetaDados(), usuario);
 
-        Arrays.fill(buffer, (byte)0); // Limpa o buffer antes da leitura
+        Arrays.fill(buffer, (byte) 0); // Limpa o buffer antes da leitura
 
         int offset = 0;
-        for(Bloco bloco : arq.getBlocos()) {
+        for (Bloco bloco : arq.getBlocos()) {
             byte[] dadosBloco = bloco.getDados();
             int tamanhoCopia = Math.min(dadosBloco.length, buffer.length - offset);
             System.arraycopy(dadosBloco, 0, buffer, offset, tamanhoCopia);
@@ -209,13 +210,14 @@ public final class FileSystemImpl implements IFileSystem {
             }
         }
     }
-    
+
     @Override
-    public void mv(String caminhoAntigo, String caminhoNovo, String usuario) throws CaminhoNaoEncontradoException, PermissaoException {
+    public void mv(String caminhoAntigo, String caminhoNovo, String usuario)
+            throws CaminhoNaoEncontradoException, PermissaoException {
         if (caminhoAntigo.equals("/") || caminhoNovo.equals("/")) {
             throw new PermissaoException("Não é permitido mover ou renomear o diretório raiz.");
         }
-        
+
         Object[] resAntigo = navegarParaPai(caminhoAntigo);
         Diretorio paiAntigo = (Diretorio) resAntigo[0];
         String nomeAntigo = (String) resAntigo[1];
@@ -230,7 +232,11 @@ public final class FileSystemImpl implements IFileSystem {
         }
 
         if (paiNovo.existeArquivo(nomeNovo) || paiNovo.existeSubDiretorio(nomeNovo)) {
-            throw new CaminhoJaExistenteException("Caminho de destino já existe: " + caminhoNovo);
+            try {
+                throw new CaminhoJaExistenteException("Caminho de destino já existe: " + caminhoNovo);
+            } catch (CaminhoJaExistenteException e) {
+                e.printStackTrace();
+            }
         }
 
         Object objMovido = encontrarObjeto(caminhoAntigo);
@@ -245,11 +251,12 @@ public final class FileSystemImpl implements IFileSystem {
             paiNovo.addSubDiretorio(dir);
         }
     }
-    
+
     @Override
-    public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo) throws CaminhoNaoEncontradoException, PermissaoException {
+    public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo)
+            throws CaminhoNaoEncontradoException, PermissaoException {
         Object objOrigem = encontrarObjeto(caminhoOrigem);
-        
+
         Object[] resDestino = navegarParaPai(caminhoDestino);
         Diretorio paiDestino = (Diretorio) resDestino[0];
         String nomeDestino = (String) resDestino[1];
@@ -257,7 +264,11 @@ public final class FileSystemImpl implements IFileSystem {
         checarPermissaoEscrita(paiDestino.getMetaDados(), usuario);
 
         if (paiDestino.existeArquivo(nomeDestino) || paiDestino.existeSubDiretorio(nomeDestino)) {
-            throw new CaminhoJaExistenteException("Caminho de destino já existe: " + caminhoDestino);
+            try {
+                throw new CaminhoJaExistenteException("Caminho de destino já existe: " + caminhoDestino);
+            } catch (CaminhoJaExistenteException e) {
+                e.printStackTrace();
+            }
         }
 
         if (objOrigem instanceof Arquivo) {
@@ -269,25 +280,27 @@ public final class FileSystemImpl implements IFileSystem {
             copiarDiretorioRecursivamente((Diretorio) objOrigem, paiDestino, nomeDestino, usuario);
         }
     }
-    
-    private void copiarArquivo(Arquivo arqOrigem, Diretorio paiDestino, String nomeNovo, String usuario) throws PermissaoException {
+
+    private void copiarArquivo(Arquivo arqOrigem, Diretorio paiDestino, String nomeNovo, String usuario)
+            throws PermissaoException {
         checarPermissaoLeitura(arqOrigem.getMetaDados(), usuario);
-        
+
         Arquivo arqNovo = new Arquivo(nomeNovo, usuario);
-        
+
         // Copia os blocos
-        for(Bloco blocoOrigem : arqOrigem.getBlocos()) {
+        for (Bloco blocoOrigem : arqOrigem.getBlocos()) {
             Bloco blocoNovo = new Bloco(TAMANHO_BLOCO);
             byte[] dadosCopiados = Arrays.copyOf(blocoOrigem.getDados(), blocoOrigem.getDados().length);
             blocoNovo.setDados(dadosCopiados);
             arqNovo.getBlocos().add(blocoNovo);
         }
-        
+
         arqNovo.getMetaDados().setTamanho(arqOrigem.getMetaDados().getTamanho());
         paiDestino.addArquivo(arqNovo);
     }
 
-    private void copiarDiretorioRecursivamente(Diretorio dirOrigem, Diretorio paiDestino, String nomeNovo, String usuario) throws CaminhoNaoEncontradoException, PermissaoException {
+    private void copiarDiretorioRecursivamente(Diretorio dirOrigem, Diretorio paiDestino, String nomeNovo,
+            String usuario) throws CaminhoNaoEncontradoException, PermissaoException {
         checarPermissaoLeitura(dirOrigem.getMetaDados(), usuario);
 
         Diretorio dirNovo = new Diretorio(nomeNovo, usuario, paiDestino);
@@ -304,7 +317,8 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     @Override
-    public void ls(String caminho, String usuario, boolean recursivo) throws CaminhoNaoEncontradoException, PermissaoException {
+    public void ls(String caminho, String usuario, boolean recursivo)
+            throws CaminhoNaoEncontradoException, PermissaoException {
         Diretorio dir = navegarParaDiretorio(caminho);
         checarPermissaoLeitura(dir.getMetaDados(), usuario);
         System.out.println("Listando " + caminho + ":");
@@ -324,7 +338,8 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     @Override
-    public void chmod(String caminho, String usuario, String usuarioAlvo, String permissao) throws CaminhoNaoEncontradoException, PermissaoException {
+    public void chmod(String caminho, String usuario, String usuarioAlvo, String permissao)
+            throws CaminhoNaoEncontradoException, PermissaoException {
         Object obj = encontrarObjeto(caminho);
         MetaDados md;
 
