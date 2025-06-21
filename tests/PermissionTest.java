@@ -8,14 +8,14 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import exception.CaminhoJaExistenteException;
+import exception.CaminhoNaoEncontradoException;
 import exception.PermissaoException;
 import filesys.FileSystemImpl;
 import filesys.IFileSystem;
+import filesys.Offset;
 import filesys.Usuario;
 
-/**
- * Testes de permissões básicas no sistema de arquivos.
- */
 public class PermissionTest {
 
     private IFileSystem fileSystem;
@@ -32,6 +32,10 @@ public class PermissionTest {
         try {
             fileSystem.mkdir("/teste", "root");
             fileSystem.touch("/teste/arquivo.txt", "root");
+            fileSystem.write("/teste/arquivo.txt", "root", false, new Offset(0), "Hello World".getBytes());
+            fileSystem.chmod("/teste/arquivo.txt", "root", "carla", "r--");
+            fileSystem.chmod("/teste/arquivo.txt", "root", "maria", "rw-");
+            fileSystem.chmod("/teste/arquivo.txt", "root", "lucas", "--x");
         } catch (Exception e) {
             fail("Falha na configuração inicial: " + e.getMessage());
         }
@@ -56,7 +60,6 @@ public class PermissionTest {
 
     @Test
     public void testLsPermissionDenied() {
-        // chmod tira o r da pasta para "maria"
         assertDoesNotThrow(() -> fileSystem.chmod("/teste", "root", "maria", "--x"));
         assertThrows(PermissaoException.class, () -> fileSystem.ls("/teste", "maria", false));
     }
@@ -79,5 +82,71 @@ public class PermissionTest {
     @Test
     public void testMkdirPermissionDenied() {
         assertThrows(PermissaoException.class, () -> fileSystem.mkdir("/teste/semPerm", "carla"));
+    }
+
+    @Test
+    public void testWritePermissionAllowed() {
+        Offset offset = new Offset(0);
+        assertDoesNotThrow(() -> fileSystem.write("/teste/arquivo.txt", "maria", true, offset, "Mais texto".getBytes()));
+    }
+
+    @Test
+    public void testWritePermissionDenied() {
+        Offset offset = new Offset(0);
+        assertThrows(PermissaoException.class, () -> fileSystem.write("/teste/arquivo.txt", "carla", false, offset, "negado".getBytes()));
+    }
+
+    @Test
+    public void testChmodPorRoot() {
+        assertDoesNotThrow(() -> fileSystem.chmod("/teste/arquivo.txt", "root", "maria", "rwx"));
+    }
+
+    @Test
+    public void testChmodPorDono() throws Exception {
+        fileSystem.touch("/teste/meuarq.txt", "maria");
+        assertDoesNotThrow(() -> fileSystem.chmod("/teste/meuarq.txt", "maria", "maria", "rwx"));
+    }
+
+    @Test
+    public void testChmodNegado() throws Exception {
+        fileSystem.touch("/teste/meuarq.txt", "maria");
+        assertThrows(PermissaoException.class, () -> fileSystem.chmod("/teste/meuarq.txt", "lucas", "maria", "rwx"));
+    }
+
+    @Test
+    public void testRmPermissionAllowed() {
+        assertDoesNotThrow(() -> fileSystem.rm("/teste/arquivo.txt", "root", false));
+    }
+
+    @Test
+    public void testRmPermissionDenied() {
+        assertThrows(PermissaoException.class, () -> fileSystem.rm("/teste/arquivo.txt", "carla", false));
+    }
+
+    @Test
+    public void testMvPermissionDenied() throws Exception {
+        fileSystem.touch("/teste/b.txt", "maria");
+        assertThrows(PermissaoException.class, () -> fileSystem.mv("/teste/b.txt", "/teste/b_renomeado.txt", "carla"));
+    }
+
+    @Test
+    public void testCpPermissionDenied() throws Exception {
+        fileSystem.touch("/teste/d.txt", "maria");
+        assertThrows(PermissaoException.class, () -> fileSystem.cp("/teste/d.txt", "/teste/d_copia.txt", "carla", false));
+    }
+
+    @Test
+    public void testRmCaminhoNaoExiste() {
+        assertThrows(CaminhoNaoEncontradoException.class, () -> fileSystem.rm("/teste/inexistente.txt", "maria", false));
+    }
+
+    @Test
+    public void testTouchDiretorioNaoExiste() {
+        assertThrows(CaminhoNaoEncontradoException.class, () -> fileSystem.touch("/inexistente/novo.txt", "maria"));
+    }
+
+    @Test
+    public void testMkdirNoCaminhoRaizNaoPode() {
+        assertThrows(CaminhoJaExistenteException.class, () -> fileSystem.mkdir("/", "maria"));
     }
 }
