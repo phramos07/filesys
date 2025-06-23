@@ -264,6 +264,6 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     public void addUser(String user) {
-        // Implemente se desejar gerenciar usuários dinamicamente
+         throw new UnsupportedOperationException("Esse metodo não foi implementado 'addUser'");
     }
 }
