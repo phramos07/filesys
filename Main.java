@@ -1,6 +1,7 @@
 import filesys.IFileSystem;
+import core.Usuario;
 
-import java.util.Scanner;
+import java.util.*;
 import java.io.FileNotFoundException;
 
 import exception.PermissaoException;
@@ -51,6 +52,7 @@ public class Main {
         // A partir do momento que um usuário cria outro diretório ou arquivo, 
         // a permissão desse usuário é de leitura, escrita e execução nesse novo diretório/arquivo,
         // e sempre será rwx para o usuário root.
+        List<Usuario> usuarios = new ArrayList<>();
         try {
             Scanner userScanner = new Scanner(new java.io.File("users/users"));
             while (userScanner.hasNextLine()) {
@@ -68,6 +70,8 @@ public class Main {
                         */
                         System.out.println(userListed + " " + dir + " " + dirPermission); // Somente imprime o usuário, diretório e permissão
 
+                        usuarios.add(new Usuario(userListed, dirPermission, dir));//Adicionar usuario
+
 
                     } else {
                         System.out.println("Formato ruim no arquivo de usuários. Linha: " + line);
@@ -84,15 +88,15 @@ public class Main {
         // Finalmente cria o Sistema de Arquivos
         // Lista de usuários é imutável durante a execução do programa
         // Obs: Como passar a lista de usuários para o FileSystem?
-        fileSystem = new FileSystem(/*usuários?*/);
+        fileSystem = new FileSystem(usuarios);
 
         // // DESCOMENTE O BLOCO ABAIXO PARA CRIAR O DIRETÓRIO RAIZ ANTES DE RODAR O MENU
         // // Cria o diretório raiz do sistema. Root sempre tem permissão total "rwx"
-        // try {
-        //     fileSystem.mkdir(ROOT_DIR, ROOT_USER);
-        // } catch (CaminhoJaExistenteException | PermissaoException e) {
-        //     System.out.println(e.getMessage());
-        // }
+        try {
+            fileSystem.mkdir(ROOT_DIR, ROOT_USER);
+        } catch (CaminhoJaExistenteException | PermissaoException e) {
+            System.out.println(e.getMessage());
+        }
 
         // Menu interativo.
         menu();
