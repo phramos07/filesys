@@ -5,9 +5,12 @@ import exception.CaminhoNaoEncontradoException;
 import exception.PermissaoException;
 
 // Essa classe deve servir apenas como proxy para o FileSystemImpl
+// Ela não deve conter a lógica de negócio do sistema de arquivos, apenas delegar.
 final public class FileSystem implements IFileSystem {
 
-    private final IFileSystem fileSystemImpl;
+
+    public final IFileSystem fileSystemImpl; 
+
 
     public FileSystem() {
         fileSystemImpl = new FileSystemImpl();
@@ -31,7 +34,8 @@ final public class FileSystem implements IFileSystem {
     }
 
     @Override
-    public void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException {
+    // CORREÇÃO: Adicionado CaminhoNaoEncontradoException à assinatura.
+    public void touch(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException, CaminhoNaoEncontradoException {
         fileSystemImpl.touch(caminho, usuario);
     }
 
@@ -61,7 +65,7 @@ final public class FileSystem implements IFileSystem {
 
     @Override
     public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo)
-            throws CaminhoNaoEncontradoException, PermissaoException {
+            throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException {
         fileSystemImpl.cp(caminhoOrigem, caminhoDestino, usuario, recursivo);
     }
 }
