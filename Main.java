@@ -33,52 +33,30 @@ public class Main {
     // O sistema de arquivos é inteiramente virtual, ou seja, será reiniciado a cada execução do programa.
     // Logo, não é necessário salvar os arquivos em disco. O sistema será uma simulação em memória.
     public static void main(String[] args) {
-        // Usuário que está executando o programa.
-        // Para quaisquer operações que serão feitas por esse usuário em um caminho /path/**,
-        // deve-se checar se o usuário tem permissão de escrita (r) neste caminho.
         if (args.length < 2) {
             System.out.println("Usuário não fornecido");
             return;
         }
         username = args[1];
 
-        // Cria o sistema de arquivos
-        // O sistema de arquivos é inteiramente virtual, ou seja, será reiniciado a cada execução do programa.
         fileSystem = new FileSystem();
-        
-        // Carrega a lista de usuários do sistema a partir de arquivo
-        // Formato do arquivo users:
-        //      username dir permission
-        // Exemplo:
-        //      maria /** rw-
-        //      luzia /** rwx
-        // Essa permissão vale para o diretório raiz e sub diretórios.
-        // A partir do momento que um usuário cria outro diretório ou arquivo, 
-        // a permissão desse usuário é de leitura, escrita e execução nesse novo diretório/arquivo,
-        // e sempre será rwx para o usuário root.
-        try {
-            Scanner userScanner = new Scanner(new java.io.File("users/users"));
+
+        // Carrega a lista de usuários do sistema a partir de arquivo users/users
+        try (Scanner userScanner = new Scanner(new java.io.File("users/users"))) {
             while (userScanner.hasNextLine()) {
                 String line = userScanner.nextLine().trim();
-                if (!line.isEmpty()) {
+                if (!line.isEmpty() && !line.startsWith("#")) {
                     String[] parts = line.split(" ");
                     if (parts.length == 3) {
                         String userListed = parts[0];
-                        String dir = parts[1].substring(0, 1); // O primeiro caractere é o diretório
+                        String dir = parts[1];
                         String dirPermission = parts[2];
-                        
-                        /* 
-                         
-                        System.out.println(userListed + " " + dir + " " + dirPermission); // Somente imprime o usuário, diretório e permissão
-                        */
 
                         if (userListed.equals(ROOT_USER)) {
-                            System.out.println("O usuário root já está adicionado.");
                             continue;
                         }
 
                         Usuario user = new Usuario(userListed, dirPermission, dir);
-
                         fileSystem.addUser(user);
 
                     } else {
@@ -86,15 +64,39 @@ public class Main {
                     }
                 }
             }
-            userScanner.close();
-        } catch (FileNotFoundException e) { // Retorna se o arquivo de usuários não for encontrado
+        } catch (FileNotFoundException e) {
             System.out.println("Arquivo de usuários não encontrado");
             return;
         }
 
-        // Menu interativo.
+        // Cria os diretórios do arquivo users/users_mkdir
+        inicializarDiretoriosDoArquivo(fileSystem, "users/users_mkdir");
+
         menu();
     }
+
+    private static void inicializarDiretoriosDoArquivo(IFileSystem fileSystem, String caminhoArquivo) {
+    try (Scanner scanner = new Scanner(new java.io.File(caminhoArquivo))) {
+        while (scanner.hasNextLine()) {
+            String linha = scanner.nextLine().trim();
+            if (linha.isEmpty() || linha.startsWith("#")) continue;
+            String[] partes = linha.split(" ");
+            if (partes.length >= 3) {
+                String usuario = partes[0];
+                String caminho = partes[1];
+                String permissao = partes[2];
+                try {
+                    fileSystem.mkdir(caminho, usuario);
+                    fileSystem.chmod(caminho, "root", usuario, permissao);
+                } catch (Exception e) {
+                    // Ignora erros para diretórios já existentes ou permissões
+                }
+            }
+        }
+    } catch (FileNotFoundException e) {
+        System.out.println("Arquivo users_mkdir não encontrado.");
+    }
+}
 
     // Menu interativo para fins de teste.
     // Os testes junit não são feitos com esse menu,

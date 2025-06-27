@@ -237,20 +237,33 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     @Override
-    public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo)
-            throws CaminhoNaoEncontradoException, PermissaoException {
-        Diretorio origem = DiretorioUtil.navegar(caminhoOrigem, root, usuario);
-        Diretorio destino = DiretorioUtil.navegar(caminhoDestino, root, usuario);
+public void cp(String caminhoOrigem, String caminhoDestino, String usuario, boolean recursivo)
+        throws CaminhoNaoEncontradoException, PermissaoException {
+    Diretorio origem = DiretorioUtil.navegar(caminhoOrigem, root, usuario);
 
-        VerificacaoUtil.verificarPermissoesParaCopia(origem, destino, usuario);
-
-        if (origem.isArquivo()) {
-            ArquivoUtil.copiarArquivo((Arquivo) origem, destino);
-        } else {
-            if (!recursivo) {
-                throw new PermissaoException("Diretório precisa de recursividade para cópia.");
-            }
-            ArquivoUtil.copiarDiretorio((Diretorio) origem, destino, usuario);
+    // Tenta navegar até o destino. Se não existir, cria o diretório de destino.
+    Diretorio destino;
+    try {
+        destino = DiretorioUtil.navegar(caminhoDestino, root, usuario);
+    } catch (CaminhoNaoEncontradoException e) {
+        // Cria o diretório de destino se não existir
+        try {
+            mkdir(caminhoDestino, usuario);
+            destino = DiretorioUtil.navegar(caminhoDestino, root, usuario);
+        } catch (Exception ex) {
+            throw new CaminhoNaoEncontradoException("Não foi possível criar o diretório de destino: " + caminhoDestino);
         }
+    }
+
+    VerificacaoUtil.verificarPermissoesParaCopia(origem, destino, usuario);
+
+    if (origem.isArquivo()) {
+        ArquivoUtil.copiarArquivo((Arquivo) origem, destino);
+    } else {
+        if (!recursivo) {
+            throw new PermissaoException("Diretório precisa de recursividade para cópia.");
+        }
+        ArquivoUtil.copiarDiretorio((Diretorio) origem, destino, usuario);
+    }
     }
 }

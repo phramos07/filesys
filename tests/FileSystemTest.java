@@ -24,8 +24,8 @@ class FileSystemTest {
   @Test
   void testChmod() throws CaminhoNaoEncontradoException, PermissaoException, CaminhoJaExistenteException, OperacaoInvalidaException {
     fileSystem.mkdir("/chmodTest", "root");
-    fileSystem.addUser(new Usuario("alvim", "r--", "/chmodTest"));
-    assertDoesNotThrow(() -> fileSystem.chmod("/chmodTest", "root", "alvim", "rw-"));
+    fileSystem.addUser(new Usuario("fernando", "r--", "/chmodTest"));
+    assertDoesNotThrow(() -> fileSystem.chmod("/chmodTest", "root", "fernando", "rw-"));
   }
 
   @Test
@@ -78,7 +78,7 @@ class FileSystemTest {
     fileSystem.touch("/cpSrc/file.txt", "root");
     fileSystem.mkdir("/cpDest", "root");
     fileSystem.cp("/cpSrc", "/cpDest", "root", true);
-    // poderia testar se "/cpDest" existe se houvesse método acessor
+
   }
 
   @Test
