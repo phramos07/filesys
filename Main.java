@@ -39,10 +39,6 @@ public class Main {
     // Logo, não é necessário salvar os arquivos em disco. O sistema será uma
     // simulação em memória.
     public static void main(String[] args) {
-        // Usuário que está executando o programa.
-        // Para quaisquer operações que serão feitas por esse usuário em um caminho
-        // /path/**,
-        // deve-se checar se o usuário tem permissão de escrita (r) neste caminho.
         if (args.length < 2) {
             System.out.println("Usuário não fornecido");
             return;
@@ -50,19 +46,9 @@ public class Main {
         user = args[1];
 
         // Carrega a lista de usuários do sistema a partir de arquivo
-        // Formato do arquivo users:
-        // username dir permission
-        // Exemplo:
-        // maria /** rw-
-        // luzia /** rwx
-        // Essa permissão vale para o diretório raiz e sub diretórios.
-        // A partir do momento que um usuário cria outro diretório ou arquivo,
-        // a permissão desse usuário é de leitura, escrita e execução nesse novo
-        // diretório/arquivo,
-        // e sempre será rwx para o usuário root.
         List<Usuario> usuarios = new ArrayList<>();
         try {
-            Scanner userScanner = new Scanner(new java.io.File("users/users"));
+            Scanner userScanner = new Scanner(new java.io.File("users/userMkdir"));
             while (userScanner.hasNextLine()) {
                 String line = userScanner.nextLine().trim();
                 if (!line.isEmpty()) {
@@ -71,34 +57,37 @@ public class Main {
                         String userListed = parts[0];
                         String dir = parts[1];
                         String dirPermission = parts[2];
-
                         usuarios.add(new Usuario(userListed, dirPermission, dir));
-
                     } else {
                         System.out.println("Formato ruim no arquivo de usuários. Linha: " + line);
                     }
                 }
             }
             userScanner.close();
-        } catch (FileNotFoundException e) { // Retorna se o arquivo de usuários não for encontrado
+        } catch (FileNotFoundException e) {
             System.out.println("Arquivo de usuários não encontrado");
-
             return;
         }
 
-        // Finalmente cria o Sistema de Arquivos
-        // Lista de usuários é imutável durante a execução do programa
-        // Obs: Como passar a lista de usuários para o FileSystem?
+        // Inicializa o sistema de arquivos com a lista de usuários
         fileSystem = new FileSystem(usuarios);
 
-        // ! JA ESTA IMPLEMENTADO NO FILESYSTEM
-        // // DESCOMENTE O BLOCO ABAIXO PARA CRIAR O DIRETÓRIO RAIZ ANTES DE RODAR O
-        // MENU
-        // // Cria o diretório raiz do sistema. Root sempre tem permissão total "rwx"
+        // Cria os diretórios e aplica as permissões conforme o arquivo
+        for (Usuario usuario : usuarios) {
+            try {
+                fileSystem.mkdir(usuario.getDiretorio(), usuario.getNome());
+                // Aplica a permissão do arquivo para o usuário no diretório criado
+                fileSystem.chmod(usuario.getDiretorio(), "root", usuario.getNome(), usuario.getPermissao());
+            } catch (CaminhoJaExistenteException | PermissaoException | CaminhoNaoEncontradoException e) {
+                // Se já existe, não tem permissão ou não encontra, apenas ignore
+            }
+        }
+
+        // Cria o diretório raiz do sistema (caso não exista)
         try {
             fileSystem.mkdir(ROOT_DIR, ROOT_USER);
         } catch (CaminhoJaExistenteException | PermissaoException e) {
-            System.out.println(e.getMessage());
+            // Pode ignorar se já existe
         }
 
         // Menu interativo.

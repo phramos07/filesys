@@ -18,8 +18,10 @@ public final class FileSystemImpl implements IFileSystem {
     private Map<String, Usuario> usuarios = new HashMap<>();
 
     public FileSystemImpl(List<Usuario> u) {
-        this.raiz = new Diretorio("/", "rwx", ROOT_USER);
-        usuarios.put(ROOT_USER, new Usuario(ROOT_USER, "rwx", "/"));
+        this.raiz = new Diretorio("/", "rwx", ROOT_USER); // adicionando um diretorio raiz, usuário ROOT tendo todas as
+                                                          // permissões
+        usuarios.put(ROOT_USER, new Usuario(ROOT_USER, "rwx", "/")); // criando um usuário com seu diretorio e colocando
+                                                                     // dentro de usuarios
         for (Usuario usuario : u) {
             if (!usuario.getNome().equalsIgnoreCase("root"))
                 usuarios.put(usuario.getNome(), usuario);
@@ -27,22 +29,44 @@ public final class FileSystemImpl implements IFileSystem {
     }
 
     private ElementoFS navegar(String caminho) throws CaminhoNaoEncontradoException {
+        // Se o caminho for apenas "/", retorna o diretório raiz
         if (caminho.equals("/"))
             return raiz;
+
+        // Divide o caminho pelos separadores "/"
+        // Ex: "/home/user/docs" -> ["", "home", "user", "docs"]
         String[] partes = caminho.split("/");
+
+        // Começa a navegação a partir do diretório raiz
         Diretorio atual = raiz;
+
+        // Itera pelas partes do caminho (ignorando a primeira que é vazia)
         for (int i = 1; i < partes.length; i++) {
+            // Tenta obter o filho (arquivo ou diretório) com o nome da parte atual
             ElementoFS filho = atual.getFilhos().get(partes[i]);
+
+            // Se não existir esse filho, lança exceção indicando que o caminho não foi
+            // encontrado
             if (filho == null)
                 throw new CaminhoNaoEncontradoException("Caminho não encontrado: " + caminho);
+
+            // Se esta é a última parte do caminho, retorna o elemento encontrado (pode ser
+            // arquivo ou diretório)
             if (i == partes.length - 1)
                 return filho;
+
+            // Se ainda há partes para percorrer e o elemento atual não for um arquivo (ou
+            // seja, é um diretório), continua a navegação
             if (!filho.isArquivo()) {
                 atual = (Diretorio) filho;
             } else {
+                // Se encontrou um arquivo no meio do caminho, lança exceção (pois não pode
+                // navegar dentro de um arquivo)
                 throw new CaminhoNaoEncontradoException("Caminho não encontrado (esperado diretório): " + caminho);
             }
         }
+
+        // Retorna o último diretório acessado (caso o caminho terminasse em diretório)
         return atual;
     }
 
@@ -60,9 +84,12 @@ public final class FileSystemImpl implements IFileSystem {
      */
     @Override
     public void mkdir(String caminho, String usuario) throws CaminhoJaExistenteException, PermissaoException {
+        // ignora casos inválidos
         if (caminho == null || caminho.isEmpty() || caminho.equals("/"))
             return;
 
+        // divide o caminho nas partes
+        // começa da raiz o sistema de arquivos
         String[] partes = caminho.split("/");
         Diretorio atual = raiz;
 
@@ -71,6 +98,7 @@ public final class FileSystemImpl implements IFileSystem {
             if (nomeDir.isEmpty())
                 continue; // Ignora barras duplas //
 
+            // busca se o filho ja possui diretorios com esse nome
             ElementoFS filho = atual.getFilhos().get(nomeDir);
 
             if (filho == null) {
@@ -79,6 +107,7 @@ public final class FileSystemImpl implements IFileSystem {
                     throw new PermissaoException("Sem permissão para criar em: " + getCaminhoCompleto(atual, nomeDir));
                 }
 
+                // criando o diretorio e adicionando
                 Diretorio novoDir = new Diretorio(nomeDir, "rwx", usuario);
                 atual.adicionarFilho(novoDir);
                 atual = novoDir;
@@ -296,8 +325,12 @@ public final class FileSystemImpl implements IFileSystem {
         }
 
         // 4) Escreve o buffer em blocos de 4096 bytes (tamanho do bloco)
-        int TAMANHO_BLOCO = 4096;
-        int bufferOffset = 0;
+        // buffer -> conteudo completo a ser salvo
+        int TAMANHO_BLOCO = 4096; // define o tamanho de cada bloco
+                                  // evita escrever tudo de uma vez no buffer
+                                  // se diminuir o tamanho do bloco, o desperdício cai, porém a memória para
+                                  // manter metadados cresce
+        int bufferOffset = 0; // se o bufferOffset não tem controler de pro onde continuar a leitura do buffer
         while (bufferOffset < buffer.length) {
             int bytesParaEscrever = Math.min(TAMANHO_BLOCO, buffer.length - bufferOffset);
             byte[] bloco = new byte[bytesParaEscrever];
@@ -321,27 +354,47 @@ public final class FileSystemImpl implements IFileSystem {
             throw new PermissaoException("Sem permissão de leitura em: " + caminho);
         }
 
-        int readOffset = (offset != null) ? offset.getValue() : 0;
-        int bufferPos = 0;
-        int filePos = 0;
+        int readOffset = (offset != null) ? offset.getValue() : 0; // onde dentro do arquivo vc deve começar a ler
+        int bufferPos = 0; // indica em que posição do buffer de destino você ja escreveu dados lidos
+        int filePos = 0; // marca qual posição de leitura do arquivo vc ja consumiu
 
         for (byte[] bloco : arquivo.getBlocos()) {
+            // 1) Se todo o bloco ainda está antes do offset, pule-o por inteiro:
             if (filePos + bloco.length <= readOffset) {
-                // Pula blocos até chegar no offset
-                filePos += bloco.length;
-                continue;
+                filePos += bloco.length; // avança a posição no arquivo
+                continue; // vai para o próximo bloco
             }
+
+            // 2) Determina onde, dentro do bloco atual, começar a copiar:
+            // - Se readOffset > filePos, significa que já consumimos parte desse bloco
             int blocoOffset = Math.max(0, readOffset - filePos);
-            int bytesParaLer = Math.min(bloco.length - blocoOffset, buffer.length - bufferPos);
+
+            // 3) Quantos bytes desse bloco cabem no buffer restante?
+            int bytesParaLer = Math.min(
+                    bloco.length - blocoOffset, // do bloco a partir de blocoOffset
+                    buffer.length - bufferPos // até encher o buffer destino
+            );
+
+            // Se não há mais nada a ler (buffer cheio ou bloco já totalmente antes do
+            // offset), encerra:
             if (bytesParaLer <= 0)
                 break;
+
+            // 4) Copia bytesParaLer do bloco para o buffer:
+            // de bloco[blocoOffset … blocoOffset+bytesParaLer-1]
+            // para buffer[bufferPos … bufferPos+bytesParaLer-1]
             System.arraycopy(bloco, blocoOffset, buffer, bufferPos, bytesParaLer);
-            bufferPos += bytesParaLer;
-            filePos += bloco.length;
-            readOffset += bytesParaLer;
+
+            // 5) Atualiza índices:
+            bufferPos += bytesParaLer; // avançou no buffer destino
+            filePos += bloco.length; // bloco todo foi “lido” em termos de filePos
+            readOffset += bytesParaLer; // avança a posição real de leitura
+
+            // 6) Se o buffer ficou cheio, pare de ler:
             if (bufferPos >= buffer.length)
                 break;
         }
+
         if (offset != null)
             offset.setValue(readOffset);
     }

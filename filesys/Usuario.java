@@ -31,6 +31,8 @@ public class Usuario {
         this.diretorio = diretorio;
     }
 
+    
+
     @Override
     public String toString() {
         return "Usuario{" +
@@ -38,6 +40,10 @@ public class Usuario {
                 ", permissao='" + permissao + '\'' +
                 ", diretorio='" + diretorio + '\'' +
                 '}';
+    }
+
+    public String getDiretorio() {
+        return diretorio;
     }
 
     
